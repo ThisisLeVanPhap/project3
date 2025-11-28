@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: demo2
+  datasource:
+    url: jdbc:postgresql://localhost:5432/global_admin
+    username: postgres
+    password: admin
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.format_sql: true
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    locations: classpath:db/migration
+  security:
+    user:
+      name: admin
+      password: admin123
+server:
+  port: 8080
+
+logging:
+  level:
+    com.app: DEBUG

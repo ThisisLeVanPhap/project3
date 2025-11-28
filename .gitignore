@@ -1,0 +1,18 @@
+# Python venv
+.venv/
+.venv-1/
+venv/
+env/
+chatbot/messenger-chatbot/.venv-1/
+chatbot/messenger-chatbot/.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log

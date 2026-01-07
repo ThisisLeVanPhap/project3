@@ -3,8 +3,8 @@
 .venv-1/
 venv/
 env/
-chatbot/messenger-chatbot/.venv-1/
-chatbot/messenger-chatbot/.venv/
+chatbot/.venv-1/
+chatbot/.venv/
 
 # Python cache
 __pycache__/

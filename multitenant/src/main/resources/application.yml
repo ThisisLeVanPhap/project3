@@ -31,7 +31,7 @@ python:
   # base-url: http://localhost:8000   # (optional) fallback, không dùng trong multi-tenant nữa
   llm:
     python-bin: "C:/Users/Admin/AppData/Local/Programs/Python/Python311/python.exe"
-    model-server-dir: "F:/20251/prj3/chatbot/messenger-chatbot"
+    model-server-dir: "F:/20251/prj3/chatbot"
     host: "127.0.0.1"
     port-range-start: 8101
     port-range-end: 8199

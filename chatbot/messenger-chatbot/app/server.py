@@ -1,127 +1,133 @@
 import os
-import json
 import time
-from typing import List, Optional
+import re
+import threading
+from typing import List, Optional, Dict, Tuple, Any
 
-import requests
-from fastapi import FastAPI, Request
-from pydantic import BaseModel
-
+from fastapi import FastAPI
+from pydantic import BaseModel, Field
 
 from .model_loader import get_pipeline
 from .prompt import build_prompt
 
-# ----- Env -----
-FB_VERIFY_TOKEN = os.getenv("FB_VERIFY_TOKEN", "my-verify")
-FB_PAGE_TOKEN = os.getenv("FB_PAGE_TOKEN")
-ADAPTER_PATH = os.getenv("LORA_ADAPTER", "out/lora_adapter")
-BASE_MODEL = os.getenv("BASE_MODEL", "TinyLlama/TinyLlama-1.1B-Chat-v1.0")
-MAX_NEW_TOKENS = int(os.getenv("MAX_NEW_TOKENS", "256"))
-TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
-TOP_P = float(os.getenv("TOP_P", "0.9"))
+BASE_MODEL_DEFAULT = os.getenv("BASE_MODEL", "TinyLlama/TinyLlama-1.1B-Chat-v1.0")
+ADAPTER_DEFAULT = os.getenv("LORA_ADAPTER") or None
+TOKENIZER_DEFAULT = os.getenv("TOKENIZER_PATH") or None
 
+MAX_NEW_TOKENS_DEFAULT = int(os.getenv("MAX_NEW_TOKENS", "256"))
+TEMPERATURE_DEFAULT = float(os.getenv("TEMPERATURE", "0.7"))
+TOP_P_DEFAULT = float(os.getenv("TOP_P", "0.9"))
+TOP_K_DEFAULT = int(os.getenv("TOP_K", "50"))
 
-app = FastAPI(title="Messenger Chatbot")
-pipe = None
+app = FastAPI(title="Multi-tenant Chatbot Model Server")
 
+PIPE_CACHE: Dict[Tuple[str, Optional[str], Optional[str]], Any] = {}
+CACHE_LOCK = threading.Lock()
+
+class GenerationConfig(BaseModel):
+    base_model: Optional[str] = None
+    adapter: Optional[str] = None
+    tokenizer_path: Optional[str] = None
+    system_prompt: Optional[str] = None
+    max_new_tokens: Optional[int] = None
+    temperature: Optional[float] = None
+    top_p: Optional[float] = None
+    top_k: Optional[int] = None
+    stop: Optional[List[str]] = None
 
 class ChatReq(BaseModel):
     message: str
-    history: Optional[List[str]] = []
+    history: List[str] = Field(default_factory=list)
+    gen: GenerationConfig = Field(default_factory=GenerationConfig)
+
+class ChatResp(BaseModel):
+    reply: str
+    latency_ms: int
+    model: str
+    adapter: Optional[str]
+
+def get_or_create_pipe(base_model: str, adapter: Optional[str], tokenizer_path: Optional[str]):
+    key = (base_model, adapter, tokenizer_path)
+    with CACHE_LOCK:
+        if key not in PIPE_CACHE:
+            pipe = get_pipeline(base=base_model, adapter=adapter, tokenizer_path=tokenizer_path)
+            PIPE_CACHE[key] = pipe
+        return PIPE_CACHE[key]
 
 @app.on_event("startup")
 def _warmup():
-    global pipe
-    t0 = time.time()
-    pipe = get_pipeline(base=BASE_MODEL, adapter=ADAPTER_PATH)
-    print(f"Model loaded in {time.time()-t0:.2f}s | base={BASE_MODEL} | adapter={ADAPTER_PATH}")
+    # chạy warmup nền để server lên ngay, /healthz trả OK luôn
+    def run():
+        try:
+            get_or_create_pipe(BASE_MODEL_DEFAULT, ADAPTER_DEFAULT, TOKENIZER_DEFAULT)
+        except Exception as e:
+            print("[warmup] failed:", e)
+
+    threading.Thread(target=run, daemon=True).start()
 
 @app.get("/healthz")
 def healthz():
-    return {"status": "ok", "base": BASE_MODEL, "adapter": ADAPTER_PATH}
+    return {"status": "ok", "cached_pipelines": len(PIPE_CACHE)}
 
-@app.post("/chat")
+@app.post("/chat", response_model=ChatResp)
 def chat(req: ChatReq):
-    prompt = build_prompt(req.message, req.history or [])
+    cfg = req.gen
+
+    base_model = cfg.base_model or BASE_MODEL_DEFAULT
+    adapter = cfg.adapter or ADAPTER_DEFAULT
+    tokenizer_path = cfg.tokenizer_path or TOKENIZER_DEFAULT
+
+    max_new_tokens = cfg.max_new_tokens or MAX_NEW_TOKENS_DEFAULT
+    temperature = cfg.temperature or TEMPERATURE_DEFAULT
+    top_p = cfg.top_p or TOP_P_DEFAULT
+    top_k = cfg.top_k or TOP_K_DEFAULT
+
+    pipe = get_or_create_pipe(base_model, adapter, tokenizer_path)
+
+    prompt = build_prompt(req.message, req.history, cfg.system_prompt)
+
     t0 = time.time()
     out = pipe(
         prompt,
-        max_new_tokens=120,
-        min_new_tokens=40,
+        max_new_tokens=max_new_tokens,
         do_sample=True,
-        temperature=0.7,
-        top_p=0.9,
-        top_k=50,
+        temperature=temperature,
+        top_p=top_p,
+        top_k=top_k,
         no_repeat_ngram_size=3,
         repetition_penalty=1.15,
         pad_token_id=pipe.tokenizer.eos_token_id,
         eos_token_id=pipe.tokenizer.eos_token_id,
+        return_full_text=False,
     )[0]["generated_text"]
 
-    # Lấy phần sau "### Response:"
-    resp = out.split("### Response:")[-1].strip()
+    # Robust extract: ưu tiên "### Assistant:" nếu có, fallback raw
+    if "### Assistant:" in out:
+        resp = out.split("### Assistant:")[-1].strip()
+    elif "### Response:" in out:
+        resp = out.split("### Response:")[-1].strip()
+    else:
+        resp = out.strip()
 
-    # Cắt tiếp nếu model bắt đầu sinh thêm turn mới
-    stop_markers = [
-        "### User:",
-        "## # User:",
-        "### Instruction:",
-        "### Input:",
-        "\nUser:",
-        "\n# User:",
-        "\n## User:",
+    # Nếu pipeline vẫn trả full text (prompt + completion) → cắt prompt
+    if resp.startswith(prompt):
+        resp = resp[len(prompt):].strip()
+
+    # stop markers
+    stops = cfg.stop or [
+        "### User:", "### System:", "### Instruction:", "### Response:", "### Assistant:",
+        "## User:", "## System:", "## Instruction:", "## Response:", "## Assistant:",
+        "\nUser:", "\nSystem:"
     ]
-    for m in stop_markers:
+
+    for m in stops:
         idx = resp.find(m)
         if idx != -1:
             resp = resp[:idx].strip()
             break
-
-    # Giữ lại tối đa ~4 câu cho gọn
-    import re
+    
     sentences = re.split(r'(?<=[.!?…])\s+', resp)
-    resp = " ".join(sentences[:4])
+    resp = " ".join(sentences[:4]).strip()
 
-    return {
-        "reply": resp[:1200],
-        "latency_ms": int((time.time() - t0) * 1000),
-        "model": BASE_MODEL,
-        "adapter": ADAPTER_PATH,
-    }
-
-# -------- Messenger webhook --------
-@app.get("/webhook")
-def verify(hub_mode: str = None, hub_challenge: str = None, hub_verify_token: str = None):
-    if hub_verify_token == FB_VERIFY_TOKEN:
-        try:
-            return int(hub_challenge or 0)
-        except Exception:
-            return hub_challenge or "" # sometimes FB expects raw string
-    return {"status": "forbidden"}
-
-def reply_text(psid: str, text: str):
-    if not FB_PAGE_TOKEN:
-        print("[WARN] FB_PAGE_TOKEN not set; skipping send.")
-        return
-    url = f"https://graph.facebook.com/v20.0/me/messages?access_token={FB_PAGE_TOKEN}"
-    body = {"recipient": {"id": psid}, "message": {"text": text[:640]}}
-    try:
-        requests.post(url, json=body, timeout=10)
-    except Exception as e:
-        print("[ERR] send message:", e)
-
-@app.post("/webhook")
-async def receive(req: Request):
-    payload = await req.json()
-    entries = payload.get("entry", [])
-    for entry in entries:      
-        for msg in entry.get("messaging", []):
-            sender = msg.get("sender", {}).get("id") 
-            if not sender:
-                continue 
-            # Only text for demo
-            text = msg.get("message", {}).get("text")
-            if text:
-                bot = chat(ChatReq(message=text, history=[]))
-                reply_text(sender, bot.get("reply", "Xin lỗi, mình đang lỗi :("))
-    return {"status": "ok"}
+    latency_ms = int((time.time() - t0) * 1000)
+    return ChatResp(reply=resp[:1200], latency_ms=latency_ms, model=base_model, adapter=adapter)

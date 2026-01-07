@@ -1,5 +1,8 @@
 from datasets import load_dataset
-from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, DataCollatorForLanguageModeling, Trainer
+from transformers import (
+    AutoTokenizer, AutoModelForCausalLM,
+    TrainingArguments, DataCollatorForLanguageModeling, Trainer
+)
 from peft import LoraConfig, get_peft_model
 
 BASE_MODEL = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
@@ -8,38 +11,43 @@ DATA_VAL = "training/data/val.jsonl"
 OUT_DIR = "out"
 
 def format_sample(example):
-    prompt = f"### Instruction:\n{example['instruction']}\n### Input:\n{example.get('input','')}\n### Response:\n"
-    return prompt + example["output"]
+    instruction = example.get("instruction", "").strip()
+    inp = example.get("input", "").strip()
+    out = example["output"].strip()
+
+    # format thống nhất với server (User/Assistant) để đỡ lệch distribution
+    parts = ["### System:\nBạn là trợ lý AI tiếng Việt.\n"]
+    if instruction:
+        parts.append(f"### User:\n{instruction}\n")
+    if inp:
+        parts.append(f"### User:\n{inp}\n")
+    parts.append("### Assistant:\n")
+    return "".join(parts) + out
 
 def main():
     ds = load_dataset("json", data_files={"train": DATA_TRAIN, "val": DATA_VAL})
 
     tok = AutoTokenizer.from_pretrained(BASE_MODEL, use_fast=True)
-    if tok.pad_token is None:
-        tok.pad_token = tok.eos_token
-    tok.padding_side = "right"  # an toàn cho causal LM
+    tok.pad_token = tok.pad_token or tok.eos_token
+    tok.padding_side = "right"
 
     def tokenize(ex):
         text = format_sample(ex)
-        # KHÔNG gán labels ở đây
         return tok(text, truncation=True, max_length=1024)
-        # (padding để collator xử lý, không cần padding=True ở đây)
 
     ds_tok = ds.map(tokenize, remove_columns=ds["train"].column_names)
-
-    # Collator này sẽ tự:
-    # - pad các field (input_ids, attention_mask, ...)
-    # - tạo labels = input_ids khi mlm=False
     collator = DataCollatorForLanguageModeling(tok, mlm=False)
 
     model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
     lora_cfg = LoraConfig(
         r=16, lora_alpha=32,
-        target_modules=["q_proj","v_proj","k_proj","o_proj"],
-        lora_dropout=0.05, bias="none", task_type="CAUSAL_LM"
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+        lora_dropout=0.05,
+        bias="none",
+        task_type="CAUSAL_LM",
     )
     model = get_peft_model(model, lora_cfg)
-    model.config.pad_token_id = tok.pad_token_id  # tránh warning
+    model.config.pad_token_id = tok.pad_token_id
 
     args = TrainingArguments(
         output_dir=OUT_DIR,
@@ -49,10 +57,11 @@ def main():
         learning_rate=2e-4,
         fp16=False,
         logging_steps=50,
-        eval_strategy="steps",
+        evaluation_strategy="steps",  # ✅ đúng tên
         eval_steps=200,
         save_steps=200,
         save_total_limit=2,
+        remove_unused_columns=False,
     )
 
     trainer = Trainer(
@@ -68,4 +77,4 @@ def main():
     tok.save_pretrained(f"{OUT_DIR}/tokenizer")
 
 if __name__ == "__main__":
-    main()   
+    main()

@@ -1,56 +1,89 @@
 package com.app.chat;
 
-import com.app.chat.dto.SendMessageDto;
-import com.app.chat.dto.StartConversationDto;
+import com.app.bots.ChatbotInstance;
+import com.app.bots.ChatbotInstanceRepository;
+import com.app.modelserver.LlmInstanceManager;
+import com.app.modelserver.PythonChatClient;
+import com.app.modelserver.dto.ChatResponse;
 import com.app.tenant.TenantContext;
-import com.app.tenant.TenantGuards;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
 public class ChatController {
+
     private final ConversationRepository convRepo;
     private final MessageRepository msgRepo;
+    private final ChatbotInstanceRepository botRepo;
+    private final PythonChatClient pythonChatClient;
+    private final LlmInstanceManager llmInstanceManager;
 
     @PostMapping("/start")
-    public Map<String,Object> start(@Valid @RequestBody StartConversationDto req) {
-        TenantGuards.requireTenant();
+    public Map<String,Object> start(@RequestBody Map<String,String> req) {
+        UUID tenantId = UUID.fromString(TenantContext.get());
+        UUID chatbotId = UUID.fromString(req.get("chatbotId"));
 
         Conversation c = new Conversation();
         c.setId(UUID.randomUUID());
-        c.setChatbotId(UUID.fromString(req.chatbotId()));
-        c.setTenantId(UUID.fromString(TenantContext.get()));
-        c.setUserExternalId(req.userExternalId());
+        c.setChatbotId(chatbotId);
+        c.setTenantId(tenantId);
         convRepo.save(c);
 
         return Map.of("conversationId", c.getId());
     }
 
     @PostMapping("/send")
-    public Map<String,Object> send(@Valid @RequestBody SendMessageDto req) {
-        TenantGuards.requireTenant();
+    public Map<String,Object> send(@RequestBody Map<String,String> req) {
+        UUID tenantId = UUID.fromString(TenantContext.get());
+        UUID convId = UUID.fromString(req.get("conversationId"));
+        String userMsg = req.get("message");
 
-        UUID convId = UUID.fromString(req.conversationId());
+        Conversation conv = convRepo.findById(convId)
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
 
-        // user message
-        Message m1 = new Message(UUID.randomUUID(), convId, "user", req.message());
-        m1.setTenantId(UUID.fromString(TenantContext.get()));
-        msgRepo.save(m1);
+        // ENFORCE tenant
+        if (!tenantId.equals(conv.getTenantId())) {
+            throw new IllegalArgumentException("Forbidden conversation for this tenant");
+        }
 
-        // TODO: thay bằng ReplyGenerator (LLM/vLLM) sau
-        String reply = "Cảm ơn bạn! (stub) Cho mình biết ngân sách dự kiến?";
+        ChatbotInstance bot = botRepo.findById(conv.getChatbotId())
+                .orElseThrow(() -> new IllegalArgumentException("Chatbot not found"));
 
-        // assistant reply
-        Message m2 = new Message(UUID.randomUUID(), convId, "assistant", reply);
-        m2.setTenantId(UUID.fromString(TenantContext.get()));
-        msgRepo.save(m2);
+        // (Optional) nếu ChatbotInstance có tenantId thì check thêm
+        // if (!tenantId.equals(bot.getTenantId())) throw ...
 
-        return Map.of("reply", reply);
+        Message mUser = new Message(UUID.randomUUID(), convId, "user", userMsg);
+        mUser.setTenantId(tenantId);
+        msgRepo.save(mUser);
+
+        List<Message> historyMsgs = msgRepo.findTop20ByConversationIdOrderByCreatedAtAsc(convId);
+        List<String> history = new ArrayList<>();
+        for (Message m : historyMsgs) {
+            history.add(m.getRole() + ": " + m.getContent());
+        }
+
+        // Lấy baseUrl riêng theo tenant (spawn nếu chưa có)
+        String baseUrl = llmInstanceManager.getOrStartBaseUrl(tenantId, bot);
+
+        ChatResponse resp = pythonChatClient.chat(baseUrl, userMsg, history, bot);
+
+        Message mBot = new Message(UUID.randomUUID(), convId, "assistant", resp.reply());
+        mBot.setTenantId(tenantId);
+        msgRepo.save(mBot);
+
+        // optional: dọn idle
+        llmInstanceManager.cleanupIdle();
+
+        return Map.of(
+                "reply", resp.reply(),
+                "latencyMs", resp.latency_ms(),
+                "model", resp.model(),
+                "adapter", resp.adapter(),
+                "llmBaseUrl", baseUrl // debug demo (có thể bỏ)
+        );
     }
 }

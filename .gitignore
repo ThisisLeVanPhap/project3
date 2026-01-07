@@ -16,3 +16,11 @@ __pycache__/
 
 # Logs
 *.log
+
+# Node / Frontend
+node_modules/
+**/node_modules/
+
+# Next.js
+.next/
+out/

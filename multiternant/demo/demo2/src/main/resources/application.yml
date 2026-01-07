@@ -26,3 +26,19 @@ server:
 logging:
   level:
     com.app: DEBUG
+
+python:
+  # base-url: http://localhost:8000   # (optional) fallback, không dùng trong multi-tenant nữa
+  llm:
+    python-bin: "C:/Users/Admin/AppData/Local/Programs/Python/Python311/python.exe"
+    model-server-dir: "F:/20251/prj3/chatbot/messenger-chatbot"
+    host: "127.0.0.1"
+    port-range-start: 8101
+    port-range-end: 8199
+    health-path: "/healthz"
+    uvicorn-module: "app.server:app"
+
+
+messenger:
+  verify-token: woodchat_secret
+  # page-access-token:

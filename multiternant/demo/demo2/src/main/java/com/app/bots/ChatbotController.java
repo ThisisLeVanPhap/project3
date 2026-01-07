@@ -1,11 +1,8 @@
 package com.app.bots;
 
-import com.app.bots.dto.CreateChatbotDto;
 import com.app.tenant.TenantContext;
-import com.app.tenant.TenantGuards;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,10 +14,6 @@ import java.util.*;
 public class ChatbotController {
     private final ChatbotInstanceRepository repo;
     private final ObjectMapper mapper;
-
-    private UUID requireTenant() {
-        return TenantGuards.requireTenant();
-    }
 
     @PostMapping
     public ChatbotInstance create(@RequestBody CreateBotDto dto) throws Exception {
@@ -45,5 +38,6 @@ public class ChatbotController {
         return repo.findAllByTenant(UUID.fromString(TenantContext.get()));
     }
 
-    public record CreateBotDto(String name, String channel, String personaJson) {}
+    public record CreateBotDto(String name, String channel, String personaJson) {
+    }
 }

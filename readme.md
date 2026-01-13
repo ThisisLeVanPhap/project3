@@ -13,7 +13,6 @@ cd messenger-chatbot
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-cp .env.example .env
 ```
 ## 2) fine-tune xong mô hình LoRA
 python training/train_lora.py

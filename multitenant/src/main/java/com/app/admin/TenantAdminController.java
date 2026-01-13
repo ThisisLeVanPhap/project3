@@ -5,6 +5,7 @@ import com.app.tenants.TenantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -24,5 +25,11 @@ public class TenantAdminController {
         t.setApiKey(UUID.randomUUID().toString().replace("-", ""));
         repo.save(t);
         return Map.of("tenantId", t.getId(), "apiKey", t.getApiKey());
+    }
+
+    // ✅ thêm GET để UI load list tenant
+    @GetMapping
+    public List<Tenant> list() {
+        return repo.findAll();
     }
 }

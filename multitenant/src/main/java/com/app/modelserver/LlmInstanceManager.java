@@ -16,6 +16,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -29,6 +33,9 @@ public class LlmInstanceManager {
 
     private final Map<UUID, Running> runningByTenant = new ConcurrentHashMap<>();
     private final WebClient http = WebClient.builder().build();
+
+    private final ReentrantLock spawnLock = new ReentrantLock();
+    private final Set<Integer> reservedPorts = ConcurrentHashMap.newKeySet();
 
     public String getOrStartBaseUrl(UUID tenantId, ChatbotInstance botCfg) {
         Running r = runningByTenant.get(tenantId);
@@ -71,7 +78,6 @@ public class LlmInstanceManager {
     }
 
     private Running spawn(UUID tenantId, ChatbotInstance botCfg) {
-        // validate config rõ ràng (để không bị null mà không biết)
         if (props.getPythonBin() == null || props.getPythonBin().isBlank()) {
             throw new IllegalStateException("Missing config: python.llm.python-bin");
         }
@@ -79,8 +85,21 @@ public class LlmInstanceManager {
             throw new IllegalStateException("Missing config: python.llm.model-server-dir");
         }
 
-        int port = pickPort();
-        String baseUrl = "http://" + props.getHost() + ":" + port;
+        int port;
+        String baseUrl;
+
+        // ✅ Lock để 2 tenant không pick trùng port
+        spawnLock.lock();
+        try {
+            port = pickPortReserved();
+            reservedPorts.add(port); // ✅ giữ chỗ port ngay lập tức
+            baseUrl = "http://" + props.getHost() + ":" + port;
+        } finally {
+            spawnLock.unlock();
+        }
+
+        Process p = null;
+        long pid = -1;
 
         try {
             File dir = new File(props.getModelServerDir());
@@ -102,32 +121,35 @@ public class LlmInstanceManager {
             log.info("Spawning LLM instance tenant={} -> {} (python={}, dir={})",
                     tenantId, baseUrl, props.getPythonBin(), dir.getAbsolutePath());
 
-            Process p = pb.start();
-            long pid = p.pid();
+            p = pb.start();
+            pid = p.pid();
 
-            // ✅ DRAIN LOG của uvicorn để thấy lỗi thật (import fail / thiếu uvicorn / v.v.)
+            // ✅ drain log
+            Process finalP = p;
+            long finalPid = pid;
             new Thread(() -> {
-                try (var br = new java.io.BufferedReader(
-                        new java.io.InputStreamReader(p.getInputStream()))) {
+                try (var br = new java.io.BufferedReader(new java.io.InputStreamReader(finalP.getInputStream()))) {
                     String line;
                     while ((line = br.readLine()) != null) {
-                        log.info("[llm:{} pid={}] {}", tenantId, pid, line);
+                        log.info("[llm:{} pid={}] {}", tenantId, finalPid, line);
                     }
                 } catch (Exception ex) {
-                    log.warn("[llm:{} pid={}] log stream closed: {}", tenantId, pid, ex.toString());
+                    log.warn("[llm:{} pid={}] log stream closed: {}", tenantId, finalPid, ex.toString());
                 }
             }, "llm-log-" + tenantId).start();
 
             long deadline = System.currentTimeMillis() + 120_000;
             long lastLog = 0;
+
             while (System.currentTimeMillis() < deadline) {
+                // ✅ nếu process chết sớm -> fail ngay (không được READY nhầm)
+                if (!p.isAlive()) {
+                    throw new IllegalStateException("LLM process exited early (pid=" + pid + ", port=" + port + ")");
+                }
+
                 if (isHealthy(baseUrl)) {
                     log.info("LLM READY tenant={} -> {} (pid={})", tenantId, baseUrl, pid);
                     return new Running(baseUrl, pid, Instant.now());
-                }
-                // nếu process chết sớm thì báo ngay, khỏi chờ đủ 30s
-                if (!p.isAlive()) {
-                    throw new IllegalStateException("LLM process exited early (pid=" + pid + ")");
                 }
 
                 long now = System.currentTimeMillis();
@@ -146,14 +168,21 @@ public class LlmInstanceManager {
             throw new RuntimeException(
                     "Failed to start LLM instance for tenant=" + tenantId
                             + " (python=" + props.getPythonBin()
-                            + ", modelServerDir=" + props.getModelServerDir() + ")",
+                            + ", modelServerDir=" + props.getModelServerDir()
+                            + ", port=" + port + ")",
                     e
             );
+        } finally {
+            // ✅ quan trọng: nếu không return Running (spawn fail) -> nhả reserved port
+            // Nếu spawn thành công thì vẫn có thể nhả reserved luôn cũng được,
+            // vì lúc đó OS đã giữ port, reserve chỉ dùng chống race lúc pick.
+            reservedPorts.remove(port);
         }
     }
 
-    private int pickPort() {
+    private int pickPortReserved() {
         for (int port = props.getPortRangeStart(); port <= props.getPortRangeEnd(); port++) {
+            if (reservedPorts.contains(port)) continue;
             if (isPortFree(port)) return port;
         }
         throw new IllegalStateException("No free port in range " +
@@ -172,5 +201,9 @@ public class LlmInstanceManager {
     @PreDestroy
     public void shutdownAll() {
         runningByTenant.clear();
+    }
+
+    public Map<UUID, Running> dumpRunning() {
+        return Map.copyOf(runningByTenant);
     }
 }

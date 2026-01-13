@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Create Chatbot Admin</title>
+    <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<div class="container">
+    <header class="topbar">
+        <div>
+            <div class="title">Create Chatbot Admin</div>
+            <div class="sub">Mở: http://localhost:8080/admin</div>
+        </div>
+
+        <div class="right">
+            <span class="chip">Selected tenant: <b id="selectedTenantName">—</b></span>
+            <button class="secondary" id="pingHealth" title="Kiểm tra Spring Boot còn sống + actuator health">Ping health</button>
+        </div>
+    </header>
+
+    <!-- CONFIG (chỉ giữ tối thiểu, không gợi ý token trong UI) -->
+    <section class="card">
+        <div class="grid2">
+            <div>
+                <label>API Base</label>
+                <input id="apiBase" />
+            </div>
+            <div>
+                <label>Authorization (Basic) – nếu bạn bật security</label>
+                <input id="basicAuth" />
+            </div>
+        </div>
+        <div class="grid2">
+            <div>
+                <label>X-API-Key (ưu tiên dùng)</label>
+                <input id="apiKey" />
+            </div>
+            <div>
+                <label>X-Tenant-Id (nếu muốn truyền trực tiếp)</label>
+                <input id="tenantId" />
+            </div>
+        </div>
+
+        <div class="row">
+            <button id="saveCfg">Save</button>
+            <span id="cfgMsg" class="muted"></span>
+            <span class="muted" id="healthMsg"></span>
+        </div>
+
+        <div class="note">
+            <b>Ping health dùng để làm gì?</b>
+            <div>- Xác nhận backend Spring Boot đang chạy.</div>
+            <div>- Nếu health FAIL: thường là lỗi DB, Flyway, port, hoặc app crash.</div>
+        </div>
+    </section>
+
+    <nav class="tabs">
+        <button class="tab active" data-tab="tenants">Tenants</button>
+        <button class="tab" data-tab="chatbots">Chatbots</button>
+        <button class="tab" data-tab="bindings">Bindings</button>
+    </nav>
+
+    <main>
+
+        <!-- TENANTS -->
+        <section id="tab-tenants" class="card">
+            <div class="head">
+                <h2>Tenants</h2>
+                <div class="row">
+                    <button class="secondary" id="clearTenantsOut">Clear output</button>
+                </div>
+            </div>
+
+            <div class="grid3">
+                <div>
+                    <label>Code</label>
+                    <input id="tenantCode" />
+                </div>
+                <div>
+                    <label>Name</label>
+                    <input id="tenantName" />
+                </div>
+                <div class="row end">
+                    <button id="createTenant">Create tenant</button>
+                </div>
+            </div>
+
+            <div class="row">
+                <button class="secondary" id="loadTenants">Load tenants</button>
+                <span class="muted" id="tenantsMsg"></span>
+            </div>
+
+            <pre id="tenantsOut" class="out"></pre>
+        </section>
+
+        <!-- CHATBOTS -->
+        <section id="tab-chatbots" class="card hidden">
+            <div class="head">
+                <h2>Chatbots</h2>
+                <div class="row">
+                    <button class="secondary" id="clearBotsOut">Clear output</button>
+                </div>
+            </div>
+
+            <div class="grid2">
+                <div>
+                    <label>Tenant (chọn để gọi /api/chatbots)</label>
+                    <select id="tenantSelectBots"></select>
+                </div>
+                <div class="row end">
+                    <button class="secondary" id="useTenantBots">Use tenant</button>
+                </div>
+            </div>
+
+            <div class="grid3">
+                <div>
+                    <label>Bot name</label>
+                    <input id="botName" />
+                </div>
+                <div>
+                    <label>Channel</label>
+                    <select id="botChannel">
+                        <option value="telegram">telegram</option>
+                        <option value="messenger">messenger</option>
+                    </select>
+                </div>
+                <div>
+                    <label>personaJson (optional)</label>
+                    <input id="botPersona" />
+                </div>
+            </div>
+
+            <div class="row">
+                <button id="createBot">Create chatbot</button>
+                <button class="secondary" id="loadBots">Load chatbots</button>
+                <span class="muted" id="botsMsg"></span>
+            </div>
+
+            <pre id="botsOut" class="out"></pre>
+        </section>
+
+        <!-- BINDINGS -->
+        <section id="tab-bindings" class="card hidden">
+            <div class="head">
+                <h2>Bindings</h2>
+                <div class="row">
+                    <button class="secondary" id="clearBindingsOut">Clear output</button>
+                </div>
+            </div>
+
+            <div class="grid2">
+                <div>
+                    <label>Tenant</label>
+                    <select id="tenantSelectBindings"></select>
+                </div>
+                <div class="row end">
+                    <button class="secondary" id="useTenantBindings">Use tenant</button>
+                </div>
+            </div>
+
+            <div class="grid2">
+                <div>
+                    <label>Chatbot (thuộc tenant đã chọn)</label>
+                    <select id="botSelect"></select>
+                    <div class="muted">Selected bot channel: <b id="selectedBotChannel">—</b></div>
+                </div>
+                <div class="row end">
+                    <button class="secondary" id="refreshBotsForBindings">Reload chatbots</button>
+                </div>
+            </div>
+
+            <div class="grid2">
+                <!-- TELEGRAM -->
+                <div class="card2">
+                    <h3>Telegram</h3>
+                    <label>Bot token</label>
+                    <input id="tgToken" />
+                    <div class="row">
+                        <button id="createTgBinding">Create Telegram binding</button>
+                        <button class="secondary" id="loadTgBindings">Load Telegram bindings</button>
+                    </div>
+                </div>
+
+                <!-- MESSENGER -->
+                <div class="card2">
+                    <h3>Messenger (Facebook)</h3>
+                    <label>Page ID</label>
+                    <input id="pageId" />
+                    <label>Page access token</label>
+                    <input id="pageToken" />
+                    <div class="row">
+                        <button id="createMsgBinding">Create Messenger binding</button>
+                        <button class="secondary" id="loadMsgBindings">Load Messenger bindings</button>
+                    </div>
+                </div>
+            </div>
+
+            <pre id="bindingsOut" class="out"></pre>
+        </section>
+
+    </main>
+
+    <footer class="footer muted">
+        Static HTML/JS – chạy cùng Spring Boot (không cần npm/build).
+    </footer>
+</div>
+
+<script src="./app.js"></script>
+</body>
+</html>

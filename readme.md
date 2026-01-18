@@ -58,6 +58,8 @@ Notes:
 
 + MODEL_SERVER_DIR must point to the chatbot/ folder (contains app/server.py).
 
+## 4.0) Use interface for create tenant, create chatbot, bind chatbot,...
+Use ```http://localhost:8080/admin``` after run ApiApplication.java
 ## 4) Database + Tenant/Chatbot + Messenger/Telegram bindings
 ### 4.1 Create database
 Create a PostgreSQL database named ```global_admin``` and update ```multitenant/src/main/resources/application.yml``` (or application.properties) to match your local DB credentials.

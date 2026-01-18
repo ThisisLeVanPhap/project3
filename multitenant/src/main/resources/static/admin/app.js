@@ -1,5 +1,18 @@
 function $(id){ return document.getElementById(id); }
 
+async function setTelegramWebhook(botToken, fullWebhookUrl){
+    const url = "https://api.telegram.org/bot" + botToken + "/setWebhook";
+    const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: fullWebhookUrl })
+    });
+    const text = await res.text();
+    let data = text;
+    try { data = JSON.parse(text); } catch(e) {}
+    return { ok: res.ok, status: res.status, data };
+}
+
 const cfgKeys = {
     apiBase: "adminui.apiBase",
     basicAuth: "adminui.basicAuth",
@@ -291,10 +304,49 @@ $("createTgBinding").addEventListener("click", async ()=>{
     const botToken = $("tgToken").value.trim();
     if(!botToken){ showMsg("cfgMsg", "Thiếu bot token"); return; }
 
-    // Endpoint đúng theo code bạn gửi
     const payload = { chatbotId: state.selectedBot.id, botToken };
     const r = await req("POST", "/api/telegram/bindings", payload);
+
+    // Always show binding result first
     $("bindingsOut").innerText = JSON.stringify(r, null, 2);
+
+    // Auto setWebhook if ngrok base URL is provided
+    const publicBase = ($("tgPublicBase")?.value || "").trim().replace(/\/+$/,"");
+    const secretPath = r?.data?.secretPath; // <-- đúng theo response bạn gửi
+
+    if(!r.ok){
+        showMsg("cfgMsg", "Create binding FAIL");
+        return;
+    }
+
+    if(!publicBase){
+        showMsg("cfgMsg", "Binding OK. Nhập ngrok base URL để auto setWebhook.", 2500);
+        return;
+    }
+
+    if(!secretPath){
+        showMsg("cfgMsg", "Binding OK nhưng thiếu secretPath trong response", 2500);
+        return;
+    }
+
+    const webhookUrl = publicBase + "/webhook/telegram/" + secretPath;
+    const w = await setTelegramWebhook(botToken, webhookUrl);
+
+    const merged = {
+        binding: r,
+        setWebhook: {
+            webhookUrl,
+            result: w
+        }
+    };
+
+    $("bindingsOut").innerText = JSON.stringify(merged, null, 2);
+
+    if(w.ok){
+        showMsg("cfgMsg", "Set Telegram webhook OK", 2500);
+    } else {
+        showMsg("cfgMsg", "Set Telegram webhook FAIL", 2500);
+    }
 });
 
 $("loadTgBindings").addEventListener("click", async ()=>{

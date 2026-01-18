@@ -24,7 +24,7 @@ public class ChatbotInstance extends TenantScoped {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "persona", columnDefinition = "jsonb")
-    private JsonNode persona;;                 // JSON: tone, flow, rules...
+    private JsonNode persona;                // JSON: tone, flow, rules...
 
     private String status;
 

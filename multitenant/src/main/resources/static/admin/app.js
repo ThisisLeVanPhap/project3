@@ -81,7 +81,7 @@ function setTab(name){
     document.querySelectorAll(".tab").forEach(b=>{
         b.classList.toggle("active", b.dataset.tab === name);
     });
-    ["tenants","chatbots","bindings"].forEach(t=>{
+    ["tenants","chatbots","bindings","monitor"].forEach(t=>{
         $("tab-"+t).classList.toggle("hidden", t !== name);
     });
 }
@@ -336,3 +336,18 @@ setTab("tenants");
 
 // Auto-load tenants at start to make dropdowns usable
 loadTenants(false).catch(()=>{});
+
+$("loadRuntime").addEventListener("click", async ()=>{
+    $("runtimeMsg").innerText = "";
+    $("runtimeOut").innerText = "";
+
+    // Nếu bạn làm Hướng A/B (exclude runtime) => KHÔNG cần tenant headers
+    const r = await req("GET", "/api/runtime/llm", undefined, { tenantHeaders: false });
+
+    $("runtimeOut").innerText = JSON.stringify(r, null, 2);
+    $("runtimeMsg").innerText = r.ok ? "OK" : `FAIL (${r.status})`;
+});
+
+$("clearRuntimeOut").addEventListener("click", ()=>{
+    $("runtimeOut").innerText = "";
+});

@@ -12,4 +12,6 @@ public class Tenant {
     private String name;
     @Column(unique=true, nullable=false) private String apiKey;
     private String status;
+    @Column(name = "kb_dir")
+    private String kbDir;
 }

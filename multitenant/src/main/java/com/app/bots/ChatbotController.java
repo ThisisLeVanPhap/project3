@@ -15,6 +15,8 @@ public class ChatbotController {
     private final ChatbotInstanceRepository repo;
     private final ObjectMapper mapper;
 
+    public record CreateBotDto(String name, String channel, String personaJson) {}
+
     @PostMapping
     public ChatbotInstance create(@RequestBody CreateBotDto dto) throws Exception {
         var c = new ChatbotInstance();
@@ -23,21 +25,16 @@ public class ChatbotController {
         c.setChannel(dto.channel());
         c.setStatus("ACTIVE");
 
-        // personaJson -> JsonNode (nếu null thì {})
         JsonNode persona = (dto.personaJson() != null && !dto.personaJson().isBlank())
                 ? mapper.readTree(dto.personaJson())
                 : mapper.createObjectNode();
         c.setPersona(persona);
 
-        // tenantId auto by listener
         return repo.save(c);
     }
 
     @GetMapping
     public List<ChatbotInstance> list() {
         return repo.findAllByTenant(UUID.fromString(TenantContext.get()));
-    }
-
-    public record CreateBotDto(String name, String channel, String personaJson) {
     }
 }

@@ -60,6 +60,7 @@
         <button class="tab active" data-tab="tenants">Tenants</button>
         <button class="tab" data-tab="chatbots">Chatbots</button>
         <button class="tab" data-tab="bindings">Bindings</button>
+        <button class="tab" data-tab="monitor">Monitoring</button>
     </nav>
 
     <main>
@@ -198,6 +199,28 @@
             </div>
 
             <pre id="bindingsOut" class="out"></pre>
+        </section>
+
+        <section id="tab-monitor" class="card hidden">
+            <div class="head">
+                <h2>Monitoring (LLM runtime)</h2>
+                <div class="row">
+                    <button class="secondary" id="clearRuntimeOut">Clear output</button>
+                </div>
+            </div>
+
+            <div class="row">
+                <button class="secondary" id="loadRuntime">Load /api/runtime/llm</button>
+                <span class="muted" id="runtimeMsg"></span>
+            </div>
+
+            <pre id="runtimeOut" class="out"></pre>
+
+            <div class="note">
+                <b>Ý nghĩa:</b>
+                <div>- Xem tenant nào đang chạy model server, baseUrl/port/pid, lastUsedAt.</div>
+                <div>- Dùng để demo “cô lập theo tenant”: mỗi tenant map sang port riêng.</div>
+            </div>
         </section>
 
     </main>

@@ -53,20 +53,21 @@ public class ChatController {
         ChatbotInstance bot = botRepo.findById(conv.getChatbotId())
                 .orElseThrow(() -> new IllegalArgumentException("Chatbot not found"));
 
-        // (Optional) nếu ChatbotInstance có tenantId thì check thêm
-        // if (!tenantId.equals(bot.getTenantId())) throw ...
-
         Message mUser = new Message(UUID.randomUUID(), convId, "user", userMsg);
         mUser.setTenantId(tenantId);
         msgRepo.save(mUser);
 
         List<Message> historyMsgs = msgRepo.findTop20ByConversationIdOrderByCreatedAtAsc(convId);
+
+        // ✅ IMPORTANT: send only user turns (avoid treating assistant turns as user in Python prompt)
         List<String> history = new ArrayList<>();
         for (Message m : historyMsgs) {
-            history.add(m.getRole() + ": " + m.getContent());
+            if ("user".equals(m.getRole())) {
+                history.add(m.getContent());
+            }
         }
 
-        // Lấy baseUrl riêng theo tenant (spawn nếu chưa có)
+        // per-tenant LLM instance
         String baseUrl = llmInstanceManager.getOrStartBaseUrl(tenantId, bot);
 
         ChatResponse resp = pythonChatClient.chat(baseUrl, userMsg, history, bot);
@@ -75,7 +76,7 @@ public class ChatController {
         mBot.setTenantId(tenantId);
         msgRepo.save(mBot);
 
-        // optional: dọn idle
+        // optional: cleanup idle
         llmInstanceManager.cleanupIdle();
 
         return Map.of(
@@ -83,7 +84,7 @@ public class ChatController {
                 "latencyMs", resp.latency_ms(),
                 "model", resp.model(),
                 "adapter", resp.adapter(),
-                "llmBaseUrl", baseUrl // debug demo (có thể bỏ)
+                "llmBaseUrl", baseUrl
         );
     }
 }

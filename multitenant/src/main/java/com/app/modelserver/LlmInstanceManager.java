@@ -1,6 +1,7 @@
 package com.app.modelserver;
 
 import com.app.bots.ChatbotInstance;
+import com.app.tenants.TenantRepository;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,9 +16,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
@@ -26,6 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class LlmInstanceManager {
 
     private final LlmProperties props;
+    private final TenantRepository tenantRepo;
 
     private final Duration idleTtl = Duration.ofMinutes(15);
 
@@ -47,7 +47,7 @@ public class LlmInstanceManager {
 
         log.info("LLM props pythonBin={}, modelServerDir={}", props.getPythonBin(), props.getModelServerDir());
 
-        Running spawned = spawn(tenantId, botCfg);
+        Running spawned = spawn(tenantId);
         runningByTenant.put(tenantId, spawned);
         return spawned.baseUrl();
     }
@@ -77,7 +77,7 @@ public class LlmInstanceManager {
         }
     }
 
-    private Running spawn(UUID tenantId, ChatbotInstance botCfg) {
+    private Running spawn(UUID tenantId) {
         if (props.getPythonBin() == null || props.getPythonBin().isBlank()) {
             throw new IllegalStateException("Missing config: python.llm.python-bin");
         }
@@ -88,11 +88,10 @@ public class LlmInstanceManager {
         int port;
         String baseUrl;
 
-        // ✅ Lock để 2 tenant không pick trùng port
         spawnLock.lock();
         try {
             port = pickPortReserved();
-            reservedPorts.add(port); // ✅ giữ chỗ port ngay lập tức
+            reservedPorts.add(port);
             baseUrl = "http://" + props.getHost() + ":" + port;
         } finally {
             spawnLock.unlock();
@@ -102,7 +101,8 @@ public class LlmInstanceManager {
         long pid = -1;
 
         try {
-            File dir = new File(props.getModelServerDir());
+            File dir = new File(props.getModelServerDir()).getAbsoluteFile();
+            log.info("Resolved model-server-dir={}", dir.getAbsolutePath());
             if (!dir.isDirectory()) {
                 throw new IllegalStateException("Invalid model-server-dir: " + dir.getAbsolutePath());
             }
@@ -118,13 +118,21 @@ public class LlmInstanceManager {
             pb.directory(dir);
             pb.redirectErrorStream(true);
 
+            // ✅ set KB_DIR theo tenant
+            String kbDir = tenantRepo.findKbDirById(tenantId).orElse(null);
+            if (kbDir == null || kbDir.isBlank()) {
+                log.warn("Tenant {} has no kb_dir set. RAG will be disabled for this tenant.", tenantId);
+            } else {
+                pb.environment().put("KB_DIR", kbDir);
+                log.info("Tenant {} KB_DIR={}", tenantId, kbDir);
+            }
+
             log.info("Spawning LLM instance tenant={} -> {} (python={}, dir={})",
                     tenantId, baseUrl, props.getPythonBin(), dir.getAbsolutePath());
 
             p = pb.start();
             pid = p.pid();
 
-            // ✅ drain log
             Process finalP = p;
             long finalPid = pid;
             new Thread(() -> {
@@ -142,7 +150,6 @@ public class LlmInstanceManager {
             long lastLog = 0;
 
             while (System.currentTimeMillis() < deadline) {
-                // ✅ nếu process chết sớm -> fail ngay (không được READY nhầm)
                 if (!p.isAlive()) {
                     throw new IllegalStateException("LLM process exited early (pid=" + pid + ", port=" + port + ")");
                 }
@@ -173,9 +180,6 @@ public class LlmInstanceManager {
                     e
             );
         } finally {
-            // ✅ quan trọng: nếu không return Running (spawn fail) -> nhả reserved port
-            // Nếu spawn thành công thì vẫn có thể nhả reserved luôn cũng được,
-            // vì lúc đó OS đã giữ port, reserve chỉ dùng chống race lúc pick.
             reservedPorts.remove(port);
         }
     }

@@ -38,7 +38,7 @@ public class PythonChatClient {
                 .onErrorResume(ex -> {
                     ex.printStackTrace();
                     return Mono.just(new ChatResponse(
-                            "Xin lỗi, hệ thống đang bận. Bạn vui lòng thử lại sau.",
+                            "Sorry — the system is busy right now. Please try again in a moment.",
                             0,
                             baseModel,
                             adapter

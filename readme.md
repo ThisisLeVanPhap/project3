@@ -1,89 +1,166 @@
-# Chatbot (FastAPI + LoRA)
+# Project Setup (Demo End-to-End)
 
+This project is a multi-tenant sales-assistant chatbot system:
+- **Spring Boot** (multi-tenant backend + Messenger/Telegram webhooks)
+- **Python FastAPI** model server spawned automatically by Spring per tenant
+- **RAG KB** built by scraping store websites and chunking into `kb/<shop>/chunks.jsonl`
 
-## 0) Requirements
-- Python 3.11, Git
-- (Optional) GPU + PyTorch
-
-
-## 1) Setup
-```bash
-git clone <this repo>
-cd messenger-chatbot
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-## 2) fine-tune xong mô hình LoRA
-python training/train_lora.py
-
-## 3) server FastAPI (chatbot):
-uvicorn app.server:app --host 0.0.0.0 --port 8000
-
-## 4) thử API bằng Swagger UI
-http://localhost:8000/docs
-
-# Backend:
-
-## 🚀 Cài đặt & Chạy Backend
-
-### 1️⃣ Yêu cầu hệ thống
-- **Java 21**
-- **Maven 3.9+**
-- **PostgreSQL 14+** hoặc Docker
-- Git (tuỳ chọn)
+> You do NOT need to run `uvicorn` manually. Spring will spawn the Python model server automatically when a message arrives.
 
 ---
 
-## 2️⃣ Chuẩn bị Database
+## 1) Install Python runtime dependencies (chatbot/)
 
-### 👉 Cách 1 — PostgreSQL local
+From repo root and install runtime dependencies (NO training dependencies required):
 ```bash
-createdb global_admin
+cd chatbot
+pip install -r requirements.txt
 ```
 
-## CHyaj bằng maven:
+## 2) Build KB (Scrape + Build Index)
+Article
 ```bash
-mvn spring-boot:run
+python tools/scrape_site.py article kb/article/raw_urls.txt kb/article/docs.jsonl
+python tools/build_kb.py kb/article/docs.jsonl kb/article/chunks.jsonl kb/article/index.json
 ```
 
-## Tài liệu API
+Castlery
 
-Swagger UI: http://localhost:8080/swagger-ui
+```bash
+python tools/scrape_site.py castlery kb/castlery/raw_urls.txt kb/castlery/docs.jsonl
+python tools/build_kb.py kb/castlery/docs.jsonl kb/castlery/chunks.jsonl kb/castlery/index.json
+```
+Result:
 
-OpenAPI JSON: http://localhost:8080/v3/api-docs
+kb/<shop>/chunks.jsonl
 
-OpenAPI YAML: http://localhost:8080/v3/api-docs.yaml
+kb/<shop>/index.json
 
-## Test bằng curl:
+## 3) Run Spring Boot (IntelliJ) + set ENV
+Open multitenant/ in IntelliJ, import Maven, then run ApiApplication.java.
 
-1. Tạo tenant:
+### 3.1) Required environment variables (Run Configuration)
+Set these in IntelliJ: Run → Edit Configurations → Environment variables
+
+```env
+# Use the Python that has installed chatbot/requirements.txt
+PYTHON_BIN=<ABSOLUTE_PATH_TO>\chatbot\.venv\Scripts\python.exe
+
+# Folder path to the "chatbot" directory (where app/server.py exists)
+MODEL_SERVER_DIR=<ABSOLUTE_PATH_TO>\chatbot
+
+# (Optional) Messenger verify token (must match what you set in Meta webhook settings)
+MESSENGER_VERIFY_TOKEN=woodchat_secret
 ```
-curl -X POST http://localhost:8080/api/admin/tenants \
-  -H "Content-Type: application/json" \
-  -d '{"code":"demo","name":"Demo Tenant"}'
+Notes:
+
++ PYTHON_BIN must be the same Python where you installed chatbot/requirements.txt.
+
++ MODEL_SERVER_DIR must point to the chatbot/ folder (contains app/server.py).
+
+## 4) Database + Tenant/Chatbot + Messenger/Telegram bindings
+### 4.1 Create database
+Create a PostgreSQL database named ```global_admin``` and update ```multitenant/src/main/resources/application.yml``` (or application.properties) to match your local DB credentials.
+
+Spring Boot will run Flyway migrations automatically on startup.
+
+### 4.2 Create a tenant (get API key)
+Call the admin API to create tenant (example):
+```bash
+POST /api/admin/tenants
 ```
 
-2. Tạo chatbot:
+```json
+{ "code": "demo", "name": "Demo Tenant" }
 ```
-curl -X POST http://localhost:8080/api/chatbots \
-  -H "X-API-Key: <API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Bot Demo","channel":"web","personaJson":"{\"tone\":\"ấm áp\"}"}'
+Response returns:
+
++ tenantId
+
++ apiKey
+
+### 4.3 Set tenant KB directory
+In DB table tenants, set kb_dir for that tenant, e.g.:
+
+For Article: .../chatbot/kb/article
+
+For Castlery: .../chatbot/kb/castlery
+
+(Each tenant points to exactly one KB folder.)
+
+4.4 Create chatbot instance
+Call:
+```
+POST /api/chatbots
+```
+Payload example:
+
+```json
+{
+  "name": "Article Sales Bot",
+  "channel": "messenger",
+  "personaJson": "{\"tone\":\"friendly\"}"
+}
+```
+Then update the created chatbot_instances record (DB) for:
+
++ base_model (optional; default is TinyLlama if not set)
+
++ adapter_path (optional)
+
++ tokenizer_path (optional)
+
++ system_prompt (recommended: English system prompt)
+
++ generation params (optional)
+
+4.5 Bind Messenger or Telegram for demo
+Messenger
+
+Create binding:
+```
+POST /api/messenger/bindings
+```
+```json
+{
+  "pageId": "<YOUR_PAGE_ID>",
+  "chatbotId": "<CHATBOT_UUID>",
+  "pageAccessToken": "<PAGE_ACCESS_TOKEN>"
+}
+```
+Configure Meta webhook URL to your ngrok URL:
+```
+https://<ngrok-domain>/webhook/messenger
+```
+Verify token must match ```MESSENGER_VERIFY_TOKEN```.
+
+Telegram
+
+Create binding:
+```
+POST /api/telegram/bindings
 ```
 
-3. Bắt đầu cuộc hội thoại
+```json
+{
+  "chatbotId": "<CHATBOT_UUID>",
+  "botToken": "<TELEGRAM_BOT_TOKEN>"
+}
 ```
-curl -X POST http://localhost:8080/api/chat/start \
-  -H "X-API-Key: <API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{"chatbotId":"<CHATBOT_ID>"}'
-```
+Use the returned secretPath to set Telegram webhook to:
 
-4. Gửi tin nhắn
-```
-curl -X POST http://localhost:8080/api/chat/send \
-  -H "X-API-Key: <API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{"conversationId":"<CONV_ID>","message":"Xin tư vấn sản phẩm"}'
-```
+```https://<ngrok-domain>/webhook/telegram/<secretPath>```
+
+5) Send a message to test (end-to-end)
+Send a message to your Facebook page (Messenger) OR to your Telegram bot.
+
+Spring receives the webhook, loads the right tenant + chatbot config,
+then spawns the Python model server (if not running yet) and replies.
+
+Recommended quick tests:
+
+“What is your return policy?”
+
+“What delivery options do you offer?”
+
+“Do you have a student discount?” (should fallback: "I couldn't find that in this store's data.")

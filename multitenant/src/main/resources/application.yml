@@ -27,16 +27,27 @@ logging:
   level:
     com.app: DEBUG
 
+#python:
+#  # base-url: http://localhost:8000   # (optional) fallback, không dùng trong multi-tenant nữa
+#  llm:
+#    python-bin: "C:/Users/Admin/AppData/Local/Programs/Python/Python311/python.exe"
+#    model-server-dir: "F:/20251/prj3/chatbot"
+#    host: "127.0.0.1"
+#    port-range-start: 8101
+#    port-range-end: 8199
+#    health-path: "/healthz"
+#    uvicorn-module: "app.server:app"
+
 python:
-  # base-url: http://localhost:8000   # (optional) fallback, không dùng trong multi-tenant nữa
   llm:
-    python-bin: "C:/Users/Admin/AppData/Local/Programs/Python/Python311/python.exe"
-    model-server-dir: "F:/20251/prj3/chatbot"
-    host: "127.0.0.1"
-    port-range-start: 8101
-    port-range-end: 8199
-    health-path: "/healthz"
-    uvicorn-module: "app.server:app"
+    python-bin: ${PYTHON_BIN:python}
+    model-server-dir: ${MODEL_SERVER_DIR:../chatbot}
+
+    host: ${LLM_HOST:127.0.0.1}
+    port-range-start: ${LLM_PORT_START:8101}
+    port-range-end: ${LLM_PORT_END:8199}
+    health-path: ${LLM_HEALTH_PATH:/healthz}
+    uvicorn-module: ${LLM_UVICORN_MODULE:app.server:app}
 
 
 messenger:

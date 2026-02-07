@@ -15,8 +15,36 @@ import java.util.UUID;
 public class TenantResolver implements HandlerInterceptor {
     private final TenantRepository tenantRepo;
 
+    private boolean shouldBypass(String path) {
+        if (path == null) return false;
+
+        // ✅ Public endpoints (no tenant context yet)
+        if (path.startsWith("/api/login")) return true;
+
+        // ✅ UI routes (static pages)
+        if (path.equals("/login") || path.startsWith("/login/")) return true;
+        if (path.equals("/admin") || path.startsWith("/admin/")) return true;
+        if (path.equals("/tenant") || path.startsWith("/tenant/")) return true;
+
+        // ✅ Common static assets
+        if (path.startsWith("/favicon")) return true;
+        if (path.startsWith("/css/") || path.startsWith("/js/") || path.startsWith("/images/")) return true;
+
+        // If your app serves static from /static/... or similar, you can add:
+        // if (path.startsWith("/static/")) return true;
+
+        return false;
+    }
+
     @Override
     public boolean preHandle(HttpServletRequest req, HttpServletResponse res, Object handler) throws IOException {
+        String path = req.getRequestURI();
+
+        // ✅ BYPASS for login + static UIs
+        if (shouldBypass(path)) {
+            return true;
+        }
+
         String tenantId = req.getHeader("X-Tenant-Id");
         String apiKey   = req.getHeader("X-API-Key");
 

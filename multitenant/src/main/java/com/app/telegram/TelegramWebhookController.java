@@ -10,6 +10,7 @@ import com.app.modelserver.LlmInstanceManager;
 import com.app.modelserver.PythonChatClient;
 import com.app.modelserver.dto.ChatResponse;
 import com.app.tenant.TenantContext;
+import com.app.leads.LeadService; // <-- NOTE: chỉnh package nếu khác
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,9 @@ public class TelegramWebhookController {
     private final PythonChatClient python;
     private final LlmInstanceManager llmInstanceManager;
     private final TelegramSendService sendService;
+
+    // ✅ NEW: lead service to create purchase request from conversation
+    private final LeadService leadService;
 
     private final Set<Long> processedUpdateIds = ConcurrentHashMap.newKeySet();
     private final ExecutorService workerPool = Executors.newFixedThreadPool(8);
@@ -96,6 +100,7 @@ public class TelegramWebhookController {
                         return convRepo.save(c);
                     });
 
+            // ✅ Save user message
             Message mUser = new Message();
             mUser.setId(UUID.randomUUID());
             mUser.setTenantId(binding.getTenantId());
@@ -105,13 +110,81 @@ public class TelegramWebhookController {
             msgRepo.save(mUser);
 
             List<Message> historyMsgs = msgRepo.findTop20ByConversationIdOrderByCreatedAtAsc(conv.getId());
+
+            // ✅ Feedback quick: user sends 👍 or 👎
+            if ("👍".equals(text.trim()) || "👎".equals(text.trim())) {
+                boolean isCorrect = "👍".equals(text.trim());
+
+                String lastQ = null, lastA = null;
+                for (int i = historyMsgs.size() - 1; i >= 0; i--) {
+                    Message mm = historyMsgs.get(i);
+                    if (lastA == null && "assistant".equals(mm.getRole())) lastA = mm.getContent();
+                    else if (lastQ == null && "user".equals(mm.getRole())) { lastQ = mm.getContent(); break; }
+                }
+
+                String baseUrl = llmInstanceManager.getOrStartBaseUrl(binding.getTenantId(), bot);
+
+                python.feedback(baseUrl, new com.app.modelserver.dto.FeedbackRequest(
+                        conv.getId().toString(),
+                        binding.getTenantId().toString(),
+                        "telegram",
+                        lastQ != null ? lastQ : "",
+                        lastA != null ? lastA : "",
+                        isCorrect,
+                        "thumb"
+                ));
+
+                sendService.sendText(binding.getBotToken(), chatId, "Cảm ơn bạn đã phản hồi!");
+                return;
+            }
+
+            // ✅ per-tenant LLM instance (needed for CONFIRM too)
+            String baseUrl = llmInstanceManager.getOrStartBaseUrl(binding.getTenantId(), bot);
+
+            // =========================================================
+            // ✅ NEW: CONFIRM / CANCEL handler (as instructed)
+            // customerHandle = chatId (or username nếu bạn muốn đổi sau)
+            // =========================================================
+            String t = text == null ? "" : text.trim();
+
+            if ("CONFIRM".equalsIgnoreCase(t)) {
+                try {
+                    leadService.createLeadFromConversation(
+                            baseUrl,
+                            binding.getTenantId().toString(),
+                            "telegram",
+                            conv.getId().toString(),
+                            String.valueOf(chatId)
+                    );
+                    sendService.sendText(binding.getBotToken(), chatId,
+                            "✅ Purchase request created. A staff member will contact you shortly to confirm the details.");
+                } catch (Exception e) {
+                    log.error("CONFIRM failed: tenantId={}, convId={}, chatId={}", binding.getTenantId(), conv.getId(), chatId, e);
+                    sendService.sendText(binding.getBotToken(), chatId,
+                            "Sorry — I couldn’t create the purchase request right now. Please try again, or share your phone/email and I’ll forward it to staff.");
+                }
+                return;
+            }
+
+            if ("CANCEL".equalsIgnoreCase(t)) {
+                sendService.sendText(binding.getBotToken(), chatId,
+                        "No problem — I’ve canceled the confirmation step. What would you like to do next?");
+                return;
+            }
+
+            // Build history for python (current logic only includes user turns)
             List<String> history = new ArrayList<>();
             for (Message hm : historyMsgs) {
                 if ("user".equals(hm.getRole())) history.add(hm.getContent());
             }
 
-            String baseUrl = llmInstanceManager.getOrStartBaseUrl(binding.getTenantId(), bot);
-            ChatResponse ai = python.chat(baseUrl, text, history, bot);
+            ChatResponse ai = python.chat(
+                    baseUrl, text, history, bot,
+                    conv.getId().toString(),
+                    "telegram",
+                    binding.getTenantId().toString()
+            );
+
             String reply = ai.reply();
 
             Message mBot = new Message();
@@ -122,6 +195,7 @@ public class TelegramWebhookController {
             mBot.setContent(reply);
             msgRepo.save(mBot);
 
+            // ✅ FIX: send AI reply (not the feedback string)
             sendService.sendText(binding.getBotToken(), chatId, reply);
 
         } finally {

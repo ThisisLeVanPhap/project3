@@ -5,5 +5,10 @@ import java.util.List;
 public record ChatRequest(
         String message,
         List<String> history,
-        GenerationConfig gen
+        GenerationConfig gen,
+
+        // ✅ metadata (optional)
+        String conversation_id,
+        String channel,
+        String tenant_id
 ) {}

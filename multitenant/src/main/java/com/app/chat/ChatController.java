@@ -70,7 +70,15 @@ public class ChatController {
         // per-tenant LLM instance
         String baseUrl = llmInstanceManager.getOrStartBaseUrl(tenantId, bot);
 
-        ChatResponse resp = pythonChatClient.chat(baseUrl, userMsg, history, bot);
+        ChatResponse resp = pythonChatClient.chat(
+                baseUrl,
+                userMsg,
+                history,
+                bot,
+                convId.toString(),
+                "web",
+                tenantId.toString()
+        );
 
         Message mBot = new Message(UUID.randomUUID(), convId, "assistant", resp.reply());
         mBot.setTenantId(tenantId);

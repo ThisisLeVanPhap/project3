@@ -14,4 +14,5 @@ public interface TenantRepository extends JpaRepository<Tenant, UUID> {
 
     @Query("select t.kbDir from Tenant t where t.id = :tenantId")
     Optional<String> findKbDirById(@Param("tenantId") UUID tenantId);
+    Optional<Tenant> findByNameAndCode(String name, String code);
 }

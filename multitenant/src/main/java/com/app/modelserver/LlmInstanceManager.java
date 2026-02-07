@@ -64,14 +64,21 @@ public class LlmInstanceManager {
 
     private boolean isHealthy(String baseUrl) {
         try {
-            HttpStatusCode code = http.get()
+            // expect JSON: {"ready": true/false, ...}
+            Boolean ready = http.get()
                     .uri(baseUrl + props.getHealthPath())
                     .retrieve()
-                    .toBodilessEntity()
-                    .map(resp -> resp.getStatusCode())
-                    .onErrorReturn(HttpStatusCode.valueOf(503))
+                    .bodyToMono(Map.class)
+                    .map(m -> {
+                        Object v = m.get("ready");
+                        if (v instanceof Boolean b) return b;
+                        if (v instanceof String s) return Boolean.parseBoolean(s);
+                        return false;
+                    })
+                    .onErrorReturn(false)
                     .block(Duration.ofSeconds(1));
-            return code != null && code.is2xxSuccessful();
+
+            return ready != null && ready;
         } catch (Exception ignored) {
             return false;
         }

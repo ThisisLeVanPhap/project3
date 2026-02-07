@@ -4,14 +4,29 @@ import re
 import threading
 from typing import List, Optional, Dict, Tuple, Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from .guardrails import rule_reply, want_similar
+from .logger import log_event, log_feedback
+
+# --- SALES FLOW imports ---
+from .state import get_state, save_turn, set_stage, reset_state
+from .sales_flow import extract_slots, next_stage, build_sales_prefix
+
 from .model_loader import get_pipeline
-from .prompt import build_prompt, DEFAULT_SYSTEM
+from .prompt import build_messages, DEFAULT_SYSTEM
 from .retriever import SimpleKb
 
-BASE_MODEL_DEFAULT = os.getenv("BASE_MODEL", "TinyLlama/TinyLlama-1.1B-Chat-v1.0")
+
+# --- Output guardrail: block unverified payment/refund/timing claims ---
+BAD_FACTS = re.compile(
+    r"\b(within\s+\d+\s+(day|days|business\s+days)|refund|complete payment|receive the item)\b",
+    re.I,
+)
+
+
+BASE_MODEL_DEFAULT = os.getenv("BASE_MODEL", "Qwen/Qwen2.5-1.5B-Instruct")
 ADAPTER_DEFAULT = os.getenv("LORA_ADAPTER") or None
 TOKENIZER_DEFAULT = os.getenv("TOKENIZER_PATH") or None
 
@@ -25,8 +40,13 @@ app = FastAPI(title="Multi-tenant Chatbot Model Server")
 PIPE_CACHE: Dict[Tuple[str, Optional[str], Optional[str]], Any] = {}
 CACHE_LOCK = threading.Lock()
 
+# ---- READY flags ----
+READY = False
+READY_ERR: Optional[str] = None
+READY_LOCK = threading.Lock()
+
 # KB: load theo env KB_DIR (mỗi process python 1 tenant)
-KB_DIR = os.getenv("KB_DIR")  # e.g. "F:/.../kb/ikea_us"
+KB_DIR = os.getenv("KB_DIR")
 KB = None
 if KB_DIR:
     try:
@@ -56,12 +76,24 @@ class ChatReq(BaseModel):
     history: List[str] = Field(default_factory=list)
     gen: GenerationConfig = Field(default_factory=GenerationConfig)
 
+    # metadata
+    conversation_id: Optional[str] = None
+    channel: Optional[str] = None      # web / messenger / telegram
+    tenant_id: Optional[str] = None
+
 
 class ChatResp(BaseModel):
     reply: str
     latency_ms: int
     model: str
     adapter: Optional[str]
+
+
+def _set_ready(value: bool, err: Optional[str] = None):
+    global READY, READY_ERR
+    with READY_LOCK:
+        READY = value
+        READY_ERR = err
 
 
 def get_or_create_pipe(base_model: str, adapter: Optional[str], tokenizer_path: Optional[str]):
@@ -75,27 +107,60 @@ def get_or_create_pipe(base_model: str, adapter: Optional[str], tokenizer_path: 
 
 @app.on_event("startup")
 def _warmup():
+    # Warmup should build at least one pipeline so server is actually usable.
     def run():
         try:
+            # Building the pipeline can take time on CPU.
             get_or_create_pipe(BASE_MODEL_DEFAULT, ADAPTER_DEFAULT, TOKENIZER_DEFAULT)
+            _set_ready(True, None)
+            print("[warmup] ready=True")
         except Exception as e:
+            _set_ready(False, str(e))
             print("[warmup] failed:", e)
 
+    _set_ready(False, None)
     threading.Thread(target=run, daemon=True).start()
 
 
 @app.get("/healthz")
 def healthz():
+    # IMPORTANT: backend should only treat healthy when ready=True
+    with READY_LOCK:
+        ready = READY
+        err = READY_ERR
     return {
-        "status": "ok",
+        "status": "ready" if ready else "loading",
+        "ready": ready,
+        "error": err,
         "cached_pipelines": len(PIPE_CACHE),
         "kb_dir": KB_DIR,
         "kb_loaded": KB is not None
     }
 
 
+class FeedbackReq(BaseModel):
+    conversation_id: Optional[str] = None
+    tenant_id: Optional[str] = None
+    channel: Optional[str] = None
+    question: str
+    answer: str
+    is_correct: bool
+    note: Optional[str] = ""
+
+
+@app.post("/feedback")
+def feedback(req: FeedbackReq):
+    log_feedback(req.model_dump())
+    return {"ok": True}
+
+
 @app.post("/chat", response_model=ChatResp)
 def chat(req: ChatReq):
+    # Defense-in-depth: refuse chat if model is not ready yet.
+    with READY_LOCK:
+        if not READY:
+            raise HTTPException(status_code=503, detail="Model is still loading")
+
     cfg = req.gen
 
     base_model = cfg.base_model or BASE_MODEL_DEFAULT
@@ -105,13 +170,85 @@ def chat(req: ChatReq):
     max_new_tokens = cfg.max_new_tokens or MAX_NEW_TOKENS_DEFAULT
     temperature = cfg.temperature or TEMPERATURE_DEFAULT
     top_p = cfg.top_p or TOP_P_DEFAULT
-    top_k = cfg.top_k or TOP_K_DEFAULT
+    top_k = int(cfg.top_k) if cfg.top_k is not None else TOP_K_DEFAULT
+
+    # Ensure conversation_id exists for stateful flow
+    conv_id = req.conversation_id or "anon"
+
+    # =========================================================
+    # (NEW) RESET COMMAND: /reset | reset | new scenario
+    # Put it BEFORE RULE layer so it always works.
+    # =========================================================
+    msg_norm = (req.message or "").strip().lower()
+    if msg_norm in {"/reset", "reset", "/end", "end", "new scenario"}:
+        if conv_id:
+            try:
+                reset_state(conv_id)
+            except Exception:
+                pass
+
+        log_event({
+            "event": "reset",
+            "channel": req.channel,
+            "conversation_id": conv_id,
+            "tenant_id": req.tenant_id,
+        })
+
+        return ChatResp(
+            reply="Got it — I’ve started a new consultation. What are you shopping for today?",
+            latency_ms=0,
+            model="system",
+            adapter=adapter
+        )
+
+    # ---- RULE layer (guardrails) ----
+    rr = rule_reply(req.message)
+    if rr:
+        log_event({
+            "event": "rule_hit",
+            "rule_type": rr["type"],
+            "question": req.message,
+            "channel": req.channel,
+            "conversation_id": conv_id,
+            "tenant_id": req.tenant_id,
+        })
+        # Save turn (optional but useful for audit)
+        try:
+            save_turn(conv_id, req.message, rr["reply"])
+        except Exception:
+            pass
+        return ChatResp(reply=rr["reply"], latency_ms=0, model="rule", adapter=adapter)
+
+    # --- SALES FLOW: state/slots/stage (AFTER RULE layer) ---
+    st = get_state(conv_id)
+
+    # update slots from this user message
+    try:
+        new_slots = extract_slots(req.message)
+        if new_slots:
+            st.slots.update(new_slots)
+        # decide next stage
+        st.stage = next_stage(st.stage, st.slots, req.message)
+    except Exception:
+        # Don't break chat if slot extractor fails
+        pass
 
     pipe = get_or_create_pipe(base_model, adapter, tokenizer_path)
 
     # ---- RAG context from KB ----
     ctx_blocks = []
-    if KB is not None:
+    # Bonus: reduce hallucination from early generic queries by limiting RAG.
+    # Rule of thumb: only inject KB when user provided a link/code or the convo is past early discovery.
+    allow_rag = False
+    try:
+        msg = (req.message or "").strip()
+        words = [w for w in msg.split() if w]
+        has_link = bool(re.search(r"https?://|www\.", msg, re.I))
+        allow_rag = has_link or (len(words) >= 6) or (getattr(st, "stage", "discover") != "discover")
+    except Exception:
+        allow_rag = False
+
+    if KB is not None and allow_rag:
         hits = KB.search(req.message, k=4)
         for h in hits:
             title = (h.get("title") or "").strip()
@@ -122,23 +259,70 @@ def chat(req: ChatReq):
             ctx_blocks.append(f"- {title} ({url}): {content[:900]}")
     context = "\n".join(ctx_blocks)
 
-    # ---- system prompt ----
-    base_sys = cfg.system_prompt or DEFAULT_SYSTEM
-    if context:
-        sys_prompt = base_sys + (
-            "\n\nYou MUST answer using the store information in CONTEXT.\n"
-            "If the answer is not found in CONTEXT, say exactly: "
-            "'I couldn't find that in this store's data.'\n"
-            "CONTEXT:\n" + context
-        )
-    else:
-        sys_prompt = base_sys
+    # ---- SIMILAR SUGGESTION (use KB hits) ----
+    if KB is not None and allow_rag and want_similar(req.message):
+        hits = KB.search(req.message, k=8)
 
-    prompt = build_prompt(req.message, req.history, sys_prompt)
+        seen = set()
+        items = []
+        for h in hits:
+            title = (h.get("title") or "").strip()
+            url = (h.get("url") or "").strip()
+            if title and title not in seen:
+                seen.add(title)
+                items.append((title, url))
+            if len(items) >= 3:
+                break
+
+        if items:
+            reply = (
+                "Here are a few similar products you might want to consider:\n" +
+                "\n".join([f"- {t} ({u})" if u else f"- {t}" for t, u in items]) +
+                "\nWhat would you like to prioritize: style, size, or material?"
+            )
+
+            log_event({
+                "event": "similar_suggestion",
+                "question": req.message,
+                "channel": req.channel,
+                "conversation_id": conv_id,
+                "tenant_id": req.tenant_id,
+                "items": [{"title": t, "url": u} for t, u in items],
+            })
+
+            # Save turn for stateful flow continuity
+            try:
+                save_turn(conv_id, req.message, reply[:1200])
+            except Exception:
+                pass
+
+            return ChatResp(
+                reply=reply[:1200],
+                latency_ms=0,
+                model=base_model,
+                adapter=adapter
+            )
+
+    # ---- SALES flow prefix inside system prompt ----
+    sales_prefix = ""
+    try:
+        sales_prefix = build_sales_prefix(getattr(st, "stage", "discover"), getattr(st, "slots", {}))
+    except Exception:
+        sales_prefix = ""
+
+    sys_prompt = cfg.system_prompt or (sales_prefix + "\n" + DEFAULT_SYSTEM)
+
+    messages = build_messages(req.message, req.history, sys_prompt)
+
+    prompt_text = pipe.tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
 
     t0 = time.time()
     out = pipe(
-        prompt,
+        prompt_text,
         max_new_tokens=max_new_tokens,
         do_sample=True,
         temperature=temperature,
@@ -151,32 +335,75 @@ def chat(req: ChatReq):
         return_full_text=False,
     )[0]["generated_text"]
 
-    # extract
-    if "### Assistant:" in out:
-        resp = out.split("### Assistant:")[-1].strip()
-    elif "### Response:" in out:
-        resp = out.split("### Response:")[-1].strip()
-    else:
-        resp = out.strip()
+    resp = out.strip()
 
-    if resp.startswith(prompt):
-        resp = resp[len(prompt):].strip()
-
-    stops = cfg.stop or [
-        "### User:", "### System:", "### Instruction:", "### Response:", "### Assistant:",
-        "## User:", "## System:", "## Instruction:", "## Response:", "## Assistant:",
-        "\nUser:", "\nSystem:"
-    ]
-
-    for m in stops:
-        idx = resp.find(m)
-        if idx != -1:
-            resp = resp[:idx].strip()
-            break
-
-    # keep concise
+    # Keep answers concise, but not too short for consultative flow
     sentences = re.split(r'(?<=[.!?…])\s+', resp)
-    resp = " ".join(sentences[:4]).strip()
+    resp = " ".join(sentences[:6]).strip()
+
+    NOT_FOUND = "I couldn't find that in this store's data."
+
+    if (not context) or (NOT_FOUND.lower() in resp.lower()):
+        resp = (
+            "Sorry, I couldn’t find enough information to answer that accurately. "
+            "If you can share the product name or code, I can try again, "
+            "or I can connect you with a staff member for further assistance."
+        )
+
+    # --- SALES FLOW: close stage hard CTA (CONFIRM / CANCEL / no payment) ---
+    if getattr(st, "stage", None) == "close":
+        resp = resp.strip()
+        resp += (
+            "\n\nTo proceed, reply CONFIRM and I’ll create a purchase request for our staff. "
+            "Reply CANCEL to stop. "
+            "I can’t process payments directly in chat."
+        )
+
+    # --- Output guardrail: if model slips into unverified facts, replace with safe fallback ---
+    if BAD_FACTS.search(resp):
+        resp = (
+            "Sorry — I can’t confirm payment, delivery timing, or refund details in chat without verified store data. "
+            "If you share the product link/name, I can check what’s available, or I can connect you with a staff member to confirm the details."
+        )
 
     latency_ms = int((time.time() - t0) * 1000)
-    return ChatResp(reply=resp[:1200], latency_ms=latency_ms, model=base_model, adapter=adapter)
+
+    log_event({
+        "event": "chat",
+        "question": req.message,
+        "answer": resp[:1200],
+        "latency_ms": latency_ms,
+        "model": base_model,
+        "adapter": adapter,
+        "channel": req.channel,
+        "conversation_id": conv_id,
+        "tenant_id": req.tenant_id,
+        "context_length": len(context),
+        "kb_loaded": KB is not None,
+        "sales_stage": getattr(st, "stage", None),
+        "sales_slots": getattr(st, "slots", {}),
+    })
+
+    # --- SALES FLOW: save conversation turn ---
+    try:
+        save_turn(conv_id, req.message, resp)
+    except Exception:
+        pass
+
+    return ChatResp(
+        reply=resp[:1200],
+        latency_ms=latency_ms,
+        model=base_model,
+        adapter=adapter
+    )
+
+@app.get("/state")
+def read_state(conversation_id: str):
+    st = get_state(conversation_id)
+    return {
+        "stage": st.stage,
+        "slots": st.slots,
+        "updated_at": st.updated_at,
+        "last_question": st.last_question,
+        "last_answer": st.last_answer,
+    }

@@ -94,9 +94,16 @@ function setTab(name){
     document.querySelectorAll(".tab").forEach(b=>{
         b.classList.toggle("active", b.dataset.tab === name);
     });
-    ["tenants","chatbots","bindings","monitor"].forEach(t=>{
-        $("tab-"+t).classList.toggle("hidden", t !== name);
+    // ✅ add "leads"
+    ["tenants","chatbots","bindings","monitor","leads"].forEach(t=>{
+        const el = $("tab-"+t);
+        if(el) el.classList.toggle("hidden", t !== name);
     });
+
+    // optional: auto load leads when open tab
+    if(name === "leads"){
+        refreshLeads().catch(()=>{});
+    }
 }
 document.querySelectorAll(".tab").forEach(b=>{
     b.addEventListener("click", ()=> setTab(b.dataset.tab));
@@ -170,6 +177,11 @@ function setSelectedBot(botId){
     const b = state.bots.find(x => x.id === botId);
     state.selectedBot = b || null;
     $("selectedBotChannel").innerText = b?.channel || "—";
+}
+
+/* ---------------- Helpers ---------------- */
+function getCurrentTenantId(){
+    return state.selectedTenant?.id || $("tenantId")?.value?.trim() || "";
 }
 
 /* ---------------- Health ---------------- */
@@ -380,6 +392,123 @@ $("loadMsgBindings").addEventListener("click", async ()=>{
 });
 
 $("clearBindingsOut").addEventListener("click", ()=> $("bindingsOut").innerText = "");
+
+/* =========================================================
+   ✅ LEADS (5.3) — fetch + render + status update + drawer
+   ========================================================= */
+
+async function fetchLeads(tenantId){
+    // Prefer your API host + tenant headers, so use req()
+    // Path expected by guide: /admin/api/leads?tenantId=...
+    const r = await req("GET", `/admin/api/leads?tenantId=${encodeURIComponent(tenantId)}`, undefined, { tenantHeaders: true });
+    if(!r.ok) throw new Error("Failed to load leads");
+    return r.data;
+}
+
+function renderLeads(leads){
+    const tbody = document.querySelector("#leads-table tbody");
+    if(!tbody) return;
+    tbody.innerHTML = "";
+
+    if(!Array.isArray(leads) || leads.length === 0){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="6" class="muted">No leads yet.</td>`;
+        tbody.appendChild(tr);
+        return;
+    }
+
+    for(const l of leads){
+        const tr = document.createElement("tr");
+
+        const created = l.createdAt ? new Date(l.createdAt).toLocaleString() : "";
+        tr.innerHTML = `
+          <td>${created}</td>
+          <td>${l.status ?? ""}</td>
+          <td>${l.channel ?? ""}</td>
+          <td>${l.customerHandle || ""}</td>
+          <td>${l.conversationId || ""}</td>
+          <td>
+            <button class="btn secondary" data-action="view" data-id="${l.id}">View</button>
+            <button class="btn secondary" data-action="contacted" data-id="${l.id}">Mark Contacted</button>
+            <button class="btn secondary" data-action="closed" data-id="${l.id}">Mark Closed</button>
+          </td>
+        `;
+
+        tr.dataset.slots = l.slotsJson || "{}";
+        tr.dataset.transcript = l.transcript || "";
+        tr.dataset.leadId = l.id;
+
+        tbody.appendChild(tr);
+    }
+}
+
+async function updateLeadStatus(id, status){
+    const r = await req("POST", `/admin/api/leads/${encodeURIComponent(id)}/status?status=${encodeURIComponent(status)}`, undefined, { tenantHeaders: true });
+    if(!r.ok) throw new Error("Failed to update status");
+    return r.data;
+}
+
+function openLeadDetails(slotsJson, transcript){
+    const slotsEl = document.querySelector("#lead-slots");
+    const trEl = document.querySelector("#lead-transcript");
+    if(slotsEl) slotsEl.textContent = `Slots:\n${slotsJson || "{}"}`;
+    if(trEl) trEl.textContent = `Transcript:\n${transcript || ""}`;
+    document.querySelector("#lead-details")?.classList.remove("hidden");
+}
+
+function closeLeadDetails(){
+    document.querySelector("#lead-details")?.classList.add("hidden");
+}
+
+async function refreshLeads(){
+    const tenantId = getCurrentTenantId();
+    if(!tenantId){
+        showMsg("cfgMsg", "Chọn tenant trước (Use tenant)", 1800);
+        renderLeads([]); // clear table
+        return;
+    }
+    const leads = await fetchLeads(tenantId);
+    renderLeads(leads);
+}
+
+// Hook UI
+document.querySelector("#btn-refresh-leads")?.addEventListener("click", async ()=>{
+    try{
+        await refreshLeads();
+    } catch(e){
+        console.error(e);
+        showMsg("cfgMsg", "Load leads FAIL", 1800);
+    }
+});
+
+document.querySelector("#leads-table")?.addEventListener("click", async (e)=>{
+    const btn = e.target.closest("button");
+    if(!btn) return;
+
+    const action = btn.dataset.action;
+    const tr = btn.closest("tr");
+    const id = btn.dataset.id;
+
+    try{
+        if(action === "view"){
+            openLeadDetails(tr?.dataset?.slots, tr?.dataset?.transcript);
+            return;
+        }
+
+        if(action === "contacted"){
+            await updateLeadStatus(id, "CONTACTED");
+        } else if(action === "closed"){
+            await updateLeadStatus(id, "CLOSED");
+        }
+
+        await refreshLeads();
+    } catch(err){
+        console.error(err);
+        showMsg("cfgMsg", "Update lead FAIL", 1800);
+    }
+});
+
+document.querySelector("#btn-close-lead")?.addEventListener("click", closeLeadDetails);
 
 /* ---------------- Init ---------------- */
 $("saveCfg").addEventListener("click", saveCfg);

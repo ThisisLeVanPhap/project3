@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Shop Dashboard</title>
+    <link rel="stylesheet" href="/tenant/styles.css" />
+</head>
+<body>
+<div class="container">
+
+    <header class="topbar">
+        <div>
+            <div class="title">Shop Dashboard</div>
+            <div class="sub">Your purchase requests</div>
+        </div>
+        <div class="right">
+            <span class="chip">Tenant: <b id="tenantLabel">—</b></span>
+            <button class="secondary" id="btn-refresh">Refresh</button>
+            <button class="danger" id="btn-logout" title="Clear session and return to login">Logout</button>
+        </div>
+    </header>
+
+    <section class="card">
+        <table class="table" id="leads-table">
+            <thead>
+            <tr>
+                <th>Created</th>
+                <th>Status</th>
+                <th>Channel</th>
+                <th>Customer</th>
+                <th>Conversation</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div id="lead-details" class="drawer hidden">
+            <div class="drawer-header">
+                <h3>Lead Details</h3>
+                <button id="btn-close" class="secondary">Close</button>
+            </div>
+
+            <pre id="lead-slots" class="pre"></pre>
+            <pre id="lead-transcript" class="pre"></pre>
+
+            <!-- ✅ Delivery info (staff collects) -->
+            <div class="order-box">
+                <label for="orderInfo">Delivery info</label>
+                <textarea id="orderInfo" placeholder="Name:\nPhone:\nAddress:"></textarea>
+
+                <div class="row end">
+                    <button id="btn-save-order" class="secondary">Save delivery info</button>
+                    <button id="btn-mark-shipped">Mark shipped</button>
+                </div>
+                <div id="orderStatus" class="muted"></div>
+            </div>
+            <!-- ✅ Reply box (staff → customer) -->
+            <div class="reply-box">
+                <label for="replyText">Reply</label>
+                <textarea id="replyText" placeholder="Type a message to the customer..."></textarea>
+                <div class="row end">
+                    <button id="btn-send-reply">Send</button>
+                </div>
+                <div id="replyStatus" class="muted"></div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer muted">
+        Tenant view (no admin privileges)
+    </footer>
+
+</div>
+
+<script src="/tenant/app.js"></script>
+
+<!-- ✅ Minimal logout hook -->
+<script>
+    (function(){
+        var btn = document.getElementById("btn-logout");
+        if(!btn) return;
+        btn.addEventListener("click", function(){
+            localStorage.removeItem("tenant_id");
+            localStorage.removeItem("tenant_name");
+            window.location.href = "/login";
+        });
+    })();
+</script>
+</body>
+</html>

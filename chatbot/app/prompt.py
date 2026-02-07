@@ -1,5 +1,5 @@
 # prompt.py
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 DEFAULT_SYSTEM = (
     "You are a helpful sales assistant for a furniture store. "
@@ -8,13 +8,14 @@ DEFAULT_SYSTEM = (
     "Do not repeat yourself."
 )
 
-def build_prompt(message: str, history: List[str], system_prompt: Optional[str] = None) -> str:
+def build_messages(message: str, history: List[str], system_prompt: Optional[str] = None) -> List[Dict[str, Any]]:
     system_hint = system_prompt or DEFAULT_SYSTEM
 
-    # History in this project is treated as user turns (to avoid faking assistant turns).
-    convo = [f"### System:\n{system_hint}\n"]
-    for turn in history[-6:]:
-        convo.append(f"### User:\n{turn}\n")
+    messages = [{"role": "system", "content": system_hint}]
 
-    convo.append(f"### User:\n{message}\n### Assistant:\n")
-    return "".join(convo)
+    # history is treated as user turns only (as your project intended)
+    for turn in history[-6:]:
+        messages.append({"role": "user", "content": turn})
+
+    messages.append({"role": "user", "content": message})
+    return messages

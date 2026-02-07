@@ -1,3 +1,4 @@
+# app/model_loader.py
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from peft import PeftModel
 import torch
@@ -11,13 +12,9 @@ def get_pipeline(
     device: int | None = None,
 ):
     """
-    base: tên/path base model, ví dụ: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-    adapter: path đến thư mục LoRA, ví dụ: "out/lora_adapter"
-    tokenizer_path:
-        - Nếu None:
-            + Nếu có adapter -> thử dùng "<adapter>/../tokenizer" (ví dụ "out/tokenizer")
-            + Nếu không có -> dùng tokenizer của base model
-        - Nếu không None -> cố gắng dùng path đó (thử fast, nếu lỗi -> slow, nếu vẫn lỗi -> fallback base)
+    base: tên/path base model, ví dụ: "Qwen/Qwen2.5-1.5B-Instruct" hoặc path snapshot local
+    adapter: path đến thư mục LoRA
+    tokenizer_path: path tokenizer (nếu None thì tự suy ra như cũ)
     device:
         - None  -> tự chọn: 0 nếu có GPU, -1 nếu chỉ CPU
         - 0,1.. -> GPU cụ thể
@@ -27,45 +24,52 @@ def get_pipeline(
     # --------- Quyết định tokenizer_path ----------
     if tokenizer_path is None:
         if adapter:
-            # adapter = "out/lora_adapter" -> base_out = "out"
             base_out = os.path.dirname(adapter)
             maybe_tok = os.path.join(base_out, "tokenizer")
-            if os.path.isdir(maybe_tok):
-                tokenizer_path = maybe_tok
-            else:
-                tokenizer_path = base
+            tokenizer_path = maybe_tok if os.path.isdir(maybe_tok) else base
         else:
             tokenizer_path = base
 
     print(f"[model_loader] Want to use tokenizer from: {tokenizer_path}")
 
+    # --------- Load tokenizer (fast -> slow -> fallback) ----------
     tok = None
-
-    # --------- Thử fast tokenizer ----------
     try:
         print("[model_loader] Trying FAST tokenizer...")
         tok = AutoTokenizer.from_pretrained(tokenizer_path, use_fast=True)
     except Exception as e_fast:
         print(f"[model_loader] FAST tokenizer failed: {e_fast}")
-        # --------- Thử slow tokenizer ----------
         try:
             print("[model_loader] Trying SLOW tokenizer...")
             tok = AutoTokenizer.from_pretrained(tokenizer_path, use_fast=False)
         except Exception as e_slow:
             print(f"[model_loader] SLOW tokenizer failed: {e_slow}")
-            # --------- Fallback về base model tokenizer ----------
             print(f"[model_loader] Fallback to BASE tokenizer: {base}")
             tok = AutoTokenizer.from_pretrained(base, use_fast=True)
 
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
 
+    # --------- Chọn device ----------
+    if device is None:
+        device = 0 if torch.cuda.is_available() else -1
+
+    print(f"[model_loader] Using device: {device}")
+
     # --------- Load base model ----------
     print(f"[model_loader] Loading base model: {base}")
+
+    use_gpu = (device is not None and device >= 0 and torch.cuda.is_available())
+    dtype = torch.float16 if use_gpu else torch.float32
+
     base_model = AutoModelForCausalLM.from_pretrained(
         base,
-        torch_dtype=torch.float32 if not torch.cuda.is_available() else torch.float16,
+        torch_dtype=dtype,
+        low_cpu_mem_usage=True,
     )
+
+    if use_gpu:
+        base_model = base_model.to("cuda")
 
     # --------- Gắn LoRA nếu có ----------
     if adapter and os.path.isdir(adapter):
@@ -75,15 +79,11 @@ def get_pipeline(
         print("[model_loader] No valid adapter provided, using base model only.")
         model = base_model
 
-    # --------- Chọn device ----------
-    if device is None:
-        device = 0 if torch.cuda.is_available() else -1
-
-    print(f"[model_loader] Using device: {device}")
+    # --------- Pipeline ----------
     pipe = pipeline(
         "text-generation",
         model=model,
         tokenizer=tok,
-        device=device,
+        device=device,  # -1 CPU
     )
     return pipe

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Create Chatbot Admin</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./admin/styles.css" />
 </head>
 <body>
 <div class="container">
@@ -61,6 +61,7 @@
         <button class="tab" data-tab="chatbots">Chatbots</button>
         <button class="tab" data-tab="bindings">Bindings</button>
         <button class="tab" data-tab="monitor">Monitoring</button>
+        <button class="tab" data-tab="leads">Leads</button>
     </nav>
 
     <main>
@@ -225,13 +226,46 @@
             </div>
         </section>
 
+        <!-- ✅ NEW: LEADS -->
+        <section id="tab-leads" class="card hidden">
+            <div class="head">
+                <h2>Purchase Requests (Leads)</h2>
+                <div class="row">
+                    <button class="secondary" id="btn-refresh-leads">Refresh</button>
+                </div>
+            </div>
+
+            <table class="table" id="leads-table">
+                <thead>
+                <tr>
+                    <th>Created</th>
+                    <th>Status</th>
+                    <th>Channel</th>
+                    <th>Customer</th>
+                    <th>Conversation</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <div id="lead-details" class="drawer hidden">
+                <div class="drawer-header">
+                    <h3>Lead Details</h3>
+                    <button id="btn-close-lead" class="secondary">Close</button>
+                </div>
+                <pre id="lead-slots" class="pre"></pre>
+                <pre id="lead-transcript" class="pre"></pre>
+            </div>
+        </section>
+
     </main>
 
     <footer class="footer muted">
-        Static HTML/JS – chạy cùng Spring Boot (không cần npm/build).
+        @2026 Le Van Phap
     </footer>
 </div>
 
-<script src="./app.js"></script>
+<script src="/admin/app.js"></script>
 </body>
 </html>

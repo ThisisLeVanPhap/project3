@@ -10,6 +10,7 @@ import com.app.modelserver.LlmInstanceManager;
 import com.app.modelserver.PythonChatClient;
 import com.app.modelserver.dto.ChatResponse;
 import com.app.tenant.TenantContext;
+import com.app.leads.LeadService; // <-- NOTE: chỉnh package nếu khác
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,9 @@ public class MessengerWebhookController {
     private final PythonChatClient python;
     private final LlmInstanceManager llmInstanceManager;
     private final MessengerSendService sendService;
+
+    // ✅ NEW: lead service to create purchase request from conversation
+    private final LeadService leadService;
 
     // ✅ Dedupe theo message.mid (Meta retry sẽ bị skip)
     private final Set<String> processedMids = ConcurrentHashMap.newKeySet();
@@ -105,15 +109,10 @@ public class MessengerWebhookController {
 
                     // ✅ dedupe mid
                     String mid = msg.get("mid") != null ? String.valueOf(msg.get("mid")) : null;
-//                    if (mid != null && !processedMids.add(mid)) {
-//                        log.info("Skip duplicate messenger mid={} pageId={} psid={}", mid, pageId, psid);
-//                        continue;
-//                    }
                     if (mid != null && !processedMids.add(mid)) {
                         log.info("Skip duplicate messenger mid={}", mid);
                         continue;
                     }
-
 
                     log.info("Messenger IN pageId={}, psid={}, mid={}, text={}", pageId, psid, mid, text);
 
@@ -131,6 +130,7 @@ public class MessengerWebhookController {
                                 return convRepo.save(c);
                             });
 
+                    // ✅ Save user message
                     Message mUser = new Message();
                     mUser.setId(UUID.randomUUID());
                     mUser.setTenantId(binding.getTenantId());
@@ -142,6 +142,78 @@ public class MessengerWebhookController {
                     List<Message> historyMsgs =
                             msgRepo.findTop20ByConversationIdOrderByCreatedAtAsc(conv.getId());
 
+                    // ✅ Feedback quick: user sends 👍 or 👎
+                    if ("👍".equals(text.trim()) || "👎".equals(text.trim())) {
+                        boolean isCorrect = "👍".equals(text.trim());
+
+                        String lastQ = null;
+                        String lastA = null;
+                        for (int i = historyMsgs.size() - 1; i >= 0; i--) {
+                            Message mm = historyMsgs.get(i);
+                            if (lastA == null && "assistant".equals(mm.getRole())) lastA = mm.getContent();
+                            else if (lastQ == null && "user".equals(mm.getRole())) { lastQ = mm.getContent(); break; }
+                        }
+
+                        String baseUrl = llmInstanceManager.getOrStartBaseUrl(binding.getTenantId(), bot);
+
+                        python.feedback(baseUrl, new com.app.modelserver.dto.FeedbackRequest(
+                                conv.getId().toString(),
+                                binding.getTenantId().toString(),
+                                "messenger",
+                                lastQ != null ? lastQ : "",
+                                lastA != null ? lastA : "",
+                                isCorrect,
+                                "thumb"
+                        ));
+
+                        sendService.sendText(psid, "Thanks for your feedback!", binding.getPageAccessToken());
+                        continue;
+                    }
+
+                    // ✅ per-tenant LLM instance (moved up so CONFIRM can use it)
+                    String baseUrl = llmInstanceManager.getOrStartBaseUrl(binding.getTenantId(), bot);
+
+                    // =========================================================
+                    // ✅ NEW: CONFIRM / CANCEL handler
+                    // Put here: after text, conv, tenantId(binding), bot, baseUrl, psid
+                    // =========================================================
+                    String t = text == null ? "" : text.trim();
+
+                    if ("CONFIRM".equalsIgnoreCase(t)) {
+                        try {
+                            leadService.createLeadFromConversation(
+                                    baseUrl,
+                                    binding.getTenantId().toString(),
+                                    "messenger",
+                                    conv.getId().toString(),
+                                    psid
+                            );
+                            sendService.sendText(
+                                    psid,
+                                    "✅ Purchase request created. A staff member will contact you shortly to confirm the details.",
+                                    binding.getPageAccessToken()
+                            );
+                        } catch (Exception e) {
+                            log.error("CONFIRM failed: tenantId={}, convId={}, psid={}", binding.getTenantId(), conv.getId(), psid, e);
+                            sendService.sendText(
+                                    psid,
+                                    "Sorry — I couldn’t create the purchase request right now. Please try again, or reply with your phone/email and I’ll forward it to staff.",
+                                    binding.getPageAccessToken()
+                            );
+                        }
+                        continue;
+                    }
+
+                    if ("CANCEL".equalsIgnoreCase(t)) {
+                        sendService.sendText(
+                                psid,
+                                "No problem — I’ve canceled the confirmation step. What would you like to do next?",
+                                binding.getPageAccessToken()
+                        );
+                        continue;
+                    }
+
+                    // Build history for python (current logic only includes user turns)
                     List<String> history = new ArrayList<>();
                     for (Message hm : historyMsgs) {
                         if ("user".equals(hm.getRole())) {
@@ -149,9 +221,13 @@ public class MessengerWebhookController {
                         }
                     }
 
-                    // ✅ per-tenant LLM instance
-                    String baseUrl = llmInstanceManager.getOrStartBaseUrl(binding.getTenantId(), bot);
-                    ChatResponse ai = python.chat(baseUrl, text, history, bot);
+                    ChatResponse ai = python.chat(
+                            baseUrl, text, history, bot,
+                            conv.getId().toString(),
+                            "messenger",
+                            binding.getTenantId().toString()
+                    );
+
                     String reply = ai.reply();
 
                     Message mBot = new Message();

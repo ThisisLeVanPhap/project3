@@ -18,4 +18,9 @@ public class AdminUiController {
 
     @GetMapping({"/tenant", "/tenant/"})
     public String tenant() { return "forward:/tenant/index.html"; }
+
+    @GetMapping({"/tenant/purchase-requests", "/tenant/purchase-requests/"})
+    public String tenantPurchaseRequests() {
+        return "forward:/tenant/purchase-requests/index.html";
+    }
 }

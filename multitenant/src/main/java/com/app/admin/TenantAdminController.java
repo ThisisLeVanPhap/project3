@@ -1,35 +1,58 @@
 package com.app.admin;
 
+import com.app.auth.SessionPrincipalAccessor;
 import com.app.tenants.Tenant;
-import com.app.tenants.TenantRepository;
+import com.app.tenants.TenantProvisioningService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/tenants")
 @RequiredArgsConstructor
 public class TenantAdminController {
-    private final TenantRepository repo;
+    private final TenantProvisioningService tenantProvisioningService;
+    private final SessionPrincipalAccessor principalAccessor;
 
     @PostMapping
-    public Map<String, Object> create(@RequestBody Map<String, String> req) {
-        Tenant t = new Tenant();
-        t.setId(UUID.randomUUID());
-        t.setCode(req.get("code"));
-        t.setName(req.get("name"));
-        t.setStatus("ACTIVE");
-        t.setApiKey(UUID.randomUUID().toString().replace("-", ""));
-        repo.save(t);
-        return Map.of("tenantId", t.getId(), "apiKey", t.getApiKey());
+    public TenantResponse create(@RequestBody TenantProvisioningService.CreateTenantRequest request) {
+        principalAccessor.requirePlatformAdmin();
+        return TenantResponse.from(tenantProvisioningService.create(request));
     }
 
-    // ✅ thêm GET để UI load list tenant
     @GetMapping
-    public List<Tenant> list() {
-        return repo.findAll();
+    public List<TenantResponse> list() {
+        principalAccessor.requirePlatformAdmin();
+        return tenantProvisioningService.list().stream()
+                .map(TenantResponse::from)
+                .toList();
+    }
+
+    @GetMapping("/{tenantId}")
+    public TenantResponse get(@PathVariable UUID tenantId) {
+        principalAccessor.requirePlatformAdmin();
+        return TenantResponse.from(tenantProvisioningService.get(tenantId));
+    }
+
+    public record TenantResponse(
+            UUID id,
+            String code,
+            String name,
+            String apiKey,
+            String kbDir,
+            String status
+    ) {
+        static TenantResponse from(Tenant tenant) {
+            return new TenantResponse(
+                    tenant.getId(),
+                    tenant.getCode(),
+                    tenant.getName(),
+                    tenant.getApiKey(),
+                    tenant.getKbDir(),
+                    tenant.getStatus()
+            );
+        }
     }
 }

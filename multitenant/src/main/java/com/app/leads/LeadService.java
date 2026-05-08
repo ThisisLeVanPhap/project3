@@ -1,9 +1,9 @@
 package com.app.leads;
 
+import com.app.chat.Message;
+import com.app.chat.MessageRepository;
 import com.app.modelserver.PythonChatClient;
 import com.app.modelserver.dto.StateResponse;
-import com.app.chat.Message; // adjust to your actual Message entity import
-import com.app.chat.MessageRepository; // adjust to your repo
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
@@ -29,21 +29,41 @@ public class LeadService {
                                            String channel,
                                            String conversationId,
                                            String customerHandle) {
+
+        Lead lead = leadRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(tenantId, conversationId)
+                .orElseGet(() -> Lead.createNew(tenantId, channel, conversationId, customerHandle, "{}", ""));
+
+        // Pull slots/state from python (optional but nice)
         StateResponse st = python.getState(baseUrl, conversationId);
 
         String slotsJson;
         try { slotsJson = om.writeValueAsString(st.slots()); }
         catch (Exception e) { slotsJson = "{}"; }
 
-        // last ~20 messages transcript
-        List<Message> history = msgRepo.findTop20ByConversationIdOrderByCreatedAtAsc(UUID.fromString(conversationId));
+        UUID convId = UUID.fromString(conversationId);
+        UUID tid = UUID.fromString(tenantId);
+
+        List<Message> history =
+                msgRepo.findTop200ByTenantIdAndConversationIdOrderByCreatedAtAsc(tid, convId);
+
         StringBuilder sb = new StringBuilder();
         for (Message m : history) {
-            sb.append(m.getRole()).append(": ").append(m.getContent()).append("\n");
+            String role = m.getRole() == null ? "" : m.getRole().trim();
+            String content = m.getContent() == null ? "" : m.getContent();
+
+            // strip HTML tags
+            content = content.replaceAll("<[^>]+>", "");
+            content = content.replaceAll("\\s{2,}", " ").trim();
+            if (content.isBlank()) continue;
+
+            sb.append(role).append(": ").append(content).append("\n");
         }
+
         String transcript = sb.toString().trim();
 
-        Lead lead = Lead.createNew(tenantId, channel, conversationId, customerHandle, slotsJson, transcript);
+        lead.setSlotsJson(slotsJson);
+        lead.setTranscript(transcript);
+        lead.setStage("HANDOFF");
         return leadRepo.save(lead);
     }
 }

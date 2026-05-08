@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-global_admin}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-global_admin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: multitenant/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-global_admin}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      SERVER_PORT: 8080
+      PYTHON_BIN: /usr/bin/python3
+      MODEL_SERVER_DIR: /opt/app/chatbot
+      BASE_MODEL: ${BASE_MODEL:-TinyLlama/TinyLlama-1.1B-Chat-v1.0}
+      LLM_HOST: 127.0.0.1
+      LLM_PORT_START: ${LLM_PORT_START:-8101}
+      LLM_PORT_END: ${LLM_PORT_END:-8199}
+      LLM_STARTUP_TIMEOUT_MS: ${LLM_STARTUP_TIMEOUT_MS:-600000}
+      MESSENGER_VERIFY_TOKEN: ${MESSENGER_VERIFY_TOKEN:-woodchat_secret}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - ./chatbot/kb:/opt/app/chatbot/kb
+      - ./chatbot/adapters:/opt/app/chatbot/adapters
+      - ./chatbot/out:/opt/app/chatbot/out
+      - ./chatbot/logs:/opt/app/chatbot/logs
+      - huggingface-cache:/root/.cache/huggingface
+
+  chatbot-api:
+    profiles: ["chatbot-api"]
+    build:
+      context: .
+      dockerfile: chatbot/Dockerfile
+    environment:
+      KB_DIR: ${CHATBOT_KB_DIR:-/app/kb/article}
+      BASE_MODEL: ${CHATBOT_BASE_MODEL:-TinyLlama/TinyLlama-1.1B-Chat-v1.0}
+      LORA_ADAPTER: ${CHATBOT_LORA_ADAPTER:-}
+      TOKENIZER_PATH: ${CHATBOT_TOKENIZER_PATH:-}
+    ports:
+      - "${CHATBOT_PORT:-8000}:8000"
+    volumes:
+      - ./chatbot/kb:/app/kb
+      - ./chatbot/adapters:/app/adapters
+      - ./chatbot/out:/app/out
+      - ./chatbot/logs:/app/logs
+      - huggingface-cache:/root/.cache/huggingface
+
+volumes:
+  postgres-data:
+  huggingface-cache:

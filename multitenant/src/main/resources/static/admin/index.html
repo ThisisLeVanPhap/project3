@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Create Chatbot Admin</title>
-    <link rel="stylesheet" href="./admin/styles.css" />
+    <link rel="stylesheet" href="/admin/styles.css" />
 </head>
 <body>
 <div class="container">
@@ -15,8 +15,10 @@
         </div>
 
         <div class="right">
+            <span class="chip">User: <b id="adminIdentity">-</b></span>
             <span class="chip">Selected tenant: <b id="selectedTenantName">—</b></span>
             <button class="secondary" id="pingHealth" title="Kiểm tra Spring Boot còn sống + actuator health">Ping health</button>
+            <button class="danger" id="btn-admin-logout" title="Sign out">Logout</button>
         </div>
     </header>
 
@@ -58,10 +60,13 @@
 
     <nav class="tabs">
         <button class="tab active" data-tab="tenants">Tenants</button>
+        <button class="tab" data-tab="members">Members</button>
         <button class="tab" data-tab="chatbots">Chatbots</button>
         <button class="tab" data-tab="bindings">Bindings</button>
         <button class="tab" data-tab="monitor">Monitoring</button>
         <button class="tab" data-tab="leads">Leads</button>
+        <button class="tab" data-tab="purchase-requests">Purchase Requests</button>
+        <button class="tab" data-tab="stats">Statistics</button>
     </nav>
 
     <main>
@@ -84,6 +89,24 @@
                     <label>Name</label>
                     <input id="tenantName" />
                 </div>
+                <div>
+                    <label>API Key (optional)</label>
+                    <input id="tenantApiKey" placeholder="Auto-generate if blank" />
+                </div>
+            </div>
+
+            <div class="grid3">
+                <div>
+                    <label>KB Dir (optional)</label>
+                    <input id="tenantKbDir" placeholder="/opt/app/chatbot/kb/demo" />
+                </div>
+                <div>
+                    <label>Status</label>
+                    <select id="tenantStatus">
+                        <option value="ACTIVE" selected>ACTIVE</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                    </select>
+                </div>
                 <div class="row end">
                     <button id="createTenant">Create tenant</button>
                 </div>
@@ -95,6 +118,61 @@
             </div>
 
             <pre id="tenantsOut" class="out"></pre>
+        </section>
+
+        <section id="tab-members" class="card hidden">
+            <div class="head">
+                <h2>Tenant Members</h2>
+                <div class="row">
+                    <button class="secondary" id="clearMembersOut">Clear output</button>
+                </div>
+            </div>
+
+            <div class="note">
+                Select a tenant first from the Tenants tab or the shared tenant selector, then manage members for that tenant.
+            </div>
+
+            <div class="grid3">
+                <div>
+                    <label>Email</label>
+                    <input id="memberEmail" />
+                </div>
+                <div>
+                    <label>Display name</label>
+                    <input id="memberDisplayName" />
+                </div>
+                <div>
+                    <label>Password</label>
+                    <input id="memberPassword" type="password" />
+                </div>
+            </div>
+
+            <div class="grid3">
+                <div>
+                    <label>Role</label>
+                    <select id="memberRole">
+                        <option value="TENANT_MEMBER" selected>TENANT_MEMBER</option>
+                        <option value="TENANT_ADMIN">TENANT_ADMIN</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Status</label>
+                    <select id="memberStatus">
+                        <option value="ACTIVE" selected>ACTIVE</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                    </select>
+                </div>
+                <div class="row end">
+                    <button id="createMember">Create member</button>
+                </div>
+            </div>
+
+            <div class="row">
+                <button class="secondary" id="loadMembers">Load members</button>
+                <span class="muted" id="membersMsg"></span>
+            </div>
+
+            <pre id="membersOut" class="out"></pre>
         </section>
 
         <!-- CHATBOTS -->
@@ -116,6 +194,17 @@
                 </div>
             </div>
 
+            <div class="grid2">
+                <div>
+                    <label>Saved chatbot (load into form to edit)</label>
+                    <select id="chatbotSelectEdit"></select>
+                    <div class="muted">Load a chatbot, adjust fields below, then save.</div>
+                </div>
+                <div class="row end">
+                    <button class="secondary" id="loadSelectedBot">Load selected chatbot</button>
+                </div>
+            </div>
+
             <div class="grid3">
                 <div>
                     <label>Bot name</label>
@@ -134,8 +223,48 @@
                 </div>
             </div>
 
+            <div class="grid2">
+                <div>
+                    <label>Response style</label>
+                    <select id="botResponseStyle">
+                        <option value="natural">natural</option>
+                        <option value="balanced">balanced</option>
+                        <option value="fast">fast</option>
+                    </select>
+                    <div class="muted">natural = more human-like, slower. balanced = middle ground. fast = shorter/faster.</div>
+                </div>
+                <div>
+                    <label>Provider</label>
+                    <select id="botProvider">
+                        <option value="local">Local (Hugging Face)</option>
+                        <option value="claude">Claude API</option>
+                    </select>
+                    <div class="muted">local = sử dụng model local. claude = sử dụng Claude API.</div>
+                </div>
+            </div>
+
+            <div class="note" id="apiConfigNote" style="display:none;">
+                Cấu hình Claude API (điền khi chọn provider "claude"):
+            </div>
+
+            <div class="grid3" id="apiConfigFields" style="display:none;">
+                <div>
+                    <label>API Model</label>
+                    <input id="botApiModel" placeholder="claude-3-5-sonnet-20241022" />
+                </div>
+                <div>
+                    <label>API Key</label>
+                    <input id="botApiKey" type="password" placeholder="sk-ant-..." />
+                </div>
+                <div>
+                    <label>API Base URL</label>
+                    <input id="botApiBaseUrl" placeholder="https://api.anthropic.com" />
+                </div>
+            </div>
+
             <div class="row">
                 <button id="createBot">Create chatbot</button>
+                <button class="secondary" id="saveBot">Save selected chatbot</button>
                 <button class="secondary" id="loadBots">Load chatbots</button>
                 <span class="muted" id="botsMsg"></span>
             </div>
@@ -206,17 +335,21 @@
 
         <section id="tab-monitor" class="card hidden">
             <div class="head">
-                <h2>Monitoring (LLM runtime)</h2>
+                <h2>Operations</h2>
                 <div class="row">
                     <button class="secondary" id="clearRuntimeOut">Clear output</button>
                 </div>
             </div>
 
             <div class="row">
-                <button class="secondary" id="loadRuntime">Load /api/runtime/llm</button>
+                <button class="secondary" id="loadRuntime">Load platform ops</button>
+                <input id="runtimeEvictTenantId" placeholder="Tenant UUID to evict runtime" />
+                <button class="secondary" id="evictRuntime">Evict runtime</button>
                 <span class="muted" id="runtimeMsg"></span>
             </div>
 
+            <div id="runtimeSummary" class="note hidden"></div>
+            <div id="benchmarkSummary" class="note hidden"></div>
             <pre id="runtimeOut" class="out"></pre>
 
             <div class="note">
@@ -259,6 +392,77 @@
             </div>
         </section>
 
+        <section id="tab-purchase-requests" class="card hidden">
+            <div class="head">
+                <h2>Purchase Requests</h2>
+            </div>
+
+            <div class="toolbar">
+                <div class="purchase-request-controls">
+                    <div>
+                        <label>Status</label>
+                        <select id="purchaseRequestStatusFilter">
+                            <option value="">All</option>
+                            <option value="NEW">NEW</option>
+                            <option value="CONTACTED">CONTACTED</option>
+                            <option value="COMPLETED">COMPLETED</option>
+                        </select>
+                    </div>
+                    <div class="row end">
+                        <button class="secondary" id="loadPurchaseRequests">Load purchase requests</button>
+                    </div>
+                </div>
+                <span class="muted" id="purchaseRequestsMsg"></span>
+            </div>
+
+            <div class="table-wrap">
+                <table class="table" id="purchase-requests-table">
+                    <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Phone</th>
+                        <th>Shipping address</th>
+                        <th>Status</th>
+                        <th>Assigned owner</th>
+                        <th>Created</th>
+                        <th>Update</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="tab-stats" class="card hidden">
+            <div class="head">
+                <h2>Statistics</h2>
+                <div class="row">
+                    <button class="secondary" id="loadStats7">Load 7 days</button>
+                    <button class="secondary" id="loadStats30">Load 30 days</button>
+                </div>
+            </div>
+
+            <div class="grid3">
+                <div class="card2">
+                    <div class="muted">Total conversations</div>
+                    <div class="big" id="st_totalConv">—</div>
+                </div>
+                <div class="card2">
+                    <div class="muted">Total leads</div>
+                    <div class="big" id="st_totalLeads">—</div>
+                </div>
+                <div class="card2">
+                    <div class="muted">Positive feedback rate</div>
+                    <div class="big" id="st_posRate">—</div>
+                </div>
+            </div>
+
+            <h3>By tenant</h3>
+            <pre id="statsByTenantOut" class="out"></pre>
+
+            <h3>Timeseries</h3>
+            <pre id="statsTimeseriesOut" class="out"></pre>
+        </section>
     </main>
 
     <footer class="footer muted">

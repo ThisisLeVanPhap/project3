@@ -2,6 +2,7 @@ package com.app.bots;
 
 import com.app.common.TenantEntityListener;
 import com.app.common.TenantScoped;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.Getter; import lombok.Setter;
@@ -49,4 +50,23 @@ public class ChatbotInstance extends TenantScoped {
 
     @Column(name = "top_k")
     private Integer topK;
+
+    @Column(name = "response_style")
+    private String responseStyle;
+
+    @Column(name = "mode")
+    private String mode = "tenant_sales";  // tenant_sales | general_consumer
+
+    @Column(name = "provider")
+    private String provider = "local";  // local | claude
+
+    @Column(name = "api_model")
+    private String apiModel;
+
+    @Column(name = "api_key")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String apiKey;
+
+    @Column(name = "api_base_url")
+    private String apiBaseUrl;
 }

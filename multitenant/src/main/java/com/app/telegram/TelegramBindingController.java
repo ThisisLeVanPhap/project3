@@ -1,5 +1,6 @@
 package com.app.telegram;
 
+import com.app.auth.SessionPrincipalAccessor;
 import com.app.bots.ChatbotInstance;
 import com.app.bots.ChatbotInstanceRepository;
 import com.app.telegram.dto.CreateTelegramBindingDto;
@@ -19,15 +20,18 @@ public class TelegramBindingController {
 
     private final TelegramBotBindingRepository bindingRepo;
     private final ChatbotInstanceRepository botRepo;
+    private final SessionPrincipalAccessor principalAccessor;
 
     @GetMapping
     public List<TelegramBotBinding> listMine() {
+        principalAccessor.requireTenantAdmin();
         UUID tenantId = UUID.fromString(TenantContext.get());
         return bindingRepo.findAllByTenantId(tenantId);
     }
 
     @PostMapping
     public TelegramBotBinding create(@RequestBody CreateTelegramBindingDto dto) {
+        principalAccessor.requireTenantAdmin();
         UUID tenantId = UUID.fromString(TenantContext.get());
 
         ChatbotInstance bot = botRepo.findById(dto.chatbotId())
@@ -44,10 +48,7 @@ public class TelegramBindingController {
         b.setId(UUID.randomUUID());
         b.setTenantId(tenantId);
         b.setChatbotId(dto.chatbotId());
-
-        // TODO: nên mã hoá token trước khi lưu
         b.setBotToken(dto.botToken());
-
         b.setSecretPath(randomSecretPath());
         b.setStatus("ACTIVE");
 
@@ -57,7 +58,6 @@ public class TelegramBindingController {
     private String randomSecretPath() {
         byte[] buf = new byte[32];
         new SecureRandom().nextBytes(buf);
-        // URL-safe base64, bỏ padding
         return Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
     }
 }

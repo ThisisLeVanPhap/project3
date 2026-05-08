@@ -2,6 +2,7 @@ import os
 import time
 import re
 import threading
+import requests
 from typing import List, Optional, Dict, Tuple, Any
 
 from fastapi import FastAPI, HTTPException
@@ -12,11 +13,110 @@ from .logger import log_event, log_feedback
 
 # --- SALES FLOW imports ---
 from .state import get_state, save_turn, set_stage, reset_state
-from .sales_flow import extract_slots, next_stage, build_sales_prefix
+from .sales_flow import extract_slots, next_stage, build_sales_prefix, detect_intent, has_sufficient_constraints
+
+# --- CONSULTATION imports ---
+from .consultation import extract_consultation_slots, build_consultation_prefix, next_consultation_stage, extract_phone
 
 from .model_loader import get_pipeline
 from .prompt import build_messages, DEFAULT_SYSTEM
 from .retriever import SimpleKb
+
+
+def _detect_and_track_preference_changes(existing_slots: Dict[str, Any], new_slots: Dict[str, Any]) -> None:
+    """
+    Track preference changes by storing previous values.
+    For each preference key, if it exists in both and values differ, store old value as {key}_prev.
+    Modifies existing_slots in-place.
+    """
+    PREFERENCE_KEYS = ["style", "color", "material", "budget_usd", "budget_text", "space", "product_type"]
+
+    for key in PREFERENCE_KEYS:
+        if key in existing_slots and key in new_slots:
+            old_val = existing_slots[key]
+            new_val = new_slots[key]
+            # Compare values (handle both string and bool)
+            if old_val != new_val:
+                # Store previous value before overwriting
+                existing_slots[f"{key}_prev"] = old_val
+        elif key in new_slots:
+            # New preference being set, clear any old _prev marker
+            existing_slots.pop(f"{key}_prev", None)
+
+
+def _handle_topic_change(existing_slots: Dict[str, Any], new_slots: Dict[str, Any], mode: str) -> None:
+    """
+    Detect topic change (product_type change) and reset relevant slots.
+    When user switches to a different product type, clear slots that are product-specific
+    while preserving general preferences (style, color, material, budget, space).
+    """
+    if "product_type" not in new_slots:
+        return
+
+    old_product = existing_slots.get("product_type")
+    new_product = new_slots["product_type"]
+
+    if old_product and new_product and old_product != new_product:
+        # Product changed - reset product-specific slots
+        if mode == "general_consumer":
+            # In consultation mode, reset room_type and room_size_sqm as they're product-specific
+            existing_slots.pop("room_type", None)
+            existing_slots.pop("room_size_sqm", None)
+            # Also clear budget_range? Keep budget as it's general. Clear only if we want fresh.
+            # We keep style_preference, color, material as they're cross-product.
+        else:
+            # In sales flow, product_type is the main product slot.
+            # No other product-specific slots to reset currently.
+            pass
+
+
+
+def _call_claude_api(
+    prompt: str,
+    api_key: str,
+    api_model: str,
+    api_base_url: str,
+    max_tokens: int,
+    temperature: float,
+    top_p: float
+) -> str:
+    """Call Anthropic Claude API and return generated text."""
+    if not api_key:
+        return ""  # empty triggers fallback
+
+    # Clean prompt: remove trailing "Response:" lines
+    cleaned_prompt = prompt.rstrip()
+    if "Response:" in cleaned_prompt:
+        cleaned_prompt = cleaned_prompt.split("Response:")[0].rstrip()
+
+    headers = {
+        "Content-Type": "application/json",
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01"
+    }
+
+    data = {
+        "model": api_model,
+        "messages": [{"role": "user", "content": cleaned_prompt}],
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "top_p": top_p
+    }
+
+    try:
+        resp = requests.post(
+            f"{api_base_url.rstrip('/')}/v1/messages",
+            headers=headers,
+            json=data,
+            timeout=10
+        )
+        if resp.status_code != 200:
+            return ""  # fallback to empty
+        result = resp.json()
+        # Anthropic response: {"content": [{"type": "text", "text": "..."}]}
+        return result["content"][0]["text"]
+    except Exception:
+        return ""  # fallback to empty
 
 
 # --- Output guardrail: block unverified payment/refund/timing claims ---
@@ -69,6 +169,11 @@ class GenerationConfig(BaseModel):
     top_p: Optional[float] = None
     top_k: Optional[int] = None
     stop: Optional[List[str]] = None
+    provider: Optional[str] = None
+    api_model: Optional[str] = None
+    api_key: Optional[str] = None
+    api_base_url: Optional[str] = None
+    mode: Optional[str] = None  # tenant_sales | general_consumer
 
 
 class ChatReq(BaseModel):
@@ -87,6 +192,9 @@ class ChatResp(BaseModel):
     latency_ms: int
     model: str
     adapter: Optional[str]
+    trigger_purchase_request: Optional[bool] = False
+    captured_phone: Optional[str] = None
+    captured_name: Optional[str] = None
 
 
 def _set_ready(value: bool, err: Optional[str] = None):
@@ -166,11 +274,16 @@ def chat(req: ChatReq):
     base_model = cfg.base_model or BASE_MODEL_DEFAULT
     adapter = cfg.adapter or ADAPTER_DEFAULT
     tokenizer_path = cfg.tokenizer_path or TOKENIZER_DEFAULT
+    mode = cfg.mode or "tenant_sales"
 
     max_new_tokens = cfg.max_new_tokens or MAX_NEW_TOKENS_DEFAULT
     temperature = cfg.temperature or TEMPERATURE_DEFAULT
     top_p = cfg.top_p or TOP_P_DEFAULT
     top_k = int(cfg.top_k) if cfg.top_k is not None else TOP_K_DEFAULT
+
+    # Debug log - write to stderr to ensure visibility
+    import sys
+    print(f"[SERVER DEBUG] Received mode: {mode}, base_model: {base_model}", file=sys.stderr)
 
     # Ensure conversation_id exists for stateful flow
     conv_id = req.conversation_id or "anon"
@@ -222,16 +335,104 @@ def chat(req: ChatReq):
     # --- SALES FLOW: state/slots/stage (AFTER RULE layer) ---
     st = get_state(conv_id)
 
+    # Default values for lead capture trigger (will be updated below)
+    trigger_purchase_request = False
+    captured_phone = None
+    captured_name = None
+
     # update slots from this user message
     try:
-        new_slots = extract_slots(req.message)
-        if new_slots:
-            st.slots.update(new_slots)
-        # decide next stage
-        st.stage = next_stage(st.stage, st.slots, req.message)
+        # Capture current stage BEFORE transition (for intent context and trigger)
+        old_stage = getattr(st, "stage", "discover")
+
+        if mode == "general_consumer":
+            # Use consultation-specific slot extraction
+            new_slots = extract_consultation_slots(req.message)
+            _detect_and_track_preference_changes(st.slots, new_slots)
+            _handle_topic_change(st.slots, new_slots, mode)
+            if new_slots:
+                st.slots.update(new_slots)
+            # Extract phone for lead capture
+            phone = extract_phone(req.message)
+            if phone:
+                st.slots["captured_phone"] = phone
+            # Extract name (simple: look for "tên là..." patterns)
+            name_match = re.search(r"(?:tên|ten|name)\s*(?:là|la|is)?\s*([A-Za-z\s]{2,50})", req.message, re.I)
+            if name_match:
+                st.slots["captured_name"] = name_match.group(1).strip()
+            # decide next stage using consultation state machine (with old_stage)
+            st.stage = next_consultation_stage(old_stage, st.slots, req.message)
+        else:
+            # Original tenant sales flow
+            new_slots = extract_slots(req.message)
+            _detect_and_track_preference_changes(st.slots, new_slots)
+            _handle_topic_change(st.slots, new_slots, mode)
+            if new_slots:
+                st.slots.update(new_slots)
+            st.stage = next_stage(old_stage, st.slots, req.message)
+
+        # ---- Intent detection for robust lead capture ----
+        # Use old_stage for context (stage that was active when user sent this message)
+        user_intent = detect_intent(req.message, old_stage)
+        trigger_purchase_request = (old_stage == "close" and user_intent == "confirm")
+        # For sales flow, phone/name are not extracted here; they come from transcript in Java
+        captured_phone = st.slots.get("captured_phone")
+        captured_name = st.slots.get("captured_name")
     except Exception:
         # Don't break chat if slot extractor fails
         pass
+
+    # ---- Provider selection ----
+    provider = cfg.provider or "local"
+
+    if provider == "claude":
+        # Claude API path
+        api_key = cfg.api_key or ''
+        api_model = cfg.api_model or 'claude-3-5-sonnet-20241022'
+        api_base_url = cfg.api_base_url or 'https://api.anthropic.com'
+
+        t0 = time.time()
+        out = _call_claude_api(
+            req.message,
+            api_key,
+            api_model,
+            api_base_url,
+            max_new_tokens,
+            temperature,
+            top_p
+        )
+        latency_ms = int((time.time() - t0) * 1000)
+
+        resp = out.strip() if out else "Sorry, I couldn't process that request right now."
+        # Concise answer
+        sentences = re.split(r'(?<=[.!?…])\s+', resp)
+        resp = " ".join(sentences[:6]).strip()
+
+        log_event({
+            "event": "chat",
+            "question": req.message,
+            "answer": resp[:1200],
+            "latency_ms": latency_ms,
+            "model": api_model,
+            "adapter": None,
+            "channel": req.channel,
+            "conversation_id": conv_id,
+            "tenant_id": req.tenant_id,
+            "context_length": 0,
+            "kb_loaded": KB is not None,
+            "sales_stage": getattr(st, "stage", None),
+            "sales_slots": getattr(st, "slots", {}),
+        })
+        try:
+            save_turn(conv_id, req.message, resp)
+        except Exception:
+            pass
+        return ChatResp(
+            reply=resp[:1200],
+            latency_ms=latency_ms,
+            model=api_model,
+            adapter=None
+        )
 
     pipe = get_or_create_pipe(base_model, adapter, tokenizer_path)
 
@@ -306,7 +507,10 @@ def chat(req: ChatReq):
     # ---- SALES flow prefix inside system prompt ----
     sales_prefix = ""
     try:
-        sales_prefix = build_sales_prefix(getattr(st, "stage", "discover"), getattr(st, "slots", {}))
+        if mode == "general_consumer":
+            sales_prefix = build_consultation_prefix(getattr(st, "stage", "discover"), getattr(st, "slots", {}))
+        else:
+            sales_prefix = build_sales_prefix(getattr(st, "stage", "discover"), getattr(st, "slots", {}))
     except Exception:
         sales_prefix = ""
 
@@ -338,12 +542,13 @@ def chat(req: ChatReq):
     resp = out.strip()
 
     # Keep answers concise, but not too short for consultative flow
-    sentences = re.split(r'(?<=[.!?…])\s+', resp)
+    sentences = re.split(r'(?<=[.!?])\s+', resp)
     resp = " ".join(sentences[:6]).strip()
 
-    NOT_FOUND = "I couldn't find that in this store's data."
+    NOT_FOUND = "I couldn’t find that in this store’s data."
 
-    if (not context) or (NOT_FOUND.lower() in resp.lower()):
+    # For general_consumer mode, do NOT apply KB-based fallback - the consultation works without KB
+    if mode != "general_consumer" and ((not context) or (NOT_FOUND.lower() in resp.lower())):
         resp = (
             "Sorry, I couldn’t find enough information to answer that accurately. "
             "If you can share the product name or code, I can try again, "
@@ -352,12 +557,22 @@ def chat(req: ChatReq):
 
     # --- SALES FLOW: close stage hard CTA (CONFIRM / CANCEL / no payment) ---
     if getattr(st, "stage", None) == "close":
-        resp = resp.strip()
-        resp += (
-            "\n\nTo proceed, reply CONFIRM and I’ll create a purchase request for our staff. "
-            "Reply CANCEL to stop. "
-            "I can’t process payments directly in chat."
-        )
+        if mode == "general_consumer":
+            resp = resp.strip()
+            resp += (
+                "\n\nWould you like to: "
+                "1) Get specific product links to browse, "
+                "2) Talk to a human advisor for final help, or "
+                "3) Continue exploring options? "
+                "Just let me know!"
+            )
+        else:
+            resp = resp.strip()
+            resp += (
+                "\n\nTo proceed, reply CONFIRM and I’ll create a purchase request for our staff. "
+                "Reply CANCEL to stop. "
+                "I can’t process payments directly in chat."
+            )
 
     # --- Output guardrail: if model slips into unverified facts, replace with safe fallback ---
     if BAD_FACTS.search(resp):
@@ -394,7 +609,10 @@ def chat(req: ChatReq):
         reply=resp[:1200],
         latency_ms=latency_ms,
         model=base_model,
-        adapter=adapter
+        adapter=adapter,
+        trigger_purchase_request=trigger_purchase_request,
+        captured_phone=captured_phone,
+        captured_name=captured_name
     )
 
 @app.get("/state")

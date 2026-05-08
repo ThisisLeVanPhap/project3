@@ -1,0 +1,261 @@
+{
+  "info": {
+    "_postman_id": "de7c7213-6e4c-47e2-bb33-2f1f236d6bf5",
+    "name": "Vietnamese Buyer Flow (Spring Boot)",
+    "description": "Minimal Postman collection for the current real Spring Boot contract. Demo/example values are included as collection variables and should be adjusted per environment as needed.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "029269d7f5f445f7ac36c196dffa134e",
+      "type": "string"
+    },
+    {
+      "key": "chatbotId",
+      "value": "e08a7b4f-ebfb-4874-a119-b90e95e85fc7",
+      "type": "string"
+    },
+    {
+      "key": "conversationId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Start Chat",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"chatbotId\": \"{{chatbotId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/start",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "start"
+          ]
+        },
+        "description": "Expected success. Starts a fresh web conversation and returns conversationId."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "var json = pm.response.json();",
+              "if (json.conversationId) {",
+              "  pm.collectionVariables.set('conversationId', json.conversationId);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Buyer Turn - Sofa Advice",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"conversationId\": \"{{conversationId}}\",\n  \"message\": \"Xin chao, toi muon mua sofa cho phong khach nho.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/send",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "send"
+          ]
+        },
+        "description": "Expected success. Normal Vietnamese buyer turn for sofa advice."
+      }
+    },
+    {
+      "name": "3. Buyer Turn - Contact Info",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"conversationId\": \"{{conversationId}}\",\n  \"message\": \"Ten toi la Nguyen Van A, so dien thoai la 0912345678. Dia chi nhan hang cua toi la 123 Nguyen Trai, Ha Noi.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/send",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "send"
+          ]
+        },
+        "description": "Expected success. Supplies buyer name, phone, and shipping address in the current chat contract."
+      }
+    },
+    {
+      "name": "4. Confirm Purchase Request",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"conversationId\": \"{{conversationId}}\",\n  \"message\": \"CONFIRM\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/send",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "send"
+          ]
+        },
+        "description": "Expected success. Creates the purchase request when conversation data is valid and returns the Vietnamese confirmation message."
+      }
+    },
+    {
+      "name": "5. List Purchase Requests",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/purchase-requests",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "purchase-requests"
+          ]
+        },
+        "description": "Expected success. Returns purchase requests for the current tenant, newest first."
+      }
+    },
+    {
+      "name": "6. List Purchase Requests (status=NEW)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/purchase-requests?status=NEW",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "purchase-requests"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "NEW"
+            }
+          ]
+        },
+        "description": "Expected success. Filters purchase requests by status while preserving tenant scoping and newest-first ordering."
+      }
+    },
+    {
+      "name": "7. Invalid Chat Request (missing message)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"conversationId\": \"{{conversationId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/send",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "send"
+          ]
+        },
+        "description": "Expected failure. Intentionally omits the required message field."
+      }
+    }
+  ]
+}

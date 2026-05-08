@@ -1,8 +1,34 @@
 import time
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 TTL_SEC = 60 * 30  # 30 minutes
+
+@dataclass
+class ConversationState:
+    intent: Optional[str] = None
+    recipient: Optional[str] = None
+    category: Optional[str] = None
+    language_mode: Optional[str] = None
+    ambiguity_count: int = 0
+    last_stable_intent: Optional[str] = None
+    budget: Dict[str, Any] = field(
+        default_factory=lambda: {"min": None, "max": None, "currency": "THB"}
+    )
+    preferences: List[str] = field(default_factory=list)
+    constraints: List[str] = field(default_factory=list)
+    inactive_preferences: List[str] = field(default_factory=list)
+    rejected_options: List[str] = field(default_factory=list)
+    rejected_attributes: List[str] = field(default_factory=list)
+    shortlisted_options: List[str] = field(default_factory=list)
+    selected_option: Optional[str] = None
+    last_behavior: Optional[str] = None
+    # --- Consultation-specific attributes ---
+    room_type: Optional[str] = None          # living room, bedroom, dining room, apartment, etc.
+    room_size_sqm: Optional[float] = None   # approximate size in square meters
+    budget_range: Optional[str] = None      # low / medium / high or specific range
+    style_preference: Optional[str] = None  # modern, minimal, classic, etc.
+    product_type: Optional[str] = None      # sofa, bed, table, wardrobe, etc.
 
 @dataclass
 class ConvState:
@@ -11,6 +37,7 @@ class ConvState:
     slots: Dict[str, Any] = field(default_factory=dict)
     last_question: Optional[str] = None
     last_answer: Optional[str] = None
+    conversation_state: ConversationState = field(default_factory=ConversationState)
 
 _STORE: Dict[str, ConvState] = {}
 

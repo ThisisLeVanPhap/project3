@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Purchase Requests</title>
+    <link rel="stylesheet" href="/tenant/styles.css" />
+    <style>
+        .filters {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: minmax(180px, 240px) auto auto;
+            align-items: end;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .status-pill {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #0f1a33;
+            border: 1px solid rgba(255,255,255,.12);
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .empty-state {
+            padding: 18px 8px;
+            text-align: center;
+        }
+        .assignment-cell {
+            min-width: 180px;
+        }
+        .request-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        .request-actions select {
+            min-width: 180px;
+        }
+        .inline-note {
+            font-size: 12px;
+            opacity: .78;
+        }
+        @media (max-width: 760px) {
+            .filters {
+                grid-template-columns: 1fr;
+            }
+            .table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header class="topbar">
+        <div>
+            <div class="title">Purchase Requests</div>
+            <div class="sub">Internal tenant-safe read view</div>
+        </div>
+        <div class="right">
+            <span class="chip">Tenant: <b id="tenantLabel">-</b></span>
+            <button class="secondary" id="btn-refresh">Refresh</button>
+            <button class="danger" id="btn-logout" title="Clear session and return to login">Logout</button>
+        </div>
+    </header>
+
+    <section class="card">
+        <div class="filters">
+            <div>
+                <label for="statusFilter">Status filter</label>
+                <select id="statusFilter">
+                    <option value="">All statuses</option>
+                    <option value="NEW">NEW</option>
+                    <option value="CONTACTED">CONTACTED</option>
+                    <option value="COMPLETED">COMPLETED</option>
+                </select>
+            </div>
+            <div class="actions">
+                <a id="jsonLink" href="/api/purchase-requests">Open JSON API</a>
+            </div>
+            <div class="muted" id="pageStatus">Loading purchase requests...</div>
+        </div>
+
+        <table class="table" id="purchase-requests-table">
+            <thead>
+            <tr>
+                <th>Created</th>
+                <th>Status</th>
+                <th>Customer name</th>
+                <th>Phone</th>
+                <th>Shipping address</th>
+                <th>Assigned owner</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
+
+    <footer class="footer muted">
+        Uses the existing <code>GET /api/purchase-requests</code> endpoint with tenant header forwarding from the browser.
+    </footer>
+</div>
+
+<script src="/tenant/purchase-requests/app.js"></script>
+</body>
+</html>

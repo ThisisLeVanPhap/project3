@@ -38,11 +38,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            if (path === "admin"){
+            if (data.role === "PLATFORM_ADMIN"){
+                localStorage.removeItem("tenant_id");
+                localStorage.removeItem("tenant_name");
                 window.location.href = "/admin";
             } else {
+                localStorage.setItem("tenant_id", data.tenantId || "");
+                localStorage.setItem("tenant_name", data.displayName || "");
                 window.location.href =
-                    `/tenant?tid=${encodeURIComponent(data.tenantId)}&name=${encodeURIComponent(data.tenantName)}`;
+                    `/tenant?tid=${encodeURIComponent(data.tenantId || "")}&name=${encodeURIComponent(data.displayName || "")}`;
             }
 
         } catch (e){

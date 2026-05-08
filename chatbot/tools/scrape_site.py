@@ -1,13 +1,19 @@
-import re, json, sys
-from urllib.parse import urljoin, urlparse
+import json
+import re
+import sys
+
 import requests
+from requests.exceptions import SSLError
 from bs4 import BeautifulSoup
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
+
 def clean_text(s: str) -> str:
-    s = re.sub(r"\s+", " ", s or "").strip()
+    s = (s or "").replace("\u00a0", " ").replace("\u200b", " ")
+    s = re.sub(r"\s+", " ", s).strip()
     return s
+
 
 def extract_main_text(html: str) -> tuple[str, str]:
     soup = BeautifulSoup(html, "html.parser")
@@ -17,7 +23,7 @@ def extract_main_text(html: str) -> tuple[str, str]:
     for tag in soup(["script", "style", "noscript"]):
         tag.decompose()
 
-    # ưu tiên các vùng content phổ biến
+    # Prefer common article/content containers when present.
     candidates = []
     for sel in ["article", "main", ".entry-content", ".post-content", ".content", "#content"]:
         for node in soup.select(sel):
@@ -32,34 +38,59 @@ def extract_main_text(html: str) -> tuple[str, str]:
 
     return title, body
 
+
 def fetch(url: str) -> dict:
-    r = requests.get(url, headers=HEADERS, timeout=20)
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=20)
+    except SSLError:
+        # Some demo/runtime environments do not expose a working CA bundle.
+        # Retry once for curator-provided sources so KB rebuilds can still proceed.
+        r = requests.get(url, headers=HEADERS, timeout=20, verify=False)
     r.raise_for_status()
+    r.encoding = r.apparent_encoding or r.encoding
     title, body = extract_main_text(r.text)
     return {"url": url, "title": title, "content": body}
 
+
+def load_curated_urls(in_urls: str) -> list[str]:
+    urls = []
+    seen = set()
+    with open(in_urls, "r", encoding="utf-8") as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line not in seen:
+                seen.add(line)
+                urls.append(line)
+    return urls
+
+
+def scrape_curated_urls(shop: str, urls: list[str], out_jsonl: str, fetcher=fetch) -> int:
+    written = 0
+    with open(out_jsonl, "w", encoding="utf-8") as out:
+        for url in urls:
+            try:
+                doc = fetcher(url)
+                doc["shop"] = shop
+                out.write(json.dumps(doc, ensure_ascii=False) + "\n")
+                written += 1
+                print("[OK]", url)
+            except Exception as e:
+                print("[FAIL]", url, e)
+    return written
+
+
 def main():
     # usage: python scrape_site.py gotrangtri kb/gotrangtri/raw_urls.txt kb/gotrangtri/docs.jsonl
+    # raw_urls.txt is a curated allowlist: one URL per line, optional # comments, no crawling.
     shop = sys.argv[1]
     in_urls = sys.argv[2]
     out_jsonl = sys.argv[3]
 
-    urls = []
-    with open(in_urls, "r", encoding="utf-8") as f:
-        for line in f:
-            u = line.strip()
-            if u and not u.startswith("#"):
-                urls.append(u)
+    urls = load_curated_urls(in_urls)
+    scrape_curated_urls(shop, urls, out_jsonl)
 
-    with open(out_jsonl, "w", encoding="utf-8") as out:
-        for u in urls:
-            try:
-                doc = fetch(u)
-                doc["shop"] = shop
-                out.write(json.dumps(doc, ensure_ascii=False) + "\n")
-                print("[OK]", u)
-            except Exception as e:
-                print("[FAIL]", u, e)
 
 if __name__ == "__main__":
     main()

@@ -10,5 +10,6 @@ public record ChatRequest(
         // ✅ metadata (optional)
         String conversation_id,
         String channel,
-        String tenant_id
+        String tenant_id,
+        String mode  // tenant_sales | general_consumer
 ) {}

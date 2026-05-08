@@ -1,0 +1,54 @@
+{
+  "dataset": {
+    "path": "chatbot\\eval\\dataset.jsonl",
+    "notes_path": "F:\\20251\\prj3\\chatbot\\eval\\dataset-notes.md",
+    "size": 48,
+    "category_coverage": {
+      "Product recommendation": 6,
+      "Small apartment / room-size scenarios": 6,
+      "Material / style questions": 6,
+      "Payment policy": 6,
+      "Delivery policy": 6,
+      "Return policy": 6,
+      "Warranty": 6,
+      "Company / general info": 6
+    }
+  },
+  "kb_dir": "chatbot\\kb\\noithatcaco",
+  "top_k": 5,
+  "command": "python chatbot/eval/runner.py --dataset chatbot\\eval\\dataset.jsonl --kb-dir chatbot\\kb\\noithatcaco --top-k 5 --compare",
+  "results": [
+    {
+      "mode": "keyword",
+      "recall_at_k": 0.7916666666666666,
+      "mrr": 0.7333333333333334,
+      "top_k": 5,
+      "total_questions": 48
+    },
+    {
+      "mode": "vector",
+      "recall_at_k": 0.6666666666666666,
+      "mrr": 0.46388888888888885,
+      "top_k": 5,
+      "total_questions": 48
+    },
+    {
+      "mode": "hybrid",
+      "recall_at_k": 0.7916666666666666,
+      "mrr": 0.6708333333333334,
+      "top_k": 5,
+      "total_questions": 48
+    },
+    {
+      "mode": "hybrid_rerank",
+      "recall_at_k": 0.7708333333333334,
+      "mrr": 0.6284722222222222,
+      "top_k": 5,
+      "total_questions": 48
+    }
+  ],
+  "interpretation": [
+    "Keyword is strongest on the current 48-question Vietnamese dataset.",
+    "Vector, hybrid, and hybrid_rerank did not outperform the tuned keyword baseline on Recall@5 and MRR."
+  ]
+}

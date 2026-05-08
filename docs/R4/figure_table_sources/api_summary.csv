@@ -1,0 +1,45 @@
+Group,Method,Endpoint,Purpose
+System/Login,POST,/api/login/admin,Platform admin login
+System/Login,POST,/api/login/tenant,Tenant admin/member login
+System/Login,POST,/api/login/logout,Logout current session
+System/Login,GET,/api/me,Get current authenticated user
+Tenant Admin,GET,/api/admin/tenants,List tenants
+Tenant Admin,POST,/api/admin/tenants,Create tenant
+Tenant Admin,PUT,/api/admin/tenants/{id},Update tenant
+Tenant Member,GET,/api/admin/tenant-members,List tenant members
+Tenant Member,POST,/api/admin/tenant-members,Create tenant member
+Tenant Member,PUT,/api/admin/tenant-members/{id},Update tenant member
+Chatbot,GET,/api/chatbots,List chatbot instances
+Chatbot,POST,/api/chatbots,Create chatbot instance
+Chatbot,PUT,/api/chatbots/{id},Update chatbot instance
+Chatbot,DELETE,/api/chatbots/{id},Delete chatbot instance
+Knowledge Base,GET,/api/kb/source-urls,List knowledge source URLs
+Knowledge Base,POST,/api/kb/source-urls,Create knowledge source URL
+Knowledge Base,DELETE,/api/kb/source-urls/{id},Delete knowledge source URL
+Knowledge Base,POST,/api/kb/rebuild,Start knowledge base rebuild
+Knowledge Base,GET,/api/kb/rebuild/status,Get rebuild status
+Chat,POST,/api/chat/send,Send tenant chat message
+Chat,GET,/api/chat/conversations,List conversations
+Chat,GET,/api/chat/conversations/{id}/messages,List messages in conversation
+General Chat,POST,/api/general/chat/send,Send general chat message
+Purchase Request,GET,/api/purchase-requests,List purchase requests
+Purchase Request,POST,/api/purchase-requests,Create purchase request
+Purchase Request,GET,/api/purchase-requests/{id},Get purchase request detail
+Purchase Request,PUT,/api/purchase-requests/{id},Update purchase request
+Purchase Request,POST,/api/purchase-requests/{id}/assign,Assign purchase request
+Purchase Request,POST,/api/purchase-requests/{id}/status,Update purchase request status
+Purchase Request,POST,/api/purchase-requests/{id}/reply,Reply to purchase request
+Messenger,GET,/api/messenger/bindings,List Messenger bindings
+Messenger,POST,/api/messenger/bindings,Create Messenger binding
+Messenger,GET,/webhook/messenger,Verify Messenger webhook
+Messenger,POST,/webhook/messenger,Receive Messenger webhook event
+Telegram,GET,/api/telegram/bindings,List Telegram bindings
+Telegram,POST,/api/telegram/bindings,Create Telegram binding
+Telegram,POST,/webhook/telegram/{secretPath},Receive Telegram webhook event
+Runtime/Ops,GET,/api/runtime/llm,Get LLM runtime status
+Runtime/Ops,GET,/api/ops/status,Get operation status
+Runtime/Ops,POST,/api/ops/restart,Restart operation/runtime component
+Python AI/RAG,GET,/healthz,Check FastAPI chatbot health
+Python AI/RAG,POST,/chat,Send direct AI/RAG chat request
+Python AI/RAG,POST,/feedback,Submit feedback
+

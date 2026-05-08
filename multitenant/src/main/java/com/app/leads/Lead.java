@@ -24,10 +24,14 @@ public class Lead {
     @Column(length = 12000)
     private String transcript;       // last N messages
 
+    // ✅ NEW (V8)
     @Column(length = 12000)
-    private String orderInfo;        // delivery info collected by staff
+    private String orderInfo;
 
     private String shippingStatus;   // NEW / READY / SHIPPED
+
+    // ✅ NEW: DISCOVER / SUGGEST / CONFIRM / HANDOFF / FULFILLED
+    private String stage;
 
     private Instant createdAt;
 
@@ -43,7 +47,8 @@ public class Lead {
         l.slotsJson = slotsJson;
         l.transcript = transcript;
         l.status = "NEW";
-        l.shippingStatus = "NEW";
+        l.shippingStatus = "NEW"; // ✅ default
+        l.stage = "HANDOFF"; // ✅ important: lead is created at CONFIRM -> handoff to staff
         l.createdAt = Instant.now();
         return l;
     }
@@ -64,4 +69,8 @@ public class Lead {
     public void setStatus(String status) { this.status = status; }
     public void setOrderInfo(String s) { this.orderInfo = s; }
     public void setShippingStatus(String s) { this.shippingStatus = s; }
+    public void setTranscript(String s) { this.transcript = s; }
+    public void setSlotsJson(String s) { this.slotsJson = s; }
+    public String getStage() { return stage; }
+    public void setStage(String s) { this.stage = s; }
 }

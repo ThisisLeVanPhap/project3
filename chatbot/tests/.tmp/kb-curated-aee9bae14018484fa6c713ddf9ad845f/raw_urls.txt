@@ -1,0 +1,7 @@
+# curated allowlist only
+https://noi-that.example/sofa-go-soi
+https://noi-that.example/danh-muc/sofa-phong-khach
+https://noi-that.example/chinh-sach/giao-hang
+https://noi-that.example/chinh-sach/thanh-toan
+https://noi-that.example/chinh-sach/doi-tra
+https://noi-that.example/sofa-go-soi

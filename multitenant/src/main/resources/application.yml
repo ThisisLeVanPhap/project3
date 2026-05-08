@@ -2,10 +2,10 @@ spring:
   application:
     name: demo2
   datasource:
-    url: jdbc:postgresql://localhost:5432/global_admin
-    username: postgres
-    password: admin
-    driver-class-name: org.postgresql.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/global_admin}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:admin}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -21,7 +21,7 @@ spring:
       name: admin
       password: admin123
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 logging:
   level:
@@ -48,8 +48,11 @@ python:
     port-range-end: ${LLM_PORT_END:8199}
     health-path: ${LLM_HEALTH_PATH:/healthz}
     uvicorn-module: ${LLM_UVICORN_MODULE:app.server:app}
+    connect-timeout-ms: ${LLM_CONNECT_TIMEOUT_MS:2000}
+    response-timeout-ms: ${LLM_RESPONSE_TIMEOUT_MS:120000}
+    startup-timeout-ms: ${LLM_STARTUP_TIMEOUT_MS:120000}
 
 
 messenger:
-  verify-token: woodchat_secret
+  verify-token: ${MESSENGER_VERIFY_TOKEN:woodchat_secret}
   # page-access-token:

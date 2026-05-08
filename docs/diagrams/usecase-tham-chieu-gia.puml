@@ -1,0 +1,32 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Người dùng cuối" as User
+
+rectangle "Tham chiếu giá" {
+  usecase "Yêu cầu tham chiếu giá\ncho loại sản phẩm" as UC1
+  usecase "Xem khoảng giá\ntham chiếu" as UC2
+  usecase "So sánh giá cụ thể\nvới mức tham chiếu" as UC3
+  usecase "Yêu cầu gợi ý\nsản phẩm tương tự" as UC4
+}
+
+User --> UC1
+User --> UC3
+User --> UC4
+
+UC1 ..> UC2 : <<include>>
+UC3 ..> UC2 : <<include>>
+
+note right of UC1
+  Chức năng này được triển khai
+  dưới dạng guardrail trong
+  chatbot, không phải API riêng.
+
+  Dữ liệu giá tham chiếu là
+  tĩnh (price_reference.json),
+  không phải tổng hợp real-time
+  từ nhiều cửa hàng.
+end note
+
+@enduml

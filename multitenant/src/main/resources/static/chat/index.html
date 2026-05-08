@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Chat với cửa hàng</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .topbar {
+            background: #1976d2;
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .topbar h2 { margin: 0; font-size: 1.1em; }
+        .config-info { font-size: 0.8em; opacity: 0.8; }
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 280px;
+            background: #fff;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+            font-size: 0.9em;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .new-chat-btn {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
+        .new-chat-btn:hover { background: #1565c0; }
+        .conversations {
+            flex: 1;
+            overflow-y: auto;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .conv-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .conv-item:hover { background: #f9f9f9; }
+        .conv-item.active { background: #e3f2fd; }
+        .conv-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .conv-title {
+            font-weight: 500;
+            font-size: 0.9em;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .conv-preview {
+            font-size: 0.8em;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px;
+        }
+        .conv-meta {
+            font-size: 0.7em;
+            color: #888;
+            margin-top: 2px;
+        }
+        .conv-actions {
+            display: none;
+            gap: 4px;
+        }
+        .conv-item:hover .conv-actions {
+            display: flex;
+        }
+        .conv-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px 6px;
+            font-size: 0.8em;
+            border-radius: 4px;
+        }
+        .conv-btn:hover { background: #eee; }
+        .conv-btn.delete { color: #c62828; }
+        .conv-btn.rename { color: #1976d2; }
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        .messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .msg {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .msg .meta {
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 4px;
+            display: block;
+        }
+        .user {
+            align-self: flex-end;
+            background: #1976d2;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .assistant {
+            align-self: flex-start;
+            background: #f0f0f0;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+        .typing {
+            align-self: flex-start;
+            background: #f0f0f0;
+            color: #888;
+            font-style: italic;
+            border-bottom-left-radius: 4px;
+            animation: pulse 1.5s infinite;
+        }
+        .error {
+            align-self: center;
+            background: #ffebee;
+            color: #c62828;
+            font-size: 0.9em;
+            border-radius: 8px;
+            padding: 8px 16px;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .input-area {
+            padding: 12px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 8px;
+        }
+        #msg {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 16px;
+        }
+        #send {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        #send:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #send.loading {
+            background: #1565c0;
+            color: #fff;
+        }
+        .empty-state {
+            text-align: center;
+            color: #888;
+            padding: 40px 20px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <h2>💬 Trợ lý mua sắm</h2>
+        <span class="config-info" id="config-info"></span>
+    </div>
+    <div class="main">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <span>Cuộc trò chuyện</span>
+                <button class="new-chat-btn" id="newChatBtn">New chat</button>
+            </div>
+            <ul class="conversations" id="convList"></ul>
+        </div>
+        <div class="chat-area">
+            <div class="messages" id="messages"></div>
+            <div class="input-area">
+                <input id="msg" type="text" placeholder="Nhập tin nhắn..." autocomplete="off" />
+                <button id="send">Gửi</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const tenantId = params.get('tenantId');
+        const chatbotId = params.get('chatbotId');
+
+        const messagesDiv = document.getElementById('messages');
+        const msgInput = document.getElementById('msg');
+        const sendBtn = document.getElementById('send');
+        const configInfo = document.getElementById('config-info');
+        const convList = document.getElementById('convList');
+
+        let conversationId = null;
+        let waiting = false;
+        const STORAGE_KEY = `chat_${tenantId}_${chatbotId}`;
+        const SELECTED_KEY = `chat_selected_${tenantId}_${chatbotId}`;
+        const GUEST_TOKEN_KEY = `guest_token_${tenantId}_${chatbotId}`;
+
+        // Generate or retrieve guest/user identifier
+        function getOrCreateUserExternalId() {
+            // Check for authenticated user (set by parent frame or server)
+            const authUserId = window.parent?.getAuthUserId?.() || localStorage.getItem('auth_user_id');
+            if (authUserId) {
+                return `auth:${authUserId}`;
+            }
+            // Guest: generate persistent token
+            let guestToken = localStorage.getItem(GUEST_TOKEN_KEY);
+            if (!guestToken) {
+                guestToken = 'guest:' + crypto.randomUUID();
+                localStorage.setItem(GUEST_TOKEN_KEY, guestToken);
+            }
+            return guestToken;
+        }
+
+        const userExternalId = getOrCreateUserExternalId();
+
+        function clearMessages() {
+            messagesDiv.innerHTML = '';
+        }
+
+        function addMessage(text, role, meta = null) {
+            const div = document.createElement('div');
+            div.className = 'msg ' + role;
+            div.textContent = text;
+            if (meta && role === 'assistant') {
+                const metaDiv = document.createElement('span');
+                metaDiv.className = 'meta';
+                metaDiv.textContent = `${meta.model || 'unknown'} · ${meta.latency || '?'}ms`;
+                div.appendChild(metaDiv);
+            }
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addTypingIndicator() {
+            const div = document.createElement('div');
+            div.className = 'msg typing';
+            div.id = 'typing-indicator';
+            div.textContent = 'Đang trả lời...';
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const el = document.getElementById('typing-indicator');
+            if (el) el.remove();
+        }
+
+        function addError(text) {
+            const div = document.createElement('div');
+            div.className = 'msg error';
+            div.textContent = text;
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function setLoading(isLoading) {
+            waiting = isLoading;
+            sendBtn.disabled = isLoading || !conversationId;
+            if (isLoading) {
+                sendBtn.classList.add('loading');
+                sendBtn.textContent = '...';
+            } else {
+                sendBtn.classList.remove('loading');
+                sendBtn.textContent = 'Gửi';
+            }
+        }
+
+        function showConfig() {
+            configInfo.textContent = `Tenant: ${tenantId?.slice(0,8)}... | Chatbot: ${chatbotId?.slice(0,8)}...`;
+        }
+
+        async function fetchConversations() {
+            try {
+                const params = new URLSearchParams();
+                params.append('chatbotId', chatbotId);
+                params.append('limit', '50');
+                if (userExternalId) {
+                    params.append('userExternalId', userExternalId);
+                }
+                const resp = await fetch(`/api/chat/conversations?${params.toString()}`, {
+                    headers: { 'X-Tenant-Id': tenantId }
+                });
+                if (!resp.ok) {
+                    throw new Error('Không thể tải danh sách cuộc trò chuyện');
+                }
+                return await resp.json();
+            } catch (e) {
+                console.error(e);
+                return [];
+            }
+        }
+
+        function renderConversationList(conversations) {
+            convList.innerHTML = '';
+            if (conversations.length === 0) {
+                const li = document.createElement('li');
+                li.className = 'empty-state';
+                li.textContent = 'Chưa có cuộc trò chuyện nào. Hãy bắt đầu một cuộc trò chuyện mới.';
+                convList.appendChild(li);
+                return;
+            }
+            for (const c of conversations) {
+                const li = document.createElement('li');
+                li.className = 'conv-item' + (c.id === conversationId ? ' active' : '');
+                li.dataset.id = c.id;
+                const date = new Date(c.createdAt).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                const displayTitle = c.title || 'Cuộc trò chuyện mới';
+                li.innerHTML = `
+                    <div class="conv-info">
+                        <div class="conv-title">${escapeHtml(displayTitle)}</div>
+                        <div class="conv-preview">${escapeHtml(c.lastPreview)}</div>
+                        <div class="conv-meta">${date} · ${c.messageCount} tin nhắn</div>
+                    </div>
+                    <div class="conv-actions">
+                        <button class="conv-btn rename" title="Đổi tên" onclick="event.stopPropagation(); renameConversation('${c.id}')">✏️</button>
+                        <button class="conv-btn delete" title="Xóa" onclick="event.stopPropagation(); deleteConversation('${c.id}')">🗑️</button>
+                    </div>
+                `;
+                li.addEventListener('click', async () => {
+                    await selectConversation(c.id);
+                });
+                convList.appendChild(li);
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function loadConversationHistory(convId) {
+            try {
+                const resp = await fetch(`/api/chat/conversation/${convId}/messages`, {
+                    headers: { 'X-Tenant-Id': tenantId }
+                });
+                if (!resp.ok) {
+                    throw new Error('Không thể tải lịch sử chat');
+                }
+                return await resp.json();
+            } catch (e) {
+                console.error(e);
+                return [];
+            }
+        }
+
+        async function selectConversation(convId) {
+            conversationId = convId;
+            localStorage.setItem(STORAGE_KEY, convId);
+            localStorage.setItem(SELECTED_KEY, convId);
+
+            // Clear and load messages
+            clearMessages();
+            const msgs = await loadConversationHistory(convId);
+            for (const m of msgs) {
+                addMessage(m.content, m.role);
+            }
+
+            // Refresh conversation list to highlight active
+            const convs = await fetchConversations();
+            renderConversationList(convs);
+        }
+
+        async function renameConversation(convId) {
+            const conv = await fetchConversations().then(cs => cs.find(c => c.id === convId));
+            if (!conv) return;
+            const currentTitle = conv.title || '';
+            const newTitle = prompt('Đổi tên cuộc trò chuyện:', currentTitle);
+            if (newTitle && newTitle.trim() !== '') {
+                try {
+                    await fetch(`/api/chat/conversation/${convId}/rename`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Tenant-Id': tenantId
+                        },
+                        body: JSON.stringify({ title: newTitle.trim() })
+                    });
+                    // Refresh list
+                    const convs = await fetchConversations();
+                    renderConversationList(convs);
+                } catch (e) {
+                    alert('Không thể đổi tên: ' + e.message);
+                }
+            }
+        }
+
+        async function deleteConversation(convId) {
+            if (!confirm('Xóa cuộc trò chuyện này? Hành động này không thể hoàn tác.')) {
+                return;
+            }
+            try {
+                await fetch(`/api/chat/conversation/${convId}`, {
+                    method: 'DELETE',
+                    headers: { 'X-Tenant-Id': tenantId }
+                });
+                // If deleted conversation was active, clear state and start new
+                if (conversationId === convId) {
+                    conversationId = null;
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(SELECTED_KEY);
+                    clearMessages();
+                    await startConversation();
+                } else {
+                    // Just refresh list
+                    const convs = await fetchConversations();
+                    renderConversationList(convs);
+                }
+            } catch (e) {
+                alert('Không thể xóa: ' + e.message);
+            }
+        }
+
+        async function startConversation() {
+            try {
+                const resp = await fetch('/api/chat/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Tenant-Id': tenantId
+                    },
+                    body: JSON.stringify({
+                        chatbotId: chatbotId,
+                        userExternalId: userExternalId
+                    })
+                });
+                if (!resp.ok) {
+                    const err = await resp.text();
+                    throw new Error('Không thể bắt đầu: ' + err);
+                }
+                const data = await resp.json();
+                conversationId = data.conversationId;
+                localStorage.setItem(STORAGE_KEY, conversationId);
+                localStorage.setItem(SELECTED_KEY, conversationId);
+
+                // Refresh conversation list and select new one
+                const convs = await fetchConversations();
+                renderConversationList(convs);
+                await selectConversation(conversationId);
+            } catch (e) {
+                addError(e.message);
+                conversationId = null;
+                setLoading(false);
+            }
+        }
+
+        async function sendMessage(isRetry = false, textOverride = null) {
+            const text = textOverride !== null ? textOverride : msgInput.value.trim();
+            if (!text || waiting || !conversationId) return;
+
+            setLoading(true);
+            if (!isRetry) {
+                addMessage(text, 'user');
+                msgInput.value = '';
+            }
+            addTypingIndicator();
+
+            try {
+                const resp = await fetch('/api/chat/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Tenant-Id': tenantId
+                    },
+                    body: JSON.stringify({
+                        conversationId: conversationId,
+                        message: text
+                    })
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.text();
+                    if (resp.status === 400 && err.includes("conversation") && !isRetry) {
+                        localStorage.removeItem(STORAGE_KEY);
+                        conversationId = null;
+                        addError('Phiên chat đã hết hạn, đang tạo mới...');
+                        await startConversation();
+                        if (conversationId) {
+                            return sendMessage(true, text);
+                        }
+                        return;
+                    }
+                    throw new Error('Gửi thất bại: ' + err);
+                }
+
+                const data = await resp.json();
+                addMessage(data.reply, 'assistant', {
+                    model: data.model || 'unknown',
+                    latency: data.latencyMs || data.latency_ms || '?'
+                });
+
+                // Refresh conversation list to update preview
+                const convs = await fetchConversations();
+                renderConversationList(convs);
+            } catch (e) {
+                addError(e.message);
+            } finally {
+                removeTypingIndicator();
+                setLoading(false);
+                msgInput.focus();
+            }
+        }
+
+        // Init
+        if (!tenantId || !chatbotId) {
+            addError('Thiếu tham số tenantId hoặc chatbotId trong URL. Ví dụ: /chat?tenantId=...&chatbotId=...');
+            msgInput.disabled = true;
+            sendBtn.disabled = true;
+            convList.innerHTML = '<li class="empty-state">Không thể tải danh sách</li>';
+        } else {
+            showConfig();
+            const selected = localStorage.getItem(SELECTED_KEY);
+            if (selected) {
+                conversationId = selected;
+            }
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                conversationId = saved;
+            }
+
+            // Load conversation list
+            const convs = await fetchConversations();
+            renderConversationList(convs);
+
+            if (conversationId) {
+                // Check if conversation exists in list (might have been deleted)
+                const exists = convs.some(c => c.id === conversationId);
+                if (exists) {
+                    await selectConversation(conversationId);
+                } else {
+                    conversationId = null;
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(SELECTED_KEY);
+                }
+            }
+
+            // Start new conversation if none
+            if (!conversationId) {
+                await startConversation();
+            }
+
+            msgInput.focus();
+            sendBtn.addEventListener('click', sendMessage);
+            msgInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+
+            const newChatBtn = document.getElementById('newChatBtn');
+            if (newChatBtn) {
+                newChatBtn.addEventListener('click', async () => {
+                    await startConversation();
+                });
+            }
+        }
+    </script>
+</body>
+</html>

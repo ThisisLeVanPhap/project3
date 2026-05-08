@@ -1,11 +1,86 @@
 import re
-from typing import Dict, Any, Tuple
+from typing import Dict, Any
 
 RX_BUDGET = re.compile(r"\b(\$|usd)\s*([0-9]{2,5})\b|under\s*\$?\s*([0-9]{2,5})\b", re.I)
-RX_SMALL  = re.compile(r"\b(small|tiny|compact|studio|apartment)\b", re.I)
-RX_PETS   = re.compile(r"\b(pet|dog|cat)\b", re.I)
-RX_KIDS   = re.compile(r"\b(kid|child|toddler|baby)\b", re.I)
-RX_STYLE  = re.compile(r"\b(modern|minimal|classic|scandinavian|boho|industrial)\b", re.I)
+RX_BUDGET_VI = re.compile(
+    r"\b(?:ng[aâ]n s[aá]ch|t[aầ]m gi[aá]|kho[aả]ng|dưới|tối đa)\s*"
+    r"([0-9]+(?:[.,][0-9]+)?)\s*(triệu|tr|nghìn|k|vnd|vnđ)?\b",
+    re.I,
+)
+RX_BUDGET_RANGE = re.compile(
+    r"\b(\d+)\s*(?:-|to|đến|tới)\s*(\d+)\s*(triệu|tr|nghìn|k|vnd|vnđ|\$|usd)?\b",
+    re.I,
+)
+RX_SMALL = re.compile(r"\b(small|tiny|compact|studio|apartment|small room)\b", re.I)
+RX_SMALL_VI = re.compile(r"\b(nhỏ|chật|gọn|căn hộ|chung cư|phòng nhỏ|studio)\b", re.I)
+RX_PETS = re.compile(r"\b(pet|dog|cat)\b", re.I)
+RX_PETS_VI = re.compile(r"\b(thú cưng|chó|mèo)\b", re.I)
+RX_KIDS = re.compile(r"\b(kid|child|toddler|baby)\b", re.I)
+RX_KIDS_VI = re.compile(r"\b(trẻ em|em bé|bé|con nhỏ|trẻ nhỏ)\b", re.I)
+RX_STYLE = re.compile(r"\b(modern|minimal|classic|scandinavian|boho|industrial|luxury)\b", re.I)
+RX_STYLE_VI = re.compile(r"\b(hiện đại|tối giản|cổ điển|bắc âu|boho|công nghiệp|cao cấp|luxury)\b", re.I)
+STYLE_MAP_VI = {
+    "hiện đại": "modern",
+    "tối giản": "minimal",
+    "cổ điển": "classic",
+    "bắc âu": "scandinavian",
+    "boho": "boho",
+    "công nghiệp": "industrial",
+    "cao cấp": "luxury",
+}
+
+# Color patterns (English and Vietnamese)
+RX_COLOR = re.compile(
+    r"\b(white|black|gray|grey|brown|beige|cream|yellow|blue|green|red|navy|"
+    r"trắng|đen|xám|nâu|be|kem|vàng|xanh|đỏ|lục|tím|hồng|nâu)\b",
+    re.I
+)
+RX_COLOR_SPECIFIC = re.compile(
+    r"\b(light|dark|pale|deep|mint|navy|burgundy|teal|olive|sage)\s+(blue|green|red|brown|gray)\b",
+    re.I
+)
+
+# Material patterns
+RX_MATERIAL = re.compile(
+    r"\b(wood|oak|walnut|pine|leather|fabric|velvet|cotton|linen|"
+    r"metal|steel|iron|gold|brass|glass|marble|granite|"
+    r"gỗ|sắt|đồng|thép|kim loại|da|vải|nhung|ren|thổ cẩm|gốm)\b",
+    re.I
+)
+RX_HANDOFF = re.compile(
+    r"\b(talk to|human|agent|staff|nh[aâ]n vi[eê]n|tư v[aấ]n vi[eê]n|người thật)\b",
+    re.I,
+)
+RX_COMPARE = re.compile(r"\b(compare|difference|vs|so s[aá]nh|kh[aá]c nhau|so với)\b", re.I)
+RX_BUY = re.compile(
+    r"\b(buy|order|checkout|purchase|mua|đặt hàng|chốt đơn|lên đơn|thanh toán)\b",
+    re.I,
+)
+# --- Consultation-specific patterns ---
+RX_ROOM_TYPE = re.compile(
+    r"\b(living room|phòng khách|bedroom|phòng ngủ|dining room|phòng ăn|kitchen|bếp|"
+    r"home office|văn phòng tại nhà|apartment|căn hộ|studio|balcony|ban công)\b",
+    re.I,
+)
+RX_ROOM_SIZE = re.compile(
+    r"\b(\d{1,3}(?:[.,]\d{2})?)\s*(m²|m2|sqm|square meters|mét vuông)\b",
+    re.I,
+)
+RX_PRODUCT_TYPE = re.compile(
+    r"\b(sofa|ghế sofa|bed|giường|table|bàn|dining table|bàn ăn|"
+    r"wardrobe|tủ|cabinet|tủ tủ|bookshelf|kệ sách|chair|ghế|desk|bàn làm việc)\b",
+    re.I,
+)
+RX_PRODUCT_TYPE_VI = re.compile(
+    r"\b(ghế sofa|sofa|giường|bed|bàn|table|tủ|wardrobe|kệ|shelf|ghế|chair|bàn làm việc|desk)\b",
+    re.I,
+)
+
+
+def _format_budget_text(amount: str, unit: str) -> str:
+    raw_amount = amount.replace(",", ".")
+    return raw_amount if not unit else f"{raw_amount} {unit.lower()}"
+
 
 def extract_slots(text: str) -> Dict[str, Any]:
     t = text or ""
@@ -16,58 +91,284 @@ def extract_slots(text: str) -> Dict[str, Any]:
         num = m.group(2) or m.group(3)
         if num:
             slots["budget_usd"] = int(num)
+    else:
+        m_vi = RX_BUDGET_VI.search(t)
+        if m_vi:
+            slots["budget_text"] = _format_budget_text(m_vi.group(1), m_vi.group(2) or "")
 
-    if RX_SMALL.search(t): slots["space"] = "small"
-    if RX_PETS.search(t):  slots["pets"] = True
-    if RX_KIDS.search(t):  slots["kids"] = True
+    if RX_SMALL.search(t) or RX_SMALL_VI.search(t):
+        slots["space"] = "small"
+    if RX_PETS.search(t) or RX_PETS_VI.search(t):
+        slots["pets"] = True
+    if RX_KIDS.search(t) or RX_KIDS_VI.search(t):
+        slots["kids"] = True
 
+    # Style extraction
     m2 = RX_STYLE.search(t)
     if m2:
         slots["style"] = m2.group(1).lower()
+    else:
+        m2_vi = RX_STYLE_VI.search(t)
+        if m2_vi:
+            slots["style"] = STYLE_MAP_VI[m2_vi.group(1).lower()]
+
+    # Color extraction (first match only)
+    color_match = RX_COLOR.search(t)
+    if color_match:
+        slots["color"] = color_match.group(1).lower()
+    else:
+        color_specific = RX_COLOR_SPECIFIC.search(t)
+        if color_specific:
+            slots["color"] = f"{color_specific.group(1)} {color_specific.group(2)}".lower()
+
+    # Material extraction (first match only)
+    material_match = RX_MATERIAL.search(t)
+    if material_match:
+        slots["material"] = material_match.group(1).lower()
 
     return slots
 
+
+def detect_intent(user_text: str, stage: str = "discover") -> str:
+    """Classify user intent: provide_info, ask_info, hesitation, irrelevant, confirm, off_topic, disengage
+
+    Context-aware rules:
+    - In close stage: short affirmatives (ok, yes, được, đồng ý) count as confirm
+    - In other stages: only explicit purchase phrases trigger confirm
+    - Question/hesitation always override
+    """
+    if not user_text:
+        return "irrelevant"
+
+    text = user_text.strip()
+    text_lower = text.lower()
+    word_count = len(text.split())
+
+    # 1. QUESTION DETECTION (strong override for all stages)
+    if text.endswith("?") or "?" in text:
+        return "ask_info"
+
+    question_starters = ["what", "where", "when", "why", "how", "gì", "làm sao", "thế nào",
+                         "khi nào", "bao nhiêu", "có", "phải không", "đúng không", "ạ"]
+    if any(text_lower.startswith(q) for q in question_starters):
+        return "ask_info"
+
+    # 2. HESITATION DETECTION (strong override for all stages)
+    hesitation_phrases = [
+        "không chắc", "chưa biết", "chưa rõ", "để nghĩ", "suy nghĩ", "cân nhắc",
+        "maybe", "not sure", "consider", "think about", "cần time", "cần suy nghĩ",
+        "lưỡng lự", "chờ đã", "đợi đã", "tôi chưa", "toi chua", "tôi không chắc",
+        "toi khong chac", "chưa quyết", "chưa quyet", "tôi do dự", "toi do du"
+    ]
+    for phrase in hesitation_phrases:
+        if phrase in text_lower:
+            return "hesitation"
+
+    # 3. DISENGAGEMENT DETECTION (user wants to stop/pause)
+    disengage_phrases = [
+        "thôi", "thoát", "dừng lại", "dừng", "không còn", "không cần",
+        "để sau", "sau này", "khi khác", "bỏ đi", "hủy",
+        "ok rồi", "được rồi", "xong rồi", "vậy thôi", "vậy nhé",
+        "tạm biệt", "bye", "goodbye", "cảm ơn", "thank you"
+    ]
+    # Disengagement typically short message
+    if word_count <= 4:
+        for phrase in disengage_phrases:
+            if phrase in text_lower:
+                return "disengage"
+
+    # 4. OFF-TOPIC DETECTION (unrelated to furniture/shopping)
+    # Only clear off-topic phrases, NOT single words (cafe, coffee alone = false positive)
+    off_topic_patterns = [
+        r"\b(politics|bầu cử|chính trị|thể thao|bóng đá|football)\b",
+        r"\b(đi chơi|đi du lịch|du lịch|đi chỗ nào|ăn gì hôm nay)\b",
+        r"\b(trà sữa|đi ăn|nhà hàng|restaurant)\b",
+        r"\b(weather|thời tiết|nóng|lạnh|mưa|nắng)\b",
+        r"\b(how are you|how do you feel|bạn khỏe không|khỏe không)\b",
+        r"\b(tên bạn|bạn là ai|who are you|what are you)\b",
+    ]
+    for pattern in off_topic_patterns:
+        if re.search(pattern, text_lower, re.I):
+            return "off_topic"
+
+    # 5. CONTEXT-AWARE CONFIRM DETECTION
+    # Stage-specific rules
+    if stage == "close":
+        # In close stage, accept short affirmatives (user ready to finalize)
+        short_affirmatives = ["ok", "oke", "yes", "vâng", "được", "đồng ý", "accept", "confirmed"]
+        # Only if message is short (1-3 words) and not a question/hesitation
+        if word_count <= 3:
+            for word in short_affirmatives:
+                if word in text_lower.split():
+                    return "confirm"
+        # Also check for stronger confirm phrases (any length)
+        strong_confirm_phrases = [
+            r"\bđồng ý mua\b", r"\bxác nhận mua\b", r"\bxác nhận đặt hàng\b",
+            r"\bđặt hàng ngay\b", r"\bmua ngay\b", r"\bchốt đơn\b",
+            r"\bthanh toán\b", r"\blên đơn\b", r"\bđặt luôn\b",
+            r"\btiền đâu\b", r"\bđược đó\b", r"\bvâng ạ\b",
+            r"\bconfirm\b", r"\byes please\b", r"\blet's do it\b",
+            r"\bi'll take it\b", r"\baccepted\b", r"\bagree to purchase\b",
+            r"\bproceed with order\b"
+        ]
+        for pattern in strong_confirm_phrases:
+            if re.search(pattern, text_lower, re.I):
+                return "confirm"
+    else:
+        # In earlier stages (discover, propose, compare), only explicit purchase phrases
+        confirm_phrases = [
+            r"\bđồng ý mua\b", r"\bxác nhận mua\b", r"\bxác nhận đặt hàng\b",
+            r"\bđặt hàng ngay\b", r"\bmua ngay\b", r"\bchốt đơn\b",
+            r"\bthanh toán\b", r"\blên đơn\b", r"\bđặt luôn\b",
+            r"\btiền đâu\b", r"\bđược đó\b", r"\bvâng ạ\b",
+            r"\bconfirm\b", r"\byes please\b", r"\blet's do it\b",
+            r"\bi'll take it\b", r"\baccepted\b", r"\bagree to purchase\b",
+            r"\bproceed with order\b"
+        ]
+        for pattern in confirm_phrases:
+            if re.search(pattern, text_lower, re.I):
+                return "confirm"
+
+    # 6. Negative filter - if message is short greeting/thanks, mark irrelevant
+    irrelevant_phrases = ["hello", "hi", "hey", "xin chào", "chào", "cảm ơn", "thank",
+                          "thanks", "good morning", "good evening", "chúc"]
+    if any(phrase in text_lower for phrase in irrelevant_phrases) and word_count <= 3:
+        return "irrelevant"
+
+    # 7. Default: provide_info (user providing details or asking general questions)
+    return "provide_info"
+
+
+def has_sufficient_constraints(slots: Dict[str, Any], stage: str) -> bool:
+    """Check if collected constraints are sufficient for the given stage."""
+    meaningful_keys = [
+        "space", "budget_usd", "budget_text", "style", "pets", "kids",
+        "product_type", "color", "material"
+    ]
+    count = sum(1 for k in meaningful_keys if slots.get(k))
+
+    if stage == "discover":
+        return count >= 1
+    elif stage in ("propose", "compare"):
+        return count >= 2
+    elif stage == "close":
+        return count >= 2
+    return False
+
+
 def next_stage(current: str, slots: Dict[str, Any], user_text: str) -> str:
-    # Minimal flow logic
-    if re.search(r"\b(talk to|human|agent|staff)\b", user_text, re.I):
+    intent = detect_intent(user_text, current)  # pass stage for context-aware detection
+
+    # Always prioritize handoff request
+    if RX_HANDOFF.search(user_text):
         return "handoff"
+
+    # Handle disengagement - DO NOT route to handoff, stay in current stage
+    # LLM will handle soft close via prompt instructions
+    if intent == "disengage":
+        return current
+
+    # Handle off-topic - redirect but stay in current stage
+    if intent == "off_topic":
+        # Stay in current stage but LLM will handle redirect via prompt
+        return current
+
     if current == "discover":
-        # once we have at least 1-2 signals, move to propose
-        if len(slots) >= 1:
+        # Advance when user provides info/asks questions AND we have at least 1 constraint
+        if intent in ("provide_info", "ask_info") and has_sufficient_constraints(slots, "discover"):
             return "propose"
+
     if current == "propose":
-        if re.search(r"\b(compare|difference|vs)\b", user_text, re.I):
+        # User wants to compare options
+        if intent == "ask_info" and RX_COMPARE.search(user_text):
             return "compare"
-        if re.search(r"\b(buy|order|checkout|purchase)\b", user_text, re.I):
+        # User ready to buy (explicit confirm OR providing info with enough constraints)
+        if intent == "confirm" or (intent == "provide_info" and has_sufficient_constraints(slots, "close")):
             return "close"
+
+    if current == "compare":
+        # From comparison, explicit confirm moves to close
+        if intent == "confirm":
+            return "close"
+
+    if current == "close":
+        # Explicit confirm from close stage moves to handoff
+        if intent == "confirm":
+            return "handoff"
+
+    # Stay in current stage for hesitation, irrelevant, or insufficient info
     return current
 
+
 def build_sales_prefix(stage: str, slots: Dict[str, Any]) -> str:
-    # This is injected into system prompt to force continuity.
     parts = []
-    if slots.get("space") == "small": parts.append("Customer has a small space.")
-    if slots.get("pets"): parts.append("Customer has pets.")
-    if slots.get("kids"): parts.append("Customer has kids.")
-    if "budget_usd" in slots: parts.append(f"Customer budget is about ${slots['budget_usd']}.")
-    if "style" in slots: parts.append(f"Customer prefers {slots['style']} style.")
+    changes = []
+
+    # Track preference changes
+    for key in ["style", "color", "material", "budget_usd", "space"]:
+        prev_key = f"{key}_prev"
+        if key in slots and prev_key in slots:
+            old = slots[prev_key]
+            new = slots[key]
+            if old != new:
+                changes.append(f"{key}: {old} → {new}")
+
+    if slots.get("space") == "small":
+        parts.append("Customer has a small space.")
+    if slots.get("pets"):
+        parts.append("Customer has pets.")
+    if slots.get("kids"):
+        parts.append("Customer has kids.")
+    if "budget_usd" in slots:
+        parts.append(f"Customer budget is about ${slots['budget_usd']}.")
+    if "budget_text" in slots:
+        parts.append(f"Customer budget is about {slots['budget_text']}.")
+    if "style" in slots:
+        parts.append(f"Customer prefers {slots['style']} style.")
+    if "color" in slots:
+        parts.append(f"Customer prefers {slots['color']} color.")
+    if "material" in slots:
+        parts.append(f"Customer prefers {slots['material']} material.")
+    if "product_type" in slots:
+        parts.append(f"Customer is looking for {slots['product_type']}.")
 
     context = " ".join(parts) if parts else "No specific preferences captured yet."
 
+    # Add change information if any
+    change_note = ""
+    if changes:
+        change_note = "Recent changes: " + "; ".join(changes) + ".\n"
+
     stage_instr = {
         "discover": "Goal: ask 2-3 clarifying questions to understand needs, then offer 1 gentle suggestion.",
-        "propose":  "Goal: propose 1-2 suitable options based on captured preferences, then ask 1 follow-up question.",
-        "compare":  "Goal: compare options using only provided KB context; if missing, ask for product links/names.",
-        "close":    "Goal: confirm key preferences and ask for next step (contact details or connect to staff). Do not claim you can place orders.",
-        "handoff":  "Goal: politely offer to connect the customer with a human staff member.",
+        "propose": "Goal: propose 1-2 suitable options based on captured preferences, then ask 1 follow-up question.",
+        "compare": "Goal: compare options using only provided KB context; if missing, ask for product links/names.",
+        "close": "Goal: confirm key preferences and ask for next step (contact details or connect to staff). Do not claim you can place orders.",
+        "handoff": "Goal: politely offer to connect the customer with a human staff member.",
     }[stage]
 
     return (
         f"[Sales Flow]\n"
         f"Stage: {stage}\n"
         f"Known customer context: {context}\n"
+        f"{change_note}"
         f"{stage_instr}\n\n"
         "HARD RULES:\n"
-        "- Do NOT mention a specific product name unless the user explicitly provided it.\n"
+        "- Do NOT mention a specific product name unless the user provided it or it appears in verified KB context.\n"
         "- Do NOT invent prices, delivery times, refunds, or return windows. Use placeholders only: <DELIVERY_TIME>, <RETURN_POLICY>, <PRICE_RANGE>.\n"
+        "- If verified KB context exists, prefer concrete product types, materials, apartment-fit guidance, and policy details from that context over generic recommendations.\n"
         "- If store data is missing, apologize and offer staff handoff.\n"
+        "- REFERENCE KNOWN PREFERENCES: When making suggestions, naturally reference previously captured preferences (style, color, material, budget, space). Example: 'With your preference for modern style and brown color, here are some options...'\n"
+        "- ACKNOWLEDGE CHANGES: If you see a 'Recent changes' note, acknowledge the user's updated preference naturally in your response. Example: 'I see you've switched from white to black—that's a great choice for...'\n"
+        "\n"
+        "NATURALNESS GUIDELINES:\n"
+        "- Vary your phrasing: sometimes start with 'Bạn có thể cân nhắc...', sometimes 'Một lựa chọn phù hợp là...', sometimes 'Theo mình...'\n"
+        "- Show light empathy when appropriate: 'Mình hiểu với không gian nhỏ...', 'Với ngân sách này, mình nghĩ...'\n"
+        "- Avoid always listing bullet points. Use flowing sentences, but keep it to 2-4 sentences total.\n"
+        "- Mix sentence lengths. Don't follow the same pattern every time.\n"
+        "- Sound like a helpful friend, not a checklist.\n"
+        "\n"
+        "OFF-TOPIC & DISENGAGEMENT:\n"
+        "- If user asks about unrelated topics (politics, sports, weather, personal questions), politely redirect: 'Mình là trợ lý mua sắm nội thất, mình có thể giúp gì cho bạn về ghế, bàn, tủ hay các sản phẩm khác?'\n"
+        "- If user indicates disengagement ('thôi', 'để sau', 'ok rồi'), respond with a soft close and end the conversation naturally (e.g., 'Tạm biệt! Nếu sau này cần tư vấn, bạn cứ quay lại nhé.'). Do NOT transition to handoff or ask further questions.\n"
     )

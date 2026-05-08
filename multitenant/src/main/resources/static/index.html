@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nội Thất AI - Trợ lý mua sắm thông minh</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 900px;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        h1 {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.2em;
+            margin-bottom: 50px;
+        }
+        .products {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .product-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px 30px;
+            width: 300px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+        .product-card.general {
+            border-top: 4px solid #4a148c;
+        }
+        .product-card.tenant {
+            border-top: 4px solid #1976d2;
+        }
+        .product-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        .product-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .product-desc {
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        .product-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .product-btn.general {
+            background: #4a148c;
+            color: white;
+        }
+        .product-btn.general:hover {
+            background: #38006b;
+        }
+        .product-btn.tenant {
+            background: #1976d2;
+            color: white;
+        }
+        .product-btn.tenant:hover {
+            background: #1565c0;
+        }
+        .footer {
+            margin-top: 50px;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Nội Thất AI</h1>
+        <p class="subtitle">Hệ thống trợ lý mua sắm nội thất thông minh</p>
+
+        <div class="products">
+            <div class="product-card general">
+                <div class="product-icon">🤖</div>
+                <div class="product-title">AI Interior Advisor</div>
+                <div class="product-desc">
+                    Trợ lý AI cá nhân hóa, tư vấn nội thất theo phong cách, ngân sách và không gian của bạn.
+                </div>
+                <a href="/chat/general/" class="product-btn general">Bắt đầu trò chuyện</a>
+            </div>
+
+            <div class="product-card tenant">
+                <div class="product-icon">🏪</div>
+                <div class="product-title">Chat với cửa hàng</div>
+                <div class="product-desc">
+                    Kết nối trực tiếp với cửa hàng nội thất. Nhận tư vấn từ nhân viên và xem sản phẩm thực tế.
+                </div>
+                <a href="/admin/" class="product-btn tenant">Vào cửa hàng</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Hỗ trợ đa tenant • Bảo mật dữ liệu • AI thông minh</p>
+        </div>
+    </div>
+</body>
+</html>

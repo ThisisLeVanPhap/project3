@@ -11,6 +11,11 @@ public record GenerationConfig(
         Double temperature,
         Double top_p,
         Integer top_k,
-        List<String> stop,          // NEW: stop sequences
-        Boolean return_full_text    // NEW (optional): yêu cầu python chỉ trả phần completion
+        String response_style,
+        List<String> stop,
+        String provider,
+        String api_model,
+        String api_key,
+        String api_base_url,
+        String mode
 ) {}

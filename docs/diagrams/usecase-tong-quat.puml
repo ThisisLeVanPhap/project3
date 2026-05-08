@@ -1,0 +1,61 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Người dùng cuối" as User
+actor "Nhân viên cửa hàng" as Member
+actor "Quản trị cửa hàng" as TenantAdmin
+actor "Quản trị hệ thống" as PlatformAdmin
+
+rectangle "Hệ thống Chatbot Tư vấn Bán hàng Nội thất" {
+
+  package "Tư vấn và Mua hàng" {
+    usecase "Tư vấn sản phẩm\ntheo cửa hàng" as UC1
+    usecase "Tư vấn tổng quát" as UC2
+    usecase "Tạo yêu cầu\nmua hàng" as UC3
+  }
+
+  package "Quản lý Yêu cầu Mua hàng" {
+    usecase "Quản lý yêu cầu\nmua hàng" as UC4
+    usecase "Xử lý lead" as UC5
+  }
+
+  package "Quản lý Chatbot" {
+    usecase "Quản lý chatbot" as UC6
+  }
+
+  package "Quản lý Knowledge Base" {
+    usecase "Quản lý\nknowledge base" as UC7
+  }
+
+  package "Quản lý Hệ thống" {
+    usecase "Quản lý tenant" as UC8
+    usecase "Quản lý người dùng" as UC9
+    usecase "Giám sát hệ thống" as UC10
+  }
+}
+
+User --> UC1
+User --> UC2
+User --> UC3
+
+Member --> UC4
+Member --> UC5
+
+TenantAdmin --> UC4
+TenantAdmin --> UC5
+TenantAdmin --> UC6
+TenantAdmin --> UC7
+
+PlatformAdmin --> UC8
+PlatformAdmin --> UC9
+PlatformAdmin --> UC10
+
+UC1 ..> UC3 : <<extend>>
+
+note right of UC1
+  Tích hợp với Messenger
+  và Telegram qua webhook
+end note
+
+@enduml

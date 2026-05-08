@@ -9,10 +9,15 @@ import java.util.UUID;
 
 public interface TenantRepository extends JpaRepository<Tenant, UUID> {
 
+    Optional<Tenant> findByCodeIgnoreCase(String code);
+
+    Optional<Tenant> findByApiKey(String apiKey);
+
     @Query("select t.id from Tenant t where t.apiKey = :apiKey")
     Optional<UUID> findIdByApiKey(@Param("apiKey") String apiKey);
 
     @Query("select t.kbDir from Tenant t where t.id = :tenantId")
     Optional<String> findKbDirById(@Param("tenantId") UUID tenantId);
+
     Optional<Tenant> findByNameAndCode(String name, String code);
 }

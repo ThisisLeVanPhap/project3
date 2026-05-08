@@ -16,4 +16,7 @@ public class LlmProperties {
     private int portRangeEnd = 8199;
     private String healthPath = "/healthz";
     private String uvicornModule = "app.server:app";
+    private int connectTimeoutMs = 2_000;
+    private int responseTimeoutMs = 120_000;
+    private int startupTimeoutMs = 120_000;
 }

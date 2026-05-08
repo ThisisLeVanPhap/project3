@@ -1,5 +1,6 @@
 package com.app.leads;
 
+import com.app.auth.SessionPrincipalAccessor;
 import com.app.leads.channel.MessengerOutbox;
 import com.app.leads.channel.TelegramOutbox;
 import com.app.leads.dto.OrderInfoReq;
@@ -12,21 +13,26 @@ public class LeadTenantOpsController {
     private final LeadRepository leadRepo;
     private final MessengerOutbox messengerOutbox;
     private final TelegramOutbox telegramOutbox;
+    private final SessionPrincipalAccessor principalAccessor;
 
     public LeadTenantOpsController(LeadRepository leadRepo,
                                    MessengerOutbox messengerOutbox,
-                                   TelegramOutbox telegramOutbox) {
+                                   TelegramOutbox telegramOutbox,
+                                   SessionPrincipalAccessor principalAccessor) {
         this.leadRepo = leadRepo;
         this.messengerOutbox = messengerOutbox;
         this.telegramOutbox = telegramOutbox;
+        this.principalAccessor = principalAccessor;
     }
 
     @PostMapping("/order-info")
     public Lead saveOrderInfo(@RequestBody OrderInfoReq req,
                               @RequestParam("tid") String tenantId) {
+        principalAccessor.requireTenantOperator();
+        String currentTenantId = principalAccessor.requireTenantIdMatching(tenantId);
 
         Lead lead = leadRepo.findById(req.leadId()).orElseThrow();
-        if (!tenantId.equals(lead.getTenantId())) throw new RuntimeException("Access denied");
+        if (!currentTenantId.equals(lead.getTenantId())) throw new RuntimeException("Access denied");
 
         lead.setOrderInfo(req.orderInfo() == null ? "" : req.orderInfo().trim());
         lead.setShippingStatus("READY");
@@ -36,21 +42,38 @@ public class LeadTenantOpsController {
     @PostMapping("/{id}/ship")
     public Lead markShipped(@PathVariable Long id,
                             @RequestParam("tid") String tenantId) {
+        principalAccessor.requireTenantOperator();
+        String currentTenantId = principalAccessor.requireTenantIdMatching(tenantId);
 
         Lead lead = leadRepo.findById(id).orElseThrow();
-        if (!tenantId.equals(lead.getTenantId())) throw new RuntimeException("Access denied");
+        if (!currentTenantId.equals(lead.getTenantId())) throw new RuntimeException("Access denied");
 
         lead.setShippingStatus("SHIPPED");
         leadRepo.save(lead);
 
-        // ✅ auto notify customer
-        String notify = "✅ Your order has been shipped. If you need anything else, just reply here.";
+        String notify = "Your order has been shipped. If you need anything else, just reply here.";
 
         if ("messenger".equalsIgnoreCase(lead.getChannel())) {
-            messengerOutbox.sendText(tenantId, lead.getCustomerHandle(), notify);
+            messengerOutbox.sendText(currentTenantId, lead.getCustomerHandle(), notify);
         } else if ("telegram".equalsIgnoreCase(lead.getChannel())) {
-            telegramOutbox.sendText(tenantId, lead.getCustomerHandle(), notify);
+            telegramOutbox.sendText(currentTenantId, lead.getCustomerHandle(), notify);
         }
+
+        lead.setStage("FULFILLED");
+        return leadRepo.save(lead);
+    }
+
+    @PostMapping("/{id}/reset")
+    public Lead resetConversation(@PathVariable Long id,
+                                  @RequestParam("tid") String tenantId) {
+        principalAccessor.requireTenantOperator();
+        String currentTenantId = principalAccessor.requireTenantIdMatching(tenantId);
+
+        Lead lead = leadRepo.findById(id).orElseThrow();
+        if (!currentTenantId.equals(lead.getTenantId())) throw new RuntimeException("Access denied");
+
+        lead.setStage("DISCOVER");
+        leadRepo.save(lead);
 
         return lead;
     }

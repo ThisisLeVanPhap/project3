@@ -14,4 +14,6 @@ public interface ChatbotInstanceRepository extends JpaRepository<ChatbotInstance
 
     // Thêm 1 method để sau này chọn bot theo channel, status
     Optional<ChatbotInstance> findFirstByChannelAndStatus(String channel, String status);
+
+    Optional<ChatbotInstance> findByModeAndStatus(String mode, String status);
 }

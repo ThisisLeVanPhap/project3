@@ -1,0 +1,48 @@
+{"question": "Bên mình có gợi ý mẫu sofa nào cho phòng khách hiện đại không?", "ground_truth": ["bộ bàn ghế sofa", "sofa phòng khách", "nội thất phòng khách"]}
+{"question": "Mình muốn tìm bộ sofa sang mà vẫn dễ phối cho nhà phố thì nên xem nội dung nào?", "ground_truth": ["bộ bàn ghế sofa", "sofa gỗ", "sofa da"]}
+{"question": "Có bài nào gợi ý các mẫu sofa đang được ưa chuộng không?", "ground_truth": ["bộ bàn ghế sofa", "mẫu sofa", "sofa phòng khách"]}
+{"question": "Nếu muốn tham khảo sofa da cao cấp thì nên xem mục nào?", "ground_truth": ["sofa da", "cao cấp", "hiện đại"]}
+{"question": "Mình cần một bộ sofa gỗ đẹp, có thể tham khảo sản phẩm nào của Caco?", "ground_truth": ["sofa gỗ", "gỗ sồi", "sfg041"]}
+{"question": "Caco có nội dung nào để chọn sofa phù hợp phong cách sống hiện đại không?", "ground_truth": ["sofa phòng khách", "hiện đại", "bộ bàn ghế sofa"]}
+{"question": "Căn hộ nhỏ thì nên chọn sofa kiểu gì cho gọn?", "ground_truth": ["sofa phòng khách nhỏ", "sofa văng", "sofa chữ i"]}
+{"question": "Phòng khách tầm 12m2 đến 15m2 thì sofa kích thước khoảng bao nhiêu là hợp?", "ground_truth": ["sofa phòng khách nhỏ", "12m2-15m2", "1m8-2m2"]}
+{"question": "Chung cư dưới 20m2 thì nên ưu tiên sofa chữ L hay sofa nào khác?", "ground_truth": ["sofa phòng khách nhỏ", "sofa chữ l", "dưới 20m2"]}
+{"question": "Mình ở apartment nhỏ, muốn tối ưu không gian tiếp khách thì có gợi ý nào không?", "ground_truth": ["sofa phòng khách nhỏ", "tối ưu không gian", "chung cư"]}
+{"question": "Caco có dịch vụ thiết kế nội thất chung cư hiện đại không?", "ground_truth": ["thiết kế nội thất chung cư", "hiện đại", "chung cư"]}
+{"question": "Nếu căn hộ cần vừa đẹp vừa tối ưu công năng thì nên tham khảo nội dung nào?", "ground_truth": ["thiết kế nội thất chung cư", "tối ưu công năng", "căn hộ"]}
+{"question": "Sofa gỗ của Caco thường dùng chất liệu gì nổi bật?", "ground_truth": ["gỗ sồi", "sofa gỗ", "da microfiber"]}
+{"question": "Bộ sofa SFG041 dùng chất liệu bọc gì vậy?", "ground_truth": ["sfg041", "da microfiber", "gỗ sồi"]}
+{"question": "Nếu thích phong cách hiện đại thì nên xem nhóm sofa nào?", "ground_truth": ["sofa da", "hiện đại", "sofa phòng khách"]}
+{"question": "Caco có gợi ý màu sofa nào hợp phòng khách nhỏ không?", "ground_truth": ["sofa phòng khách nhỏ", "màu trắng", "be"]}
+{"question": "Phòng nhỏ thì nên tránh chọn sofa màu gì để đỡ bí?", "ground_truth": ["sofa phòng khách nhỏ", "đen", "xám đậm"]}
+{"question": "Muốn sofa vừa bền vừa dễ vệ sinh thì nên quan tâm chất liệu nào?", "ground_truth": ["da microfiber", "sofa da", "dễ dàng vệ sinh"]}
+{"question": "Caco có hỗ trợ thanh toán online hay chuyển khoản không?", "ground_truth": ["thanh toán online", "chuyển khoản", "acb"]}
+{"question": "Nếu mình ở xa hơn 50km thì thanh toán theo cách nào?", "ground_truth": ["thanh toán trước khi nhận hàng", "50km", "chuyển khoản"]}
+{"question": "Khách trong phạm vi gần cửa hàng có thể thanh toán khi nhận hàng không?", "ground_truth": ["thanh toán sau khi giao hàng", "0-50km", "thanh toán"]}
+{"question": "Bên mình có cho đặt cọc trực tiếp tại cửa hàng không?", "ground_truth": ["thanh toán tại cửa hàng", "đặt cọc", "nhân viên bán hàng"]}
+{"question": "Muốn chuyển khoản cho Caco thì qua ngân hàng nào?", "ground_truth": ["acb", "thanh toán trước khi nhận hàng", "chuyển khoản"]}
+{"question": "Ở tỉnh lân cận TP.HCM thì đơn hàng thanh toán thế nào?", "ground_truth": ["thanh toán trước", "tỉnh lân cận tphcm", "bưu điện"]}
+{"question": "Caco giao hàng miễn phí ở khu vực nào vậy?", "ground_truth": ["giao hàng", "miễn phí", "nội thành tphcm"]}
+{"question": "Ở quận xa nội thành TP.HCM thì phí giao nhận thế nào?", "ground_truth": ["giao hàng", "quận xa", "phụ thu"]}
+{"question": "Bên mình có gửi hàng qua chành xe cho khách ở tỉnh xa không?", "ground_truth": ["chành xe", "tỉnh xa tphcm", "giao hàng"]}
+{"question": "Khách ở nước ngoài thì Caco giao bằng cách nào?", "ground_truth": ["vận chuyển quốc tế", "khách ở nước ngoài", "giao hàng"]}
+{"question": "Nếu đơn cần giao ngoài thành phố thì có đi qua bưu điện không?", "ground_truth": ["bưu điện", "giao hàng", "tỉnh lân cận tphcm"]}
+{"question": "Muốn đổi lịch giao hàng thì cần báo trước bao lâu?", "ground_truth": ["giao hàng", "24 giờ", "hotline"]}
+{"question": "Chính sách đổi trả của Caco là bao lâu?", "ground_truth": ["đổi trả", "30 ngày", "đổi trả hàng"]}
+{"question": "Khi đổi trả thì sản phẩm cần giữ tình trạng như thế nào?", "ground_truth": ["đổi trả", "nguyên đai", "nguyên kiện"]}
+{"question": "Khách có được kiểm hàng trước khi thanh toán không?", "ground_truth": ["đổi trả", "kiểm hàng", "thanh toán"]}
+{"question": "Nếu muốn đổi sang mẫu khác vì đổi ý thì Caco có nhận không?", "ground_truth": ["không chấp nhận đổi trả", "đổi trả", "mẫu mã"]}
+{"question": "Muốn đổi hàng thì có cần xác nhận là đã mua tại Caco không?", "ground_truth": ["đổi trả", "xác nhận", "đã mua sản phẩm"]}
+{"question": "Có trường hợp nào Caco từ chối đổi trả không?", "ground_truth": ["không chấp nhận đổi trả", "đổi trả", "điều kiện chung"]}
+{"question": "Caco bảo hành sản phẩm như thế nào?", "ground_truth": ["bảo hành", "sửa chữa", "chính sách bảo hành"]}
+{"question": "Nếu sản phẩm lỗi kỹ thuật sau lắp đặt thì bên mình xử lý ra sao?", "ground_truth": ["bảo hành", "lỗi kỹ thuật", "sửa chữa"]}
+{"question": "Riêng bộ sofa SFG041 thì bảo hành trong bao lâu?", "ground_truth": ["sfg041", "bảo hành 2 năm", "bảo trì vĩnh viễn"]}
+{"question": "Caco có bảo trì lâu dài sau khi hết bảo hành không?", "ground_truth": ["bảo trì", "bảo hành", "vĩnh viễn"]}
+{"question": "Nếu cần sửa chữa hàng trong thời gian bảo hành thì làm thế nào?", "ground_truth": ["bảo hành", "sửa chữa", "hỗ trợ khách hàng"]}
+{"question": "Chính sách hậu mãi và bảo trì sofa của Caco có rõ không?", "ground_truth": ["bảo hành", "bảo trì", "sofa"]}
+{"question": "Nội Thất Caco là đơn vị chuyên về gì?", "ground_truth": ["giới thiệu", "thiết kế", "thi công"]}
+{"question": "Caco có trực tiếp sản xuất nội thất tại xưởng không?", "ground_truth": ["xưởng sản xuất", "trực tiếp sản xuất", "giới thiệu"]}
+{"question": "Showroom của Caco nằm ở đâu?", "ground_truth": ["showroom", "phạm thế hiển", "tp hồ chí minh"]}
+{"question": "Nếu cần liên hệ nhanh thì gọi số nào?", "ground_truth": ["hotline", "0987.822.944", "0949.822.944"]}
+{"question": "Caco có nhận thiết kế và thi công trọn gói không?", "ground_truth": ["thiết kế", "thi công", "trọn gói"]}
+{"question": "Điểm mạnh chung của Caco là gì so với đơn vị khác?", "ground_truth": ["xưởng sản xuất", "mức giá hợp lý", "chuyên nghiệp và minh bạch"]}

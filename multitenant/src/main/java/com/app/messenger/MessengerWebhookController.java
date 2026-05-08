@@ -2,21 +2,30 @@ package com.app.messenger;
 
 import com.app.bots.ChatbotInstance;
 import com.app.bots.ChatbotInstanceRepository;
+import com.app.chat.ChannelConversationService;
 import com.app.chat.Conversation;
-import com.app.chat.ConversationRepository;
 import com.app.chat.Message;
 import com.app.chat.MessageRepository;
+import com.app.leads.Lead;
+import com.app.leads.LeadRepository;
+import com.app.leads.LeadService;
+import com.app.modelserver.ChatbotUpstreamException;
 import com.app.modelserver.LlmInstanceManager;
 import com.app.modelserver.PythonChatClient;
+import com.app.modelserver.PythonChatFallbacks;
 import com.app.modelserver.dto.ChatResponse;
+import com.app.purchases.PurchaseRequestService;
 import com.app.tenant.TenantContext;
-import com.app.leads.LeadService; // <-- NOTE: chỉnh package nếu khác
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
+// ✅ NEW: feedback imports
+import com.app.feedback.Feedback;
+import com.app.feedback.FeedbackRepository;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -27,24 +36,23 @@ import java.util.concurrent.*;
 @RequiredArgsConstructor
 public class MessengerWebhookController {
 
-    private static final String VERIFY_TOKEN = "woodchat_secret";
-
     private final MessengerPageBindingRepository bindingRepo;
+    private final MessengerProperties messengerProperties;
     private final ChatbotInstanceRepository botRepo;
-    private final ConversationRepository convRepo;
+    private final ChannelConversationService channelConversationService;
     private final MessageRepository msgRepo;
+    private final LeadRepository leadRepo;
 
     private final PythonChatClient python;
     private final LlmInstanceManager llmInstanceManager;
     private final MessengerSendService sendService;
-
-    // ✅ NEW: lead service to create purchase request from conversation
     private final LeadService leadService;
+    private final PurchaseRequestService purchaseRequestService;
 
-    // ✅ Dedupe theo message.mid (Meta retry sẽ bị skip)
+    // ✅ NEW: feedback repo
+    private final FeedbackRepository feedbackRepo;
+
     private final Set<String> processedMids = ConcurrentHashMap.newKeySet();
-
-    // ✅ Thread pool để xử lý async (ACK nhanh)
     private final ExecutorService workerPool = Executors.newFixedThreadPool(8);
 
     @GetMapping
@@ -53,21 +61,15 @@ public class MessengerWebhookController {
             @RequestParam(name = "hub.verify_token", required = false) String token,
             @RequestParam(name = "hub.challenge", required = false) String challenge
     ) {
-        if ("subscribe".equals(mode) && VERIFY_TOKEN.equals(token)) {
-            return challenge;
-        }
+        if ("subscribe".equals(mode) && messengerProperties.getVerifyToken().equals(token)) return challenge;
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid verify token");
     }
 
     @PostMapping
     public ResponseEntity<String> onEvent(@RequestBody Map<String, Object> payload) {
-        // ✅ ACK NGAY để Facebook không retry
         workerPool.submit(() -> {
-            try {
-                handlePayload(payload);
-            } catch (Exception e) {
-                log.error("Messenger webhook async error", e);
-            }
+            try { handlePayload(payload); }
+            catch (Exception e) { log.error("Messenger webhook async error", e); }
         });
         return ResponseEntity.ok("ok");
     }
@@ -82,10 +84,7 @@ public class MessengerWebhookController {
             if (pageId == null || "null".equals(pageId)) continue;
 
             Optional<MessengerPageBinding> bindingOpt = bindingRepo.findByPageId(pageId);
-            if (bindingOpt.isEmpty()) {
-                log.warn("No messenger_page_bindings for pageId={}", pageId);
-                continue;
-            }
+            if (bindingOpt.isEmpty()) continue;
             MessengerPageBinding binding = bindingOpt.get();
 
             String prevTenant = TenantContext.get();
@@ -107,30 +106,21 @@ public class MessengerWebhookController {
                     String text = (String) msg.get("text");
                     if (text == null || text.isBlank()) continue;
 
-                    // ✅ dedupe mid
                     String mid = msg.get("mid") != null ? String.valueOf(msg.get("mid")) : null;
-                    if (mid != null && !processedMids.add(mid)) {
-                        log.info("Skip duplicate messenger mid={}", mid);
-                        continue;
-                    }
+                    if (mid != null && !processedMids.add(mid)) continue;
 
-                    log.info("Messenger IN pageId={}, psid={}, mid={}, text={}", pageId, psid, mid, text);
+                    String senderKey = channelConversationService.buildMessengerSenderKey(pageId, psid);
+                    Conversation conv = channelConversationService.findOrCreateActiveConversation(
+                            binding.getTenantId(),
+                            binding.getChatbotId(),
+                            "messenger",
+                            senderKey
+                    );
 
-                    ChatbotInstance bot = botRepo.findById(binding.getChatbotId())
-                            .orElseThrow(() -> new IllegalStateException("Bot not found: " + binding.getChatbotId()));
+                    ChatbotInstance bot = botRepo.findById(conv.getChatbotId())
+                            .orElseThrow(() -> new IllegalStateException("Bot not found: " + conv.getChatbotId()));
 
-                    Conversation conv = convRepo
-                            .findByTenantIdAndChatbotIdAndUserExternalId(binding.getTenantId(), bot.getId(), psid)
-                            .orElseGet(() -> {
-                                Conversation c = new Conversation();
-                                c.setId(UUID.randomUUID());
-                                c.setTenantId(binding.getTenantId());
-                                c.setChatbotId(bot.getId());
-                                c.setUserExternalId(psid);
-                                return convRepo.save(c);
-                            });
-
-                    // ✅ Save user message
+                    // ✅ Always persist user message
                     Message mUser = new Message();
                     mUser.setId(UUID.randomUUID());
                     mUser.setTenantId(binding.getTenantId());
@@ -139,96 +129,112 @@ public class MessengerWebhookController {
                     mUser.setContent(text);
                     msgRepo.save(mUser);
 
-                    List<Message> historyMsgs =
-                            msgRepo.findTop20ByConversationIdOrderByCreatedAtAsc(conv.getId());
+                    // =====================================================
+                    // ✅ NEW: RATE GOOD / RATE BAD -> insert feedback
+                    // Put it early so it works even during HANDOFF.
+                    // =====================================================
+                    String norm = text.trim().toUpperCase(Locale.ROOT);
+                    if (norm.equals("RATE GOOD") || norm.equals("RATE BAD")) {
+                        int rating = norm.equals("RATE GOOD") ? 1 : -1;
 
-                    // ✅ Feedback quick: user sends 👍 or 👎
-                    if ("👍".equals(text.trim()) || "👎".equals(text.trim())) {
-                        boolean isCorrect = "👍".equals(text.trim());
-
-                        String lastQ = null;
-                        String lastA = null;
-                        for (int i = historyMsgs.size() - 1; i >= 0; i--) {
-                            Message mm = historyMsgs.get(i);
-                            if (lastA == null && "assistant".equals(mm.getRole())) lastA = mm.getContent();
-                            else if (lastQ == null && "user".equals(mm.getRole())) { lastQ = mm.getContent(); break; }
-                        }
-
-                        String baseUrl = llmInstanceManager.getOrStartBaseUrl(binding.getTenantId(), bot);
-
-                        python.feedback(baseUrl, new com.app.modelserver.dto.FeedbackRequest(
-                                conv.getId().toString(),
-                                binding.getTenantId().toString(),
-                                "messenger",
-                                lastQ != null ? lastQ : "",
-                                lastA != null ? lastA : "",
-                                isCorrect,
-                                "thumb"
-                        ));
+                        Feedback fb = new Feedback();
+                        fb.setTenantId(binding.getTenantId().toString());
+                        fb.setConversationId(conv.getId().toString());
+                        fb.setRating(rating);
+                        fb.setComment("rate_keyword");
+                        feedbackRepo.save(fb);
 
                         sendService.sendText(psid, "Thanks for your feedback!", binding.getPageAccessToken());
                         continue;
                     }
 
-                    // ✅ per-tenant LLM instance (moved up so CONFIRM can use it)
-                    String baseUrl = llmInstanceManager.getOrStartBaseUrl(binding.getTenantId(), bot);
+                    String baseUrl = "";
+                    String t = text.trim();
 
-                    // =========================================================
-                    // ✅ NEW: CONFIRM / CANCEL handler
-                    // Put here: after text, conv, tenantId(binding), bot, baseUrl, psid
-                    // =========================================================
-                    String t = text == null ? "" : text.trim();
-
+                    // ✅ CONFIRM -> create lead snapshot + stage=HANDOFF
                     if ("CONFIRM".equalsIgnoreCase(t)) {
                         try {
-                            leadService.createLeadFromConversation(
+                            LlmInstanceManager.Session session = llmInstanceManager.getOrStartSession(binding.getTenantId(), bot);
+                            baseUrl = session.baseUrl();
+                            Lead lead = leadService.createLeadFromConversation(
                                     baseUrl,
                                     binding.getTenantId().toString(),
                                     "messenger",
                                     conv.getId().toString(),
                                     psid
                             );
-                            sendService.sendText(
-                                    psid,
-                                    "✅ Purchase request created. A staff member will contact you shortly to confirm the details.",
-                                    binding.getPageAccessToken()
-                            );
+                            purchaseRequestService.findOrCreateFromLead(lead);
+
+                            // one single bot/system message (handoff)
+                            String handoffMsg =
+                                    "Thanks! Our staff will follow up to confirm delivery details.";
+
+                            Message mBot = new Message();
+                            mBot.setId(UUID.randomUUID());
+                            mBot.setTenantId(binding.getTenantId());
+                            mBot.setConversationId(conv.getId());
+                            mBot.setRole("assistant");
+                            mBot.setContent(handoffMsg);
+                            msgRepo.save(mBot);
+
+                            sendService.sendText(psid, handoffMsg, binding.getPageAccessToken());
                         } catch (Exception e) {
-                            log.error("CONFIRM failed: tenantId={}, convId={}, psid={}", binding.getTenantId(), conv.getId(), psid, e);
+                            log.error("CONFIRM failed", e);
                             sendService.sendText(
                                     psid,
-                                    "Sorry — I couldn’t create the purchase request right now. Please try again, or reply with your phone/email and I’ll forward it to staff.",
+                                    "Sorry — I couldn’t create the purchase request right now. Please try again.",
                                     binding.getPageAccessToken()
                             );
                         }
                         continue;
                     }
 
+                    // CANCEL: allow bot to continue (no lead)
                     if ("CANCEL".equalsIgnoreCase(t)) {
-                        sendService.sendText(
-                                psid,
+                        sendService.sendText(psid,
                                 "No problem — I’ve canceled the confirmation step. What would you like to do next?",
-                                binding.getPageAccessToken()
-                        );
+                                binding.getPageAccessToken());
                         continue;
                     }
 
-                    // Build history for python (current logic only includes user turns)
-                    List<String> history = new ArrayList<>();
-                    for (Message hm : historyMsgs) {
-                        if ("user".equals(hm.getRole())) {
-                            history.add(hm.getContent());
-                        }
+                    // ✅ HANDOFF GATE: if lead exists and stage=HANDOFF, do NOT call python
+                    Optional<Lead> leadOpt =
+                            leadRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(
+                                    binding.getTenantId().toString(), conv.getId().toString());
+
+                    if (leadOpt.isPresent() && "HANDOFF".equalsIgnoreCase(leadOpt.get().getStage())) {
+                        // Staff owns chat now: persist only, no bot reply.
+                        log.info("Handoff gate: skip LLM for convId={}, psid={}", conv.getId(), psid);
+                        continue;
                     }
 
-                    ChatResponse ai = python.chat(
-                            baseUrl, text, history, bot,
-                            conv.getId().toString(),
-                            "messenger",
-                            binding.getTenantId().toString()
-                    );
+                    // Normal: call python
+                    List<Message> historyMsgs = msgRepo.findTop20ByConversationIdOrderByCreatedAtAsc(conv.getId());
+                    List<String> history = new ArrayList<>();
+                    for (Message hm : historyMsgs) if ("user".equals(hm.getRole())) history.add(hm.getContent());
 
-                    String reply = ai.reply();
+                    ChatResponse ai;
+                    try {
+                        LlmInstanceManager.Session session = llmInstanceManager.getOrStartSession(binding.getTenantId(), bot);
+                        baseUrl = session.baseUrl();
+                        ai = python.chat(
+                                baseUrl, text, history, bot,
+                                conv.getId().toString(),
+                                "messenger",
+                                binding.getTenantId().toString(),
+                                session.coldStart(),
+                                session.warmupWaited()
+                        );
+                    } catch (ChatbotUpstreamException ex) {
+                        baseUrl = ex.getBaseUrl() == null ? "" : ex.getBaseUrl();
+                        ai = PythonChatFallbacks.forFailure(bot.getBaseModel(), bot.getAdapterPath(), ex.getCategory());
+                    }
+
+                    String reply = (ai.reply() == null) ? "" : ai.reply().trim();
+                    if (reply.isBlank()) {
+                        // e.g., python handoff guard returns ""
+                        continue;
+                    }
 
                     Message mBot = new Message();
                     mBot.setId(UUID.randomUUID());

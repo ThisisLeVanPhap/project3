@@ -5,7 +5,6 @@ import com.app.tenants.TenantRepository;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -14,9 +13,9 @@ import java.net.ServerSocket;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
@@ -31,25 +30,59 @@ public class LlmInstanceManager {
 
     public record Running(String baseUrl, long pid, Instant lastUsedAt) {}
 
+    public record Session(String baseUrl, boolean coldStart, boolean warmupWaited) {}
+
+    public record RuntimeStatusSnapshot(
+            UUID tenantId,
+            String baseUrl,
+            long pid,
+            Instant lastUsedAt,
+            boolean healthy
+    ) {}
+
     private final Map<UUID, Running> runningByTenant = new ConcurrentHashMap<>();
+    private final Map<UUID, Process> processByTenant = new ConcurrentHashMap<>();
+    private final Map<UUID, ReentrantLock> tenantSpawnLocks = new ConcurrentHashMap<>();
     private final WebClient http = WebClient.builder().build();
 
     private final ReentrantLock spawnLock = new ReentrantLock();
     private final Set<Integer> reservedPorts = ConcurrentHashMap.newKeySet();
 
     public String getOrStartBaseUrl(UUID tenantId, ChatbotInstance botCfg) {
-        Running r = runningByTenant.get(tenantId);
-        if (r != null && isHealthy(r.baseUrl())) {
-            runningByTenant.put(tenantId, new Running(r.baseUrl(), r.pid(), Instant.now()));
-            return r.baseUrl();
+        return getOrStartSession(tenantId, botCfg).baseUrl();
+    }
+
+    public Session getOrStartSession(UUID tenantId, ChatbotInstance botCfg) {
+        Running current = runningByTenant.get(tenantId);
+        if (current != null && isHealthy(current.baseUrl())) {
+            runningByTenant.put(tenantId, new Running(current.baseUrl(), current.pid(), Instant.now()));
+            return new Session(current.baseUrl(), false, false);
         }
         runningByTenant.remove(tenantId);
 
-        log.info("LLM props pythonBin={}, modelServerDir={}", props.getPythonBin(), props.getModelServerDir());
+        ReentrantLock tenantLock = tenantSpawnLocks.computeIfAbsent(tenantId, ignored -> new ReentrantLock());
+        boolean warmupWaited = !tenantLock.tryLock();
+        if (warmupWaited) {
+            log.info("Waiting for in-flight LLM startup tenant={}", tenantId);
+            tenantLock.lock();
+        }
 
-        Running spawned = spawn(tenantId);
-        runningByTenant.put(tenantId, spawned);
-        return spawned.baseUrl();
+        try {
+            Running existing = runningByTenant.get(tenantId);
+            if (existing != null && isHealthy(existing.baseUrl())) {
+                runningByTenant.put(tenantId, new Running(existing.baseUrl(), existing.pid(), Instant.now()));
+                return new Session(existing.baseUrl(), false, warmupWaited);
+            }
+            runningByTenant.remove(tenantId);
+
+            log.info("LLM props tenant={} pythonBin={} modelServerDir={}", tenantId, props.getPythonBin(), props.getModelServerDir());
+
+            Running spawned = spawn(tenantId, warmupWaited);
+            runningByTenant.put(tenantId, spawned);
+            return new Session(spawned.baseUrl(), true, warmupWaited);
+        } finally {
+            tenantLock.unlock();
+        }
     }
 
     public void cleanupIdle() {
@@ -64,7 +97,6 @@ public class LlmInstanceManager {
 
     private boolean isHealthy(String baseUrl) {
         try {
-            // expect JSON: {"ready": true/false, ...}
             Boolean ready = http.get()
                     .uri(baseUrl + props.getHealthPath())
                     .retrieve()
@@ -84,7 +116,7 @@ public class LlmInstanceManager {
         }
     }
 
-    private Running spawn(UUID tenantId) {
+    private Running spawn(UUID tenantId, boolean warmupWaited) {
         if (props.getPythonBin() == null || props.getPythonBin().isBlank()) {
             throw new IllegalStateException("Missing config: python.llm.python-bin");
         }
@@ -104,7 +136,7 @@ public class LlmInstanceManager {
             spawnLock.unlock();
         }
 
-        Process p = null;
+        Process process = null;
         long pid = -1;
 
         try {
@@ -125,7 +157,6 @@ public class LlmInstanceManager {
             pb.directory(dir);
             pb.redirectErrorStream(true);
 
-            // ✅ set KB_DIR theo tenant
             String kbDir = tenantRepo.findKbDirById(tenantId).orElse(null);
             if (kbDir == null || kbDir.isBlank()) {
                 log.warn("Tenant {} has no kb_dir set. RAG will be disabled for this tenant.", tenantId);
@@ -134,16 +165,23 @@ public class LlmInstanceManager {
                 log.info("Tenant {} KB_DIR={}", tenantId, kbDir);
             }
 
-            log.info("Spawning LLM instance tenant={} -> {} (python={}, dir={})",
-                    tenantId, baseUrl, props.getPythonBin(), dir.getAbsolutePath());
+            log.info(
+                    "Spawning LLM instance tenant={} baseUrl={} warmupWaited={} python={} dir={}",
+                    tenantId,
+                    baseUrl,
+                    warmupWaited,
+                    props.getPythonBin(),
+                    dir.getAbsolutePath()
+            );
 
-            p = pb.start();
-            pid = p.pid();
+            process = pb.start();
+            pid = process.pid();
+            processByTenant.put(tenantId, process);
 
-            Process finalP = p;
+            Process finalProcess = process;
             long finalPid = pid;
             new Thread(() -> {
-                try (var br = new java.io.BufferedReader(new java.io.InputStreamReader(finalP.getInputStream()))) {
+                try (var br = new java.io.BufferedReader(new java.io.InputStreamReader(finalProcess.getInputStream()))) {
                     String line;
                     while ((line = br.readLine()) != null) {
                         log.info("[llm:{} pid={}] {}", tenantId, finalPid, line);
@@ -153,32 +191,62 @@ public class LlmInstanceManager {
                 }
             }, "llm-log-" + tenantId).start();
 
-            long deadline = System.currentTimeMillis() + 120_000;
+            long deadline = System.currentTimeMillis() + props.getStartupTimeoutMs();
             long lastLog = 0;
 
             while (System.currentTimeMillis() < deadline) {
-                if (!p.isAlive()) {
-                    throw new IllegalStateException("LLM process exited early (pid=" + pid + ", port=" + port + ")");
+                if (!process.isAlive()) {
+                    throw new ChatbotUpstreamException(
+                            UpstreamFailureCategory.UNAVAILABLE,
+                            tenantId.toString(),
+                            baseUrl,
+                            null,
+                            true,
+                            warmupWaited,
+                            "LLM process exited before becoming healthy",
+                            null
+                    );
                 }
 
                 if (isHealthy(baseUrl)) {
-                    log.info("LLM READY tenant={} -> {} (pid={})", tenantId, baseUrl, pid);
+                    log.info("LLM READY tenant={} baseUrl={} pid={} coldStart=true warmupWaited={}", tenantId, baseUrl, pid, warmupWaited);
                     return new Running(baseUrl, pid, Instant.now());
                 }
 
                 long now = System.currentTimeMillis();
                 if (now - lastLog > 5000) {
-                    log.info("Waiting LLM healthy tenant={} at {}", tenantId, baseUrl);
+                    log.info("Waiting LLM healthy tenant={} baseUrl={} coldStart=true warmupWaited={}", tenantId, baseUrl, warmupWaited);
                     lastLog = now;
                 }
 
                 Thread.sleep(300);
             }
 
-            p.destroyForcibly();
-            throw new IllegalStateException("LLM server not healthy for tenant=" + tenantId + " at " + baseUrl);
-
+            process.destroyForcibly();
+            throw new ChatbotUpstreamException(
+                    UpstreamFailureCategory.TIMEOUT,
+                    tenantId.toString(),
+                    baseUrl,
+                    null,
+                    true,
+                    warmupWaited,
+                    "Timed out waiting for chatbot warmup",
+                    null
+            );
+        } catch (ChatbotUpstreamException e) {
+            log.warn(
+                    "LLM startup failure tenant={} baseUrl={} category={} coldStart={} warmupWaited={} message={}",
+                    e.getTenantId(),
+                    e.getBaseUrl(),
+                    e.getCategory(),
+                    e.isColdStart(),
+                    e.isWarmupWaited(),
+                    e.getMessage(),
+                    e
+            );
+            throw e;
         } catch (Exception e) {
+            processByTenant.remove(tenantId);
             throw new RuntimeException(
                     "Failed to start LLM instance for tenant=" + tenantId
                             + " (python=" + props.getPythonBin()
@@ -193,8 +261,12 @@ public class LlmInstanceManager {
 
     private int pickPortReserved() {
         for (int port = props.getPortRangeStart(); port <= props.getPortRangeEnd(); port++) {
-            if (reservedPorts.contains(port)) continue;
-            if (isPortFree(port)) return port;
+            if (reservedPorts.contains(port)) {
+                continue;
+            }
+            if (isPortFree(port)) {
+                return port;
+            }
         }
         throw new IllegalStateException("No free port in range " +
                 props.getPortRangeStart() + "-" + props.getPortRangeEnd());
@@ -211,10 +283,54 @@ public class LlmInstanceManager {
 
     @PreDestroy
     public void shutdownAll() {
+        for (UUID tenantId : processByTenant.keySet()) {
+            evictTenant(tenantId);
+        }
         runningByTenant.clear();
     }
 
     public Map<UUID, Running> dumpRunning() {
         return Map.copyOf(runningByTenant);
+    }
+
+    public Map<UUID, RuntimeStatusSnapshot> dumpRuntimeStatuses() {
+        Map<UUID, RuntimeStatusSnapshot> snapshots = new ConcurrentHashMap<>();
+        for (var entry : runningByTenant.entrySet()) {
+            Running running = entry.getValue();
+            snapshots.put(
+                    entry.getKey(),
+                    new RuntimeStatusSnapshot(
+                            entry.getKey(),
+                            running.baseUrl(),
+                            running.pid(),
+                            running.lastUsedAt(),
+                            isHealthy(running.baseUrl())
+                    )
+            );
+        }
+        return Map.copyOf(snapshots);
+    }
+
+    public void evictTenant(UUID tenantId) {
+        runningByTenant.remove(tenantId);
+        Process process = processByTenant.remove(tenantId);
+        if (process == null) {
+            return;
+        }
+
+        try {
+            if (process.isAlive()) {
+                process.destroy();
+                process.waitFor(2, java.util.concurrent.TimeUnit.SECONDS);
+                if (process.isAlive()) {
+                    process.destroyForcibly();
+                }
+            }
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            if (process.isAlive()) {
+                process.destroyForcibly();
+            }
+        }
     }
 }

@@ -1,0 +1,60 @@
+{
+  "categories": {
+    "sofa": {
+      "min": 500,
+      "max": 5000,
+      "avg": 2500,
+      "currency": "USD",
+      "unit": "piece"
+    },
+    "table": {
+      "min": 300,
+      "max": 3000,
+      "avg": 1500,
+      "currency": "USD",
+      "unit": "piece"
+    },
+    "dining table": {
+      "min": 400,
+      "max": 4000,
+      "avg": 2000,
+      "currency": "USD",
+      "unit": "piece"
+    },
+    "chair": {
+      "min": 100,
+      "max": 1000,
+      "avg": 400,
+      "currency": "USD",
+      "unit": "piece"
+    },
+    "desk": {
+      "min": 200,
+      "max": 2000,
+      "avg": 800,
+      "currency": "USD",
+      "unit": "piece"
+    },
+    "bed": {
+      "min": 600,
+      "max": 6000,
+      "avg": 3000,
+      "currency": "USD",
+      "unit": "piece"
+    },
+    "cabinet": {
+      "min": 400,
+      "max": 4500,
+      "avg": 2000,
+      "currency": "USD",
+      "unit": "piece"
+    },
+    "wardrobe": {
+      "min": 500,
+      "max": 5500,
+      "avg": 2500,
+      "currency": "USD",
+      "unit": "piece"
+    }
+  }
+}

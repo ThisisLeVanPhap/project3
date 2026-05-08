@@ -1,5 +1,6 @@
 package com.app.leads;
 
+import com.app.auth.SessionPrincipalAccessor;
 import com.app.leads.channel.MessengerOutbox;
 import com.app.leads.channel.TelegramOutbox;
 import com.app.leads.dto.ReplyReq;
@@ -12,23 +13,26 @@ public class ReplyController {
     private final LeadRepository leadRepo;
     private final MessengerOutbox messengerOutbox;
     private final TelegramOutbox telegramOutbox;
+    private final SessionPrincipalAccessor principalAccessor;
 
     public ReplyController(LeadRepository leadRepo,
                            MessengerOutbox messengerOutbox,
-                           TelegramOutbox telegramOutbox) {
+                           TelegramOutbox telegramOutbox,
+                           SessionPrincipalAccessor principalAccessor) {
         this.leadRepo = leadRepo;
         this.messengerOutbox = messengerOutbox;
         this.telegramOutbox = telegramOutbox;
+        this.principalAccessor = principalAccessor;
     }
 
     @PostMapping
     public void reply(@RequestBody ReplyReq req,
                       @RequestParam("tid") String tenantId) {
+        principalAccessor.requireTenantOperator();
+        String currentTenantId = principalAccessor.requireTenantIdMatching(tenantId);
 
         Lead lead = leadRepo.findById(req.leadId()).orElseThrow();
-
-        // ✅ tenant isolation even without auth
-        if (!tenantId.equals(lead.getTenantId())) {
+        if (!currentTenantId.equals(lead.getTenantId())) {
             throw new RuntimeException("Access denied");
         }
 
@@ -36,9 +40,9 @@ public class ReplyController {
         if (msg.isBlank()) return;
 
         if ("messenger".equalsIgnoreCase(lead.getChannel())) {
-            messengerOutbox.sendText(tenantId, lead.getCustomerHandle(), msg);
+            messengerOutbox.sendText(currentTenantId, lead.getCustomerHandle(), msg);
         } else if ("telegram".equalsIgnoreCase(lead.getChannel())) {
-            telegramOutbox.sendText(tenantId, lead.getCustomerHandle(), msg);
+            telegramOutbox.sendText(currentTenantId, lead.getCustomerHandle(), msg);
         } else {
             throw new RuntimeException("Unsupported channel: " + lead.getChannel());
         }

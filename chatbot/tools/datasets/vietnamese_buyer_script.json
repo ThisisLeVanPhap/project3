@@ -1,0 +1,223 @@
+{
+  "scenario_id": "vietnamese_sofa_buyer_v1",
+  "description": "30-turn Vietnamese buyer script for a small-living-room sofa purchase flow.",
+  "turns": [
+    {
+      "stt": 1,
+      "user_input": "Xin chào, tôi muốn mua đồ nội thất cho phòng khách.",
+      "expected_behavior": "Mở đầu bằng tư vấn thân thiện bằng tiếng Việt và gợi ý làm rõ nhu cầu.",
+      "stage_hint": "discovery",
+      "marker": ""
+    },
+    {
+      "stt": 2,
+      "user_input": "Tôi đang muốn mua sofa.",
+      "expected_behavior": "Xác nhận nhu cầu mua sofa và tiếp tục khai thác bối cảnh sử dụng.",
+      "stage_hint": "discovery",
+      "marker": ""
+    },
+    {
+      "stt": 3,
+      "user_input": "Phòng khách nhà tôi khá nhỏ.",
+      "expected_behavior": "Ưu tiên tư vấn mẫu gọn cho không gian nhỏ.",
+      "stage_hint": "discovery",
+      "marker": ""
+    },
+    {
+      "stt": 4,
+      "user_input": "Chiều ngang chỗ đặt sofa chỉ khoảng 3 mét thôi.",
+      "expected_behavior": "Dùng ràng buộc kích thước để thu hẹp lựa chọn.",
+      "stage_hint": "discovery",
+      "marker": ""
+    },
+    {
+      "stt": 5,
+      "user_input": "Tôi muốn loại vừa đủ cho khoảng 2 đến 3 người ngồi.",
+      "expected_behavior": "Gợi ý cấu hình phù hợp số chỗ ngồi 2 đến 3 người.",
+      "stage_hint": "discovery",
+      "marker": ""
+    },
+    {
+      "stt": 6,
+      "user_input": "Nhà tôi là căn hộ nhỏ nên tôi muốn kiểu gọn thôi.",
+      "expected_behavior": "Củng cố ưu tiên thiết kế nhỏ gọn cho căn hộ.",
+      "stage_hint": "discovery",
+      "marker": ""
+    },
+    {
+      "stt": 7,
+      "user_input": "Tôi thích kiểu hiện đại và đơn giản.",
+      "expected_behavior": "Bám theo phong cách hiện đại, tối giản.",
+      "stage_hint": "style",
+      "marker": ""
+    },
+    {
+      "stt": 8,
+      "user_input": "Màu tôi thích là xám, kem hoặc các màu trung tính.",
+      "expected_behavior": "Đề xuất bảng màu trung tính phù hợp.",
+      "stage_hint": "style",
+      "marker": ""
+    },
+    {
+      "stt": 9,
+      "user_input": "Tôi không thích kiểu quá to hoặc quá cầu kỳ.",
+      "expected_behavior": "Loại bỏ phương án cồng kềnh hoặc quá cầu kỳ.",
+      "stage_hint": "style",
+      "marker": ""
+    },
+    {
+      "stt": 10,
+      "user_input": "Theo bạn thì tôi nên chọn sofa băng hay sofa góc?",
+      "expected_behavior": "So sánh sofa băng và sofa góc cho bối cảnh căn hộ nhỏ.",
+      "stage_hint": "compare",
+      "marker": ""
+    },
+    {
+      "stt": 11,
+      "user_input": "Nếu đặt trong không gian nhỏ thì loại nào nhìn gọn hơn?",
+      "expected_behavior": "Ưu tiên loại nhìn gọn hơn trong không gian nhỏ.",
+      "stage_hint": "compare",
+      "marker": ""
+    },
+    {
+      "stt": 12,
+      "user_input": "Tôi muốn ưu tiên loại không chiếm quá nhiều diện tích.",
+      "expected_behavior": "Tiếp tục thu hẹp theo tiêu chí tiết kiệm diện tích.",
+      "stage_hint": "compare",
+      "marker": ""
+    },
+    {
+      "stt": 13,
+      "user_input": "Ngân sách của tôi khoảng 2 triệu thôi.",
+      "expected_behavior": "Phản hồi thực tế theo ngân sách thấp và tránh bịa giá.",
+      "stage_hint": "budget",
+      "marker": ""
+    },
+    {
+      "stt": 14,
+      "user_input": "Trong tầm giá này có mẫu nào phù hợp không?",
+      "expected_behavior": "Đưa ra phương án phù hợp ngân sách hoặc nêu giới hạn rõ ràng.",
+      "stage_hint": "budget",
+      "marker": ""
+    },
+    {
+      "stt": 15,
+      "user_input": "Nhà tôi có trẻ nhỏ nên tôi cũng cần loại dễ vệ sinh.",
+      "expected_behavior": "Bổ sung tiêu chí dễ vệ sinh cho gia đình có trẻ nhỏ.",
+      "stage_hint": "material",
+      "marker": ""
+    },
+    {
+      "stt": 16,
+      "user_input": "Vậy sofa vải hay sofa da sẽ phù hợp hơn?",
+      "expected_behavior": "So sánh vật liệu theo tiêu chí vệ sinh và sử dụng thực tế.",
+      "stage_hint": "material",
+      "marker": ""
+    },
+    {
+      "stt": 17,
+      "user_input": "Tôi muốn loại vừa dễ lau chùi vừa nhìn hiện đại.",
+      "expected_behavior": "Kết hợp yêu cầu thẩm mỹ hiện đại và dễ lau chùi.",
+      "stage_hint": "material",
+      "marker": ""
+    },
+    {
+      "stt": 18,
+      "user_input": "Nếu ưu tiên thực tế thì bạn gợi ý tôi bắt đầu từ loại nào?",
+      "expected_behavior": "Đưa ra khuyến nghị rõ ràng, thực dụng để bắt đầu.",
+      "stage_hint": "recommendation",
+      "marker": ""
+    },
+    {
+      "stt": 19,
+      "user_input": "Có mẫu nào phù hợp căn hộ nhỏ dưới 20m2 không?",
+      "expected_behavior": "Gợi ý theo bối cảnh căn hộ nhỏ dưới 20m2.",
+      "stage_hint": "recommendation",
+      "marker": ""
+    },
+    {
+      "stt": 20,
+      "user_input": "Nếu tôi muốn màu xám thì nên chọn màu nào?",
+      "expected_behavior": "Tư vấn sắc độ xám phù hợp không gian nhỏ và phong cách hiện đại.",
+      "stage_hint": "recommendation",
+      "marker": ""
+    },
+    {
+      "stt": 21,
+      "user_input": "Có mẫu nào nhìn gọn mà vẫn đủ cho 2 đến 3 người ngồi không?",
+      "expected_behavior": "Đề xuất lựa chọn cân bằng giữa độ gọn và số chỗ ngồi.",
+      "stage_hint": "recommendation",
+      "marker": ""
+    },
+    {
+      "stt": 22,
+      "user_input": "Trong các lựa chọn đó, mẫu nào hợp phong cách hiện đại hơn?",
+      "expected_behavior": "So sánh các lựa chọn theo phong cách hiện đại.",
+      "stage_hint": "recommendation",
+      "marker": ""
+    },
+    {
+      "stt": 23,
+      "user_input": "Mẫu nào sẽ dễ vệ sinh hơn khi nhà có trẻ nhỏ?",
+      "expected_behavior": "Nhấn mạnh lựa chọn dễ vệ sinh cho gia đình có trẻ nhỏ.",
+      "stage_hint": "recommendation",
+      "marker": ""
+    },
+    {
+      "stt": 24,
+      "user_input": "Tôi đang nghiêng về loại nhỏ gọn, hiện đại và dễ vệ sinh.",
+      "expected_behavior": "Tóm lược đúng nhu cầu và tiến gần tới đề xuất chốt.",
+      "stage_hint": "close",
+      "marker": ""
+    },
+    {
+      "stt": 25,
+      "user_input": "Giá có thể bớt xuống đúng 2 triệu được không?",
+      "expected_behavior": "Bargain turn: should not directly reduce price.",
+      "stage_hint": "negotiation",
+      "marker": "bargain"
+    },
+    {
+      "stt": 26,
+      "user_input": "Tôi muốn mặc cả thêm một chút nữa.",
+      "expected_behavior": "Bargain turn: should not directly reduce price.",
+      "stage_hint": "negotiation",
+      "marker": "bargain"
+    },
+    {
+      "stt": 27,
+      "user_input": "Nếu không giảm giá được thì có mẫu nào rẻ hơn mà gần giống không?",
+      "expected_behavior": "Similar alternative turn: should offer lower-priced similar options if available.",
+      "stage_hint": "negotiation",
+      "marker": "bargain"
+    },
+    {
+      "stt": 28,
+      "user_input": "Nếu tôi muốn đặt mua thì chatbot có xử lý thanh toán luôn được không?",
+      "expected_behavior": "Payment turn: should not claim full payment can be completed in chat.",
+      "stage_hint": "handoff",
+      "marker": "payment"
+    },
+    {
+      "stt": 29,
+      "user_input": "Vậy tôi muốn tạo yêu cầu mua hàng. Tên tôi là Nguyễn Văn A, số điện thoại là 0912345678.",
+      "expected_behavior": "Purchase-request turn: should capture buyer name and phone.",
+      "stage_hint": "purchase_request",
+      "marker": "confirm_or_purchase_request"
+    },
+    {
+      "stt": 30,
+      "user_input": "Địa chỉ nhận hàng của tôi là 123 Nguyễn Trãi, Hà Nội. Hãy xác nhận lại yêu cầu mua hàng giúp tôi.",
+      "expected_behavior": "Purchase-request turn: should capture shipping address and confirm request details.",
+      "stage_hint": "purchase_request",
+      "marker": "delivery|confirm_or_purchase_request"
+    },
+    {
+      "stt": 31,
+      "user_input": "CONFIRM",
+      "expected_behavior": "Purchase-request turn: should hand off cleanly on CONFIRM.",
+      "stage_hint": "purchase_request",
+      "marker": "confirm_or_purchase_request"
+    }
+  ]
+}

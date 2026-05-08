@@ -387,7 +387,7 @@ def chat(req: ChatReq):
 
     if provider == "claude":
         # Claude API path
-        api_key = cfg.api_key or ''
+        api_key = cfg.api_key or 'sk-proj-fe708bb0167c4c18ae0ddb7ed8701d1a'
         api_model = cfg.api_model or 'claude-3-5-sonnet-20241022'
         api_base_url = cfg.api_base_url or 'https://api.anthropic.com'
 

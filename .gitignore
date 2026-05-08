@@ -24,3 +24,5 @@ node_modules/
 # Next.js
 .next/
 out/
+.claude
+CLAUDE.md

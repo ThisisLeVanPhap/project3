@@ -23,6 +23,7 @@ public class TenantResolver implements HandlerInterceptor {
         if (path == null) return false;
 
         if (path.startsWith("/api/login")) return true;
+        if (path.equals("/api/onboarding-requests") || path.startsWith("/api/onboarding-requests/")) return true;
         if (path.equals("/api/me")) return true;
 
         if (path.equals("/login") || path.startsWith("/login/")) return true;
@@ -48,33 +49,58 @@ public class TenantResolver implements HandlerInterceptor {
         if (session != null) {
             Object value = session.getAttribute(SessionPrincipalAccessor.SESSION_PRINCIPAL_KEY);
             if (value instanceof AppPrincipal principal) {
-                if (principal.role() != AppRole.PLATFORM_ADMIN
-                        && principal.tenantId() != null
-                        && !principal.tenantId().isBlank()) {
+                if (principal.role() == AppRole.PLATFORM_ADMIN) {
+                    if (hasTenantScopeHeader(req)) {
+                        String requestedTenantId = resolveTenantIdFromHeaders(req, res, true);
+                        if (requestedTenantId == null) {
+                            return false;
+                        }
+                        TenantContext.set(requestedTenantId);
+                    }
+                    return true;
+                }
+
+                if (principal.tenantId() != null && !principal.tenantId().isBlank()) {
                     TenantContext.set(principal.tenantId());
                 }
                 return true;
             }
         }
 
+        String tenantId = resolveTenantIdFromHeaders(req, res, true);
+        if (tenantId == null) {
+            return false;
+        }
+
+        TenantContext.set(tenantId);
+        return true;
+    }
+
+    private String resolveTenantIdFromHeaders(
+            HttpServletRequest req,
+            HttpServletResponse res,
+            boolean required
+    ) throws IOException {
         String tenantId = req.getHeader("X-Tenant-Id");
         String apiKey = req.getHeader("X-API-Key");
 
-        if (tenantId == null && apiKey != null && !apiKey.isBlank()) {
+        if ((tenantId == null || tenantId.isBlank()) && apiKey != null && !apiKey.isBlank()) {
             var idOpt = tenantRepo.findIdByApiKey(apiKey);
             if (idOpt.isPresent()) {
                 tenantId = idOpt.get().toString();
             } else {
                 res.setStatus(401);
                 res.getWriter().write("Invalid API key");
-                return false;
+                return null;
             }
         }
 
-        if (tenantId == null) {
-            res.setStatus(400);
-            res.getWriter().write("Missing tenant header (X-API-Key or X-Tenant-Id)");
-            return false;
+        if (tenantId == null || tenantId.isBlank()) {
+            if (required) {
+                res.setStatus(400);
+                res.getWriter().write("Missing tenant header (X-API-Key or X-Tenant-Id)");
+            }
+            return null;
         }
 
         try {
@@ -82,11 +108,16 @@ public class TenantResolver implements HandlerInterceptor {
         } catch (IllegalArgumentException e) {
             res.setStatus(400);
             res.getWriter().write("Invalid tenant id format");
-            return false;
+            return null;
         }
 
-        TenantContext.set(tenantId);
-        return true;
+        return tenantId;
+    }
+
+    private boolean hasTenantScopeHeader(HttpServletRequest req) {
+        String tenantId = req.getHeader("X-Tenant-Id");
+        String apiKey = req.getHeader("X-API-Key");
+        return (tenantId != null && !tenantId.isBlank()) || (apiKey != null && !apiKey.isBlank());
     }
 
     @Override

@@ -10,6 +10,7 @@ import com.app.leads.Lead;
 import com.app.leads.LeadRepository;
 import com.app.leads.LeadService;
 import com.app.modelserver.ChatbotUpstreamException;
+import com.app.modelserver.ChatbotMode;
 import com.app.modelserver.LlmInstanceManager;
 import com.app.modelserver.PythonChatClient;
 import com.app.modelserver.PythonChatFallbacks;
@@ -129,8 +130,27 @@ public class TelegramWebhookController {
 
             String baseUrl = "";
             String t = text.trim();
+            String requestedMode = ChatbotMode.normalize(bot.getMode());
 
             if ("CONFIRM".equalsIgnoreCase(t)) {
+                if (!ChatbotMode.isTenantSales(requestedMode)) {
+                    String blockedMsg = "This chat mode does not create purchase requests.";
+                    log.info(
+                            "Blocked Telegram CONFIRM by mode contract tenant={} conversationId={} requestedMode={}",
+                            binding.getTenantId(),
+                            conv.getId(),
+                            requestedMode
+                    );
+                    Message mBot = new Message();
+                    mBot.setId(UUID.randomUUID());
+                    mBot.setTenantId(binding.getTenantId());
+                    mBot.setConversationId(conv.getId());
+                    mBot.setRole("assistant");
+                    mBot.setContent(blockedMsg);
+                    msgRepo.save(mBot);
+                    sendService.sendText(binding.getBotToken(), chatId, blockedMsg);
+                    return;
+                }
                 try {
                     LlmInstanceManager.Session session = llmInstanceManager.getOrStartSession(binding.getTenantId(), bot);
                     baseUrl = session.baseUrl();
@@ -198,6 +218,25 @@ public class TelegramWebhookController {
             } catch (ChatbotUpstreamException ex) {
                 baseUrl = ex.getBaseUrl() == null ? "" : ex.getBaseUrl();
                 ai = PythonChatFallbacks.forFailure(bot.getBaseModel(), bot.getAdapterPath(), ex.getCategory());
+            }
+
+            String finalMode = ChatbotMode.finalMode(ai, requestedMode);
+            log.info(
+                    "Chat mode contract channel=telegram tenant={} conversationId={} requestedMode={} finalMode={} triggerPurchaseRequest={}",
+                    binding.getTenantId(),
+                    conv.getId(),
+                    requestedMode,
+                    finalMode,
+                    ai.trigger_purchase_request()
+            );
+            if (Boolean.TRUE.equals(ai.trigger_purchase_request()) && !ChatbotMode.allowsPurchaseRequest(requestedMode, ai)) {
+                log.info(
+                        "Blocked purchase request by mode contract tenant={} conversationId={} requestedMode={} finalMode={}",
+                        binding.getTenantId(),
+                        conv.getId(),
+                        requestedMode,
+                        finalMode
+                );
             }
 
             String reply = (ai.reply() == null) ? "" : ai.reply().trim();

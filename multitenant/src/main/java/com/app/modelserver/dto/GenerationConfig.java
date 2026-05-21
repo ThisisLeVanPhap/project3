@@ -17,5 +17,7 @@ public record GenerationConfig(
         String api_model,
         String api_key,
         String api_base_url,
-        String mode
+        String mode,
+        String retrieval_mode,
+        Integer retrieval_top_k
 ) {}

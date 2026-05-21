@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "python.llm")
 public class LlmProperties {
+    private String baseUrl;
     private String pythonBin;
     private String modelServerDir;
 

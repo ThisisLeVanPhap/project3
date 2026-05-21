@@ -13,17 +13,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -57,7 +54,7 @@ class PurchaseRequestControllerTest {
                 .thenReturn(List.of(newer, older));
         when(purchaseRequestService.findMemberDisplayNames(tenantId))
                 .thenReturn(Map.of(memberId, "Assigned Owner"));
-        when(principalAccessor.requireTenantOperator()).thenReturn(
+        when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN, AppRole.TENANT_MEMBER)).thenReturn(
                 new AppPrincipal(memberId.toString(), AppRole.TENANT_MEMBER, tenantId, "Tenant Member", "member@tenant.local")
         );
 
@@ -96,7 +93,7 @@ class PurchaseRequestControllerTest {
                 .thenReturn(List.of(purchaseRequest));
         when(purchaseRequestService.findMemberDisplayNames(tenantId))
                 .thenReturn(Map.of());
-        when(principalAccessor.requireTenantOperator()).thenReturn(
+        when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN, AppRole.TENANT_MEMBER)).thenReturn(
                 new AppPrincipal(memberId.toString(), AppRole.TENANT_MEMBER, tenantId, "Tenant Member", "member@tenant.local")
         );
 
@@ -119,7 +116,7 @@ class PurchaseRequestControllerTest {
     @Test
     void rejectsTenantFilterForDifferentTenant() throws Exception {
         TenantContext.set("8e0f40c4-83de-4d44-bf0f-5e53769595e0");
-        when(principalAccessor.requireTenantOperator()).thenReturn(
+        when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN, AppRole.TENANT_MEMBER)).thenReturn(
                 new AppPrincipal(UUID.randomUUID().toString(), AppRole.TENANT_MEMBER, "8e0f40c4-83de-4d44-bf0f-5e53769595e0", "Tenant Member", "member@tenant.local")
         );
 
@@ -143,7 +140,7 @@ class PurchaseRequestControllerTest {
         when(purchaseRequestService.updateStatus(tenantId, 42L, "CONTACTED"))
                 .thenReturn(purchaseRequest);
         when(purchaseRequestService.findMemberDisplayNames(tenantId)).thenReturn(Map.of());
-        when(principalAccessor.requireTenantOperator()).thenReturn(
+        when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN, AppRole.TENANT_MEMBER)).thenReturn(
                 new AppPrincipal(memberId.toString(), AppRole.TENANT_MEMBER, tenantId, "Tenant Member", "member@tenant.local")
         );
 
@@ -171,7 +168,7 @@ class PurchaseRequestControllerTest {
     void rejectsUnsupportedPurchaseRequestStatus() throws Exception {
         String tenantId = "8e0f40c4-83de-4d44-bf0f-5e53769595e0";
         TenantContext.set(tenantId);
-        when(principalAccessor.requireTenantOperator()).thenReturn(
+        when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN, AppRole.TENANT_MEMBER)).thenReturn(
                 new AppPrincipal(UUID.randomUUID().toString(), AppRole.TENANT_MEMBER, tenantId, "Tenant Member", "member@tenant.local")
         );
 
@@ -200,7 +197,7 @@ class PurchaseRequestControllerTest {
         UUID memberId = UUID.fromString("8dfe3f11-0b64-4a98-bfd8-24ce59c8d5ab");
         TenantContext.set(tenantId);
         PurchaseRequest purchaseRequest = purchaseRequest(42L, tenantId, "Nguyen Van A", "0912345678", "12 Nguyen Trai", "", "COMPLETED", Instant.parse("2026-04-01T10:07:10Z"));
-        when(principalAccessor.requireTenantOperator()).thenReturn(
+        when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN, AppRole.TENANT_MEMBER)).thenReturn(
                 new AppPrincipal(memberId.toString(), AppRole.TENANT_MEMBER, tenantId, "Tenant Member", "member@tenant.local")
         );
         when(purchaseRequestService.updateStatus(tenantId, 42L, "COMPLETED"))
@@ -224,10 +221,16 @@ class PurchaseRequestControllerTest {
     }
 
     @Test
-    void deniesPlatformAdminOnPurchaseRequestOperationalEndpoint() throws Exception {
-        TenantContext.set("8e0f40c4-83de-4d44-bf0f-5e53769595e0");
-        doThrow(new ResponseStatusException(FORBIDDEN, "Insufficient role"))
-                .when(principalAccessor).requireTenantOperator();
+    void allowsPlatformAdminOnPurchaseRequestOperationalEndpointForSelectedTenant() throws Exception {
+        String tenantId = "8e0f40c4-83de-4d44-bf0f-5e53769595e0";
+        TenantContext.set(tenantId);
+        PurchaseRequest purchaseRequest = purchaseRequest(42L, tenantId, "Nguyen Van A", "0912345678", "12 Nguyen Trai", "", "COMPLETED", Instant.parse("2026-04-01T10:07:10Z"));
+        when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN, AppRole.TENANT_MEMBER)).thenReturn(
+                new AppPrincipal("platform-admin", AppRole.PLATFORM_ADMIN, null, "Platform Admin", "admin")
+        );
+        when(purchaseRequestService.updateStatus(tenantId, 42L, "COMPLETED"))
+                .thenReturn(purchaseRequest);
+        when(purchaseRequestService.findMemberDisplayNames(tenantId)).thenReturn(Map.of());
 
         MockMvc mvc = MockMvcBuilders.standaloneSetup(new PurchaseRequestController(purchaseRequestService, principalAccessor))
                 .setControllerAdvice(new ApiExceptionHandler())
@@ -238,10 +241,11 @@ class PurchaseRequestControllerTest {
                         .content("""
                                 {
                                   "status": "COMPLETED"
-                                }
-                                """)
+                        }
+                        """)
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
     }
 
     @Test
@@ -283,7 +287,7 @@ class PurchaseRequestControllerTest {
         purchaseRequest.setAssignedToMemberId(targetMemberId);
         purchaseRequest.setClaimedAt(Instant.parse("2026-04-01T10:12:10Z"));
 
-        when(principalAccessor.requireTenantAdmin()).thenReturn(
+        when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN)).thenReturn(
                 new AppPrincipal(adminId.toString(), AppRole.TENANT_ADMIN, tenantId, "Tenant Admin", "admin@tenant.local")
         );
         when(purchaseRequestService.reassign(tenantId, 56L, targetMemberId)).thenReturn(purchaseRequest);

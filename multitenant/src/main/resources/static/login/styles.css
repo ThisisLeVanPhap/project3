@@ -25,7 +25,7 @@ body{
 }
 
 label{display:block;font-size:12px;opacity:.85;margin:8px 0 6px}
-input, select{
+input, select, textarea{
     width:100%;
     padding:10px 12px;
     border-radius:12px;
@@ -34,7 +34,11 @@ input, select{
     color:#e6edf3;
     outline:none;
 }
-input:focus, select:focus{
+textarea{
+    resize:vertical;
+    min-height:5rem;
+}
+input:focus, select:focus, textarea:focus{
     border-color:rgba(43,76,255,.65);
     box-shadow:0 0 0 3px rgba(43,76,255,.18);
 }
@@ -167,13 +171,75 @@ button:active{transform:translateY(1px)}
 }
 
 .login-actions button{
-    flex:1;
+    width:100%;
     padding:.7rem 1rem;
     font-size:.9rem;
+}
+
+.login-actions button:disabled{
+    opacity:.65;
+    cursor:wait;
 }
 
 /* Message */
 .login-msg{
     margin-top:1rem;
     text-align:center;
+}
+
+.access-note{
+    margin-top:1.4rem;
+    padding:1rem;
+    border-radius:14px;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.1);
+    color:rgba(230,237,243,.82);
+    font-size:.82rem;
+    line-height:1.5;
+}
+
+.access-title{
+    color:#e6edf3;
+    font-weight:700;
+    margin-bottom:.35rem;
+}
+
+.access-note a{
+    display:inline-block;
+    margin-top:.7rem;
+    color:#9db8ff;
+    text-decoration:none;
+    font-weight:600;
+}
+
+.access-note a:hover{
+    color:#c7d6ff;
+    text-decoration:underline;
+}
+
+.link-button{
+    margin-top:.7rem;
+    padding:0;
+    border:0;
+    background:transparent;
+    color:#9db8ff;
+    font-weight:700;
+}
+
+.link-button:hover{
+    color:#c7d6ff;
+    text-decoration:underline;
+}
+
+.onboarding-form{
+    margin-top:1rem;
+    padding:1rem;
+    border-radius:14px;
+    background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.1);
+}
+
+.onboarding-form button{
+    width:100%;
+    margin-top:1rem;
 }

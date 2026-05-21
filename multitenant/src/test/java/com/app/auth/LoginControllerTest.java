@@ -1,5 +1,7 @@
 package com.app.auth;
 
+import com.app.tenants.Tenant;
+import com.app.tenants.TenantRepository;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +31,9 @@ class LoginControllerTest {
 
     @Mock
     private TenantMemberRepository tenantMemberRepository;
+
+    @Mock
+    private TenantRepository tenantRepository;
 
     private final PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
@@ -63,6 +68,49 @@ class LoginControllerTest {
                 .andExpect(jsonPath("$.tenantId").value(admin.getTenantId().toString()))
                 .andExpect(jsonPath("$.email").value("admin@tenant.local"))
                 .andExpect(jsonPath("$.displayName").value("Admin User"));
+    }
+
+    @Test
+    void unifiedLoginResolvesTenantMemberWithoutRoleSelector() throws Exception {
+        TenantMember member = tenantMember(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "owner@tenant.local",
+                "Owner User",
+                "TENANT_ADMIN",
+                "{noop}owner123",
+                "ACTIVE"
+        );
+        when(tenantMemberRepository.findAllByEmailIgnoreCase("owner@tenant.local")).thenReturn(List.of(member));
+
+        MockMvc mvc = mvc();
+
+        mvc.perform(post("/api/login")
+                        .contentType("application/json")
+                        .content("""
+                                {"name":"owner@tenant.local","code":"owner123"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ok").value(true))
+                .andExpect(jsonPath("$.role").value("TENANT_ADMIN"))
+                .andExpect(jsonPath("$.tenantId").value(member.getTenantId().toString()));
+    }
+
+    @Test
+    void unifiedLoginResolvesPlatformAdminWithoutRoleSelector() throws Exception {
+        when(tenantMemberRepository.findAllByEmailIgnoreCase("admin")).thenReturn(List.of());
+
+        MockMvc mvc = mvc();
+
+        mvc.perform(post("/api/login")
+                        .contentType("application/json")
+                        .content("""
+                                {"name":"admin","code":"admin123"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ok").value(true))
+                .andExpect(jsonPath("$.role").value("PLATFORM_ADMIN"))
+                .andExpect(jsonPath("$.tenantId").value(nullValue()));
     }
 
     @Test
@@ -159,13 +207,56 @@ class LoginControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ok").value(false))
-                .andExpect(jsonPath("$.message").value("Ambiguous tenant member login"));
+                .andExpect(jsonPath("$.message").value("Email belongs to multiple stores. Enter tenant code to choose the correct store."));
+    }
+
+    @Test
+    void logsInDuplicateEmailWhenTenantCodeIsProvided() throws Exception {
+        String encoded = passwordEncoder.encode("shared123");
+        UUID firstTenantId = UUID.randomUUID();
+        UUID secondTenantId = UUID.randomUUID();
+        TenantMember first = tenantMember(
+                UUID.randomUUID(),
+                firstTenantId,
+                "shared@tenant.local",
+                "First User",
+                "TENANT_MEMBER",
+                encoded,
+                "ACTIVE"
+        );
+        TenantMember second = tenantMember(
+                UUID.randomUUID(),
+                secondTenantId,
+                "shared@tenant.local",
+                "Second User",
+                "TENANT_ADMIN",
+                encoded,
+                "ACTIVE"
+        );
+        Tenant secondTenant = tenant(secondTenantId, "shop-b", "Shop B");
+
+        when(tenantRepository.findByCodeIgnoreCase("shop-b")).thenReturn(java.util.Optional.of(secondTenant));
+        when(tenantMemberRepository.findByTenantIdAndEmailIgnoreCase(secondTenantId, "shared@tenant.local"))
+                .thenReturn(java.util.Optional.of(second));
+
+        MockMvc mvc = mvc();
+
+        mvc.perform(post("/api/login/tenant")
+                        .contentType("application/json")
+                        .content("""
+                                {"name":"shared@tenant.local","code":"shared123","tenantCode":"shop-b"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ok").value(true))
+                .andExpect(jsonPath("$.role").value("TENANT_ADMIN"))
+                .andExpect(jsonPath("$.tenantId").value(secondTenantId.toString()))
+                .andExpect(jsonPath("$.displayName").value("Second User"));
     }
 
     private MockMvc mvc() {
         return MockMvcBuilders
                 .standaloneSetup(
-                        new LoginController(tenantMemberRepository, passwordEncoder),
+                        new LoginController(tenantMemberRepository, tenantRepository, passwordEncoder),
                         new MeController(new SessionPrincipalAccessor())
                 )
                 .addFilters(new SessionAuthenticationFilter())
@@ -190,5 +281,15 @@ class LoginControllerTest {
         member.setPasswordHash(passwordHash);
         member.setStatus(status);
         return member;
+    }
+
+    private static Tenant tenant(UUID id, String code, String name) {
+        Tenant tenant = new Tenant();
+        tenant.setId(id);
+        tenant.setCode(code);
+        tenant.setName(name);
+        tenant.setApiKey("test-key-" + code);
+        tenant.setStatus("ACTIVE");
+        return tenant;
     }
 }

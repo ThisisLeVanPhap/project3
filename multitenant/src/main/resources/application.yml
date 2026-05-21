@@ -20,6 +20,7 @@ spring:
     user:
       name: admin
       password: admin123
+
 server:
   port: ${SERVER_PORT:8080}
 
@@ -27,22 +28,15 @@ logging:
   level:
     com.app: DEBUG
 
-#python:
-#  # base-url: http://localhost:8000   # (optional) fallback, không dùng trong multi-tenant nữa
-#  llm:
-#    python-bin: "C:/Users/Admin/AppData/Local/Programs/Python/Python311/python.exe"
-#    model-server-dir: "F:/20251/prj3/chatbot"
-#    host: "127.0.0.1"
-#    port-range-start: 8101
-#    port-range-end: 8199
-#    health-path: "/healthz"
-#    uvicorn-module: "app.server:app"
-
 python:
   llm:
+    # Preferred deploy mode: call a standalone Python chatbot service.
+    base-url: ${PYTHON_LLM_BASE_URL:}
+
+    # Local fallback only. Set explicitly when running Spring without
+    # PYTHON_LLM_BASE_URL.
     python-bin: ${PYTHON_BIN:python}
     model-server-dir: ${MODEL_SERVER_DIR:../chatbot}
-
     host: ${LLM_HOST:127.0.0.1}
     port-range-start: ${LLM_PORT_START:8101}
     port-range-end: ${LLM_PORT_END:8199}
@@ -51,7 +45,6 @@ python:
     connect-timeout-ms: ${LLM_CONNECT_TIMEOUT_MS:2000}
     response-timeout-ms: ${LLM_RESPONSE_TIMEOUT_MS:120000}
     startup-timeout-ms: ${LLM_STARTUP_TIMEOUT_MS:120000}
-
 
 messenger:
   verify-token: ${MESSENGER_VERIFY_TOKEN:woodchat_secret}

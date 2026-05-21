@@ -1,6 +1,8 @@
 package com.app.bots;
 
+import com.app.auth.AppRole;
 import com.app.auth.SessionPrincipalAccessor;
+import com.app.modelserver.ChatbotMode;
 import com.app.tenant.TenantContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,10 +35,11 @@ public class ChatbotController {
 
     @PostMapping
     public ChatbotInstance create(@RequestBody SaveBotDto dto) throws Exception {
-        principalAccessor.requireTenantAdmin();
+        UUID tenantId = requireChatbotManagerTenantId();
 
         var c = new ChatbotInstance();
         c.setId(UUID.randomUUID());
+        c.setTenantId(tenantId);
         c.setStatus("ACTIVE");
         applyDto(c, dto);
         return repo.save(c);
@@ -44,9 +47,8 @@ public class ChatbotController {
 
     @PutMapping("/{id}")
     public ChatbotInstance update(@PathVariable UUID id, @RequestBody SaveBotDto dto) throws Exception {
-        principalAccessor.requireTenantAdmin();
+        UUID tenantId = requireChatbotManagerTenantId();
 
-        UUID tenantId = UUID.fromString(TenantContext.get());
         ChatbotInstance chatbot = repo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chatbot not found"));
         if (!tenantId.equals(chatbot.getTenantId())) {
@@ -56,10 +58,36 @@ public class ChatbotController {
         return repo.save(chatbot);
     }
 
+    @DeleteMapping("/{id}")
+    public Map<String, Object> delete(@PathVariable UUID id) {
+        UUID tenantId = requireChatbotManagerTenantId();
+
+        ChatbotInstance chatbot = repo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chatbot not found"));
+        if (!tenantId.equals(chatbot.getTenantId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Chatbot not found");
+        }
+
+        repo.delete(chatbot);
+        return Map.of("deleted", true, "id", id);
+    }
+
     @GetMapping
     public List<ChatbotInstance> list() {
-        principalAccessor.requireTenantAdmin();
-        return repo.findAllByTenant(UUID.fromString(TenantContext.get()));
+        UUID tenantId = requireChatbotManagerTenantId();
+        return repo.findAllByTenant(tenantId);
+    }
+
+    private UUID requireChatbotManagerTenantId() {
+        principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN);
+        String tenantId = TenantContext.get();
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Tenant context required. Select a tenant first."
+            );
+        }
+        return UUID.fromString(tenantId);
     }
 
     private void applyDto(ChatbotInstance chatbot, SaveBotDto dto) throws Exception {
@@ -70,23 +98,23 @@ public class ChatbotController {
 
         // Mode
         if (dto.mode() != null && !dto.mode().isBlank()) {
-            chatbot.setMode(dto.mode());
+            chatbot.setMode(ChatbotMode.normalize(dto.mode()));
         } else {
-            chatbot.setMode("tenant_sales");
+            chatbot.setMode(ChatbotMode.TENANT_SALES);
         }
 
-        // Provider and API config
+        // Provider
         if (dto.provider() != null && !dto.provider().isBlank()) {
             chatbot.setProvider(dto.provider());
         } else {
-            chatbot.setProvider("local");
+            chatbot.setProvider("claude");
         }
-        chatbot.setApiModel(blankToNull(dto.apiModel()));
-        // Only update apiKey if a non-empty value is provided; preserve existing if blank
-        if (dto.apiKey() != null && !dto.apiKey().isBlank()) {
-            chatbot.setApiKey(dto.apiKey());
+        // Claude config is system-level only (env-based). Do not persist per-chatbot API fields.
+        if ("claude".equalsIgnoreCase(chatbot.getProvider())) {
+            chatbot.setApiModel(null);
+            chatbot.setApiKey(null);
+            chatbot.setApiBaseUrl(null);
         }
-        chatbot.setApiBaseUrl(blankToNull(dto.apiBaseUrl()));
     }
 
     private String blankToNull(String s) {

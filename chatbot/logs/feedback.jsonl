@@ -1,4 +1,0 @@
-{"conversation_id": "a46da46e-9937-4b86-a977-c77b28fff264", "tenant_id": "58ca3bdb-50b4-4e36-bcf6-fc88dbd2e457", "channel": "messenger", "question": "What is your return policy and how does the satisfaction guarantee work?", "answer": "", "is_correct": true, "note": "thumb", "timestamp_ms": 1770386709799}
-{"conversation_id": "738f88fd-af98-4e23-b87b-3da211cd7f2f", "tenant_id": "58ca3bdb-50b4-4e36-bcf6-fc88dbd2e457", "channel": "messenger", "question": "👍", "answer": "", "is_correct": true, "note": "thumb", "timestamp_ms": 1770396990975}
-{"conversation_id": "string", "tenant_id": "string", "channel": "string", "question": "string", "answer": "string", "is_correct": true, "note": "", "timestamp_ms": 1774541647142}
-{"conversation_id": "string", "tenant_id": "string", "channel": "string", "question": "string", "answer": "string", "is_correct": true, "note": "", "timestamp_ms": 1774542598499}

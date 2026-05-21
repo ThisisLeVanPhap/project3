@@ -270,6 +270,10 @@
 
         const userExternalId = getOrCreateUserExternalId();
 
+        function ownerQuery() {
+            return `userExternalId=${encodeURIComponent(userExternalId)}`;
+        }
+
         function clearMessages() {
             messagesDiv.innerHTML = '';
         }
@@ -369,12 +373,20 @@
                         <div class="conv-meta">${date} · ${c.messageCount} tin nhắn</div>
                     </div>
                     <div class="conv-actions">
-                        <button class="conv-btn rename" title="Đổi tên" onclick="event.stopPropagation(); renameConversation('${c.id}')">✏️</button>
-                        <button class="conv-btn delete" title="Xóa" onclick="event.stopPropagation(); deleteConversation('${c.id}')">🗑️</button>
+                        <button class="conv-btn rename" title="Đổi tên" data-action="rename">✏️</button>
+                        <button class="conv-btn delete" title="Xóa" data-action="delete">🗑️</button>
                     </div>
                 `;
                 li.addEventListener('click', async () => {
                     await selectConversation(c.id);
+                });
+                li.querySelector('[data-action="rename"]')?.addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    await renameConversation(c.id);
+                });
+                li.querySelector('[data-action="delete"]')?.addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    await deleteConversation(c.id);
                 });
                 convList.appendChild(li);
             }
@@ -389,7 +401,7 @@
 
         async function loadConversationHistory(convId) {
             try {
-                const resp = await fetch(`/api/chat/conversation/${convId}/messages`, {
+                const resp = await fetch(`/api/chat/conversation/${convId}/messages?${ownerQuery()}`, {
                     headers: { 'X-Tenant-Id': tenantId }
                 });
                 if (!resp.ok) {
@@ -426,7 +438,7 @@
             const newTitle = prompt('Đổi tên cuộc trò chuyện:', currentTitle);
             if (newTitle && newTitle.trim() !== '') {
                 try {
-                    await fetch(`/api/chat/conversation/${convId}/rename`, {
+                    const resp = await fetch(`/api/chat/conversation/${convId}/rename?${ownerQuery()}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -434,6 +446,9 @@
                         },
                         body: JSON.stringify({ title: newTitle.trim() })
                     });
+                    if (!resp.ok) {
+                        throw new Error(await resp.text());
+                    }
                     // Refresh list
                     const convs = await fetchConversations();
                     renderConversationList(convs);
@@ -448,10 +463,13 @@
                 return;
             }
             try {
-                await fetch(`/api/chat/conversation/${convId}`, {
+                const resp = await fetch(`/api/chat/conversation/${convId}?${ownerQuery()}`, {
                     method: 'DELETE',
                     headers: { 'X-Tenant-Id': tenantId }
                 });
+                if (!resp.ok) {
+                    throw new Error(await resp.text());
+                }
                 // If deleted conversation was active, clear state and start new
                 if (conversationId === convId) {
                     conversationId = null;
@@ -522,7 +540,8 @@
                     },
                     body: JSON.stringify({
                         conversationId: conversationId,
-                        message: text
+                        message: text,
+                        userExternalId: userExternalId
                     })
                 });
 
@@ -559,47 +578,9 @@
             }
         }
 
-        // Init
-        if (!tenantId || !chatbotId) {
-            addError('Thiếu tham số tenantId hoặc chatbotId trong URL. Ví dụ: /chat?tenantId=...&chatbotId=...');
-            msgInput.disabled = true;
-            sendBtn.disabled = true;
-            convList.innerHTML = '<li class="empty-state">Không thể tải danh sách</li>';
-        } else {
-            showConfig();
-            const selected = localStorage.getItem(SELECTED_KEY);
-            if (selected) {
-                conversationId = selected;
-            }
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                conversationId = saved;
-            }
-
-            // Load conversation list
-            const convs = await fetchConversations();
-            renderConversationList(convs);
-
-            if (conversationId) {
-                // Check if conversation exists in list (might have been deleted)
-                const exists = convs.some(c => c.id === conversationId);
-                if (exists) {
-                    await selectConversation(conversationId);
-                } else {
-                    conversationId = null;
-                    localStorage.removeItem(STORAGE_KEY);
-                    localStorage.removeItem(SELECTED_KEY);
-                }
-            }
-
-            // Start new conversation if none
-            if (!conversationId) {
-                await startConversation();
-            }
-
-            msgInput.focus();
-            sendBtn.addEventListener('click', sendMessage);
-            msgInput.addEventListener('keypress', (e) => {
+        function bindChatEvents() {
+            sendBtn.addEventListener('click', () => sendMessage());
+            msgInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') sendMessage();
             });
 
@@ -610,6 +591,53 @@
                 });
             }
         }
+
+        async function bootstrapTenantChat() {
+            if (!tenantId || !chatbotId) {
+                addError('Thiếu tham số tenantId hoặc chatbotId trong URL. Ví dụ: /chat?tenantId=...&chatbotId=...');
+                msgInput.disabled = true;
+                sendBtn.disabled = true;
+                convList.innerHTML = '<li class="empty-state">Không thể tải danh sách</li>';
+                return;
+            }
+
+            showConfig();
+            const selected = localStorage.getItem(SELECTED_KEY);
+            if (selected) {
+                conversationId = selected;
+            }
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                conversationId = saved;
+            }
+
+            const convs = await fetchConversations();
+            renderConversationList(convs);
+
+            if (conversationId) {
+                const exists = convs.some(c => c.id === conversationId);
+                if (exists) {
+                    await selectConversation(conversationId);
+                } else {
+                    conversationId = null;
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(SELECTED_KEY);
+                }
+            }
+
+            if (!conversationId) {
+                await startConversation();
+            }
+
+            msgInput.focus();
+        }
+
+        bindChatEvents();
+        bootstrapTenantChat().catch((e) => {
+            console.error(e);
+            addError(e.message || 'Khong the khoi tao chat');
+            setLoading(false);
+        });
     </script>
 </body>
 </html>

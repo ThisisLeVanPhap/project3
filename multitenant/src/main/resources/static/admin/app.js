@@ -26,7 +26,9 @@ const state = {
     selectedTenant: null, // {id, name, apiKey, code}
     selectedBot: null,    // {id, name, channel, ...}
     editingBotId: null,
-    currentPrincipal: null
+    currentPrincipal: null,
+    onboardingRequests: [],
+    selectedOnboardingRequestId: null
 };
 
 async function loadCurrentPrincipal(){
@@ -100,7 +102,7 @@ function headersJson(){
 }
 
 async function req(method, path, body, opts = { tenantHeaders: true }){
-    const url = baseUrl() + path;
+    const url = opts.sameOrigin === false ? baseUrl() + path : path;
     const headers = { "Content-Type": "application/json" };
 
     // tenant headers ON/OFF
@@ -112,7 +114,7 @@ async function req(method, path, body, opts = { tenantHeaders: true }){
         if(auth) headers["Authorization"] = auth;
     }
 
-    const opt = { method, headers };
+    const opt = { method, headers, credentials: "same-origin" };
     if(body !== undefined) opt.body = JSON.stringify(body);
 
     const res = await fetch(url, opt);
@@ -288,14 +290,7 @@ function renderKbStatusBadge(status){
 
 async function evictPlatformRuntime(tenantId){
     const params = new URLSearchParams({ tenantId });
-    const res = await fetch(baseUrl() + `/api/ops/runtime/evict?${params.toString()}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(headersJson().Authorization ? { Authorization: headersJson().Authorization } : {}) }
-    });
-    const text = await res.text();
-    let data = text;
-    try { data = JSON.parse(text); } catch(e) {}
-    return { ok: res.ok, status: res.status, data };
+    return req("POST", `/api/ops/runtime/evict?${params.toString()}`, undefined, { tenantHeaders: false });
 }
 
 /* ---------------- Tabs ---------------- */
@@ -304,11 +299,14 @@ function setTab(name){
         b.classList.toggle("active", b.dataset.tab === name);
     });
     // ✅ add "leads"
-    ["tenants","members","chatbots","bindings","monitor","leads","purchase-requests","stats"].forEach(t=>{
+    ["tenants","onboarding","members","chatbots","bindings","monitor","leads","purchase-requests","stats"].forEach(t=>{
         const el = $("tab-"+t);
         if(el) el.classList.toggle("hidden", t !== name);
     });
 
+    if(name === "onboarding"){
+        loadOnboardingRequests().catch(()=>{});
+    }
     // optional: auto load leads when open tab
     if(name === "leads"){
         refreshLeads().catch(()=>{});
@@ -317,6 +315,204 @@ function setTab(name){
 document.querySelectorAll(".tab").forEach(b=>{
     b.addEventListener("click", ()=> setTab(b.dataset.tab));
 });
+
+/* ---------------- Onboarding requests ---------------- */
+function onboardingStatusBadge(status){
+    const normalized = (status || "NEW").toUpperCase();
+    return `<span class="ops-badge ops-badge-neutral">${normalized}</span>`;
+}
+
+function slugifyTenantCode(value){
+    return (value || "tenant")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        || `tenant_${Math.random().toString(16).slice(2, 8)}`;
+}
+
+function generatedTemporaryPassword(){
+    return `Temp@${Math.random().toString(36).slice(2, 8)}${Math.floor(100 + Math.random() * 900)}`;
+}
+
+async function loadOnboardingRequests(){
+    const status = $("onboardingStatusFilter")?.value || "";
+    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+    const r = await req("GET", `/api/admin/onboarding-requests${query}`, undefined, { tenantHeaders:false });
+    $("onboardingOut").innerText = JSON.stringify(r, null, 2);
+    if(!r.ok){
+        $("onboardingMsg").innerText = r.status === 401
+            ? "Phiên đăng nhập đã hết hạn. Đăng nhập lại rồi bấm Load requests."
+            : (r.data?.message || `Load failed (${r.status})`);
+        return;
+    }
+    state.onboardingRequests = Array.isArray(r.data) ? r.data : [];
+    renderOnboardingRequests(state.onboardingRequests);
+    $("onboardingMsg").innerText = `Loaded ${state.onboardingRequests.length} request(s)`;
+}
+
+function renderOnboardingRequests(items){
+    const tbody = document.querySelector("#onboarding-table tbody");
+    if(!tbody) return;
+    tbody.innerHTML = "";
+    if(!Array.isArray(items) || items.length === 0){
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 5;
+        td.className = "muted";
+        td.textContent = "No onboarding requests found.";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+    }
+
+    for(const item of items){
+        const tr = document.createElement("tr");
+        tr.dataset.id = item.id;
+
+        const storeTd = document.createElement("td");
+        storeTd.innerHTML = `<b></b><div class="muted"></div>`;
+        storeTd.querySelector("b").textContent = item.storeName || "-";
+        storeTd.querySelector(".muted").textContent = item.websiteUrl || item.note || "";
+
+        const contactTd = document.createElement("td");
+        contactTd.innerHTML = `<b></b><div class="muted"></div><div class="muted"></div>`;
+        contactTd.querySelector("b").textContent = item.contactName || "-";
+        contactTd.querySelectorAll(".muted")[0].textContent = item.email || "";
+        contactTd.querySelectorAll(".muted")[1].textContent = item.phone || "";
+
+        const statusTd = document.createElement("td");
+        statusTd.innerHTML = onboardingStatusBadge(item.status);
+
+        const createdTd = document.createElement("td");
+        createdTd.textContent = fmtDateTime(item.createdAt);
+
+        const actionsTd = document.createElement("td");
+        const canProvision = (item.status || "").toUpperCase() === "APPROVED";
+        actionsTd.innerHTML = `
+            <button class="secondary" data-action="contacted">Contacted</button>
+            <button class="secondary" data-action="approved">Approve</button>
+            <button class="secondary" data-action="rejected">Reject</button>
+            <button data-action="select-provision" ${canProvision ? "" : "disabled"} title="${canProvision ? "Create tenant and owner account" : "Approve this request before provisioning"}">Provision</button>
+        `;
+
+        tr.append(storeTd, contactTd, statusTd, createdTd, actionsTd);
+        tbody.appendChild(tr);
+    }
+}
+
+async function updateOnboardingStatus(requestId, status){
+    const current = state.onboardingRequests.find(item => item.id === requestId);
+    $("onboardingMsg").innerText = `Updating request to ${status}...`;
+    const r = await req(
+        "PATCH",
+        `/api/admin/onboarding-requests/${encodeURIComponent(requestId)}/status`,
+        { status, adminNote: current?.adminNote || "" },
+        { tenantHeaders:false }
+    );
+    $("onboardingOut").innerText = JSON.stringify(r, null, 2);
+    if(!r.ok){
+        $("onboardingMsg").innerText = r.data?.message || `Update failed (${r.status})`;
+        return;
+    }
+    $("onboardingMsg").innerText = `Request marked ${status}`;
+    await loadOnboardingRequests();
+}
+
+function selectOnboardingForProvision(requestId){
+    const item = state.onboardingRequests.find(r => r.id === requestId);
+    if(!item){
+        $("onboardingMsg").innerText = "Request not found. Reload requests first.";
+        return;
+    }
+    state.selectedOnboardingRequestId = requestId;
+    $("onboardingProvisionPanel")?.classList.remove("hidden");
+    $("onboardingSelectedSummary").textContent =
+        `${item.storeName || "-"} | ${item.contactName || "-"} | ${item.email || "-"} | status ${item.status || "NEW"}`;
+    $("onboardingTenantCode").value = slugifyTenantCode(item.storeName);
+    $("onboardingTenantName").value = item.storeName || "";
+    $("onboardingOwnerEmail").value = item.email || "";
+    $("onboardingOwnerDisplayName").value = item.contactName || "";
+    $("onboardingOwnerPassword").value = generatedTemporaryPassword();
+    $("onboardingAdminNote").value = item.adminNote || "";
+    $("onboardingProvisionMsg").innerText = item.status === "APPROVED"
+        ? "Ready to provision."
+        : "Approve this request before provisioning.";
+}
+
+async function provisionSelectedOnboardingRequest(){
+    const requestId = state.selectedOnboardingRequestId;
+    if(!requestId){
+        $("onboardingProvisionMsg").innerText = "Select a request first.";
+        return;
+    }
+    const body = {
+        tenantCode: $("onboardingTenantCode").value.trim(),
+        tenantName: $("onboardingTenantName").value.trim(),
+        kbDir: $("onboardingKbDir").value.trim(),
+        ownerEmail: $("onboardingOwnerEmail").value.trim(),
+        ownerDisplayName: $("onboardingOwnerDisplayName").value.trim(),
+        ownerPassword: $("onboardingOwnerPassword").value.trim(),
+        adminNote: $("onboardingAdminNote").value.trim()
+    };
+    if(!body.tenantCode || !body.tenantName || !body.ownerEmail || !body.ownerPassword){
+        $("onboardingProvisionMsg").innerText = "Tenant code, tenant name, owner email and temporary password are required.";
+        return;
+    }
+
+    $("onboardingProvisionMsg").innerText = "Provisioning...";
+    const r = await req(
+        "POST",
+        `/api/admin/onboarding-requests/${encodeURIComponent(requestId)}/provision`,
+        body,
+        { tenantHeaders:false }
+    );
+    $("onboardingOut").innerText = JSON.stringify(r, null, 2);
+    if(!r.ok){
+        $("onboardingProvisionMsg").innerText = r.data?.message || `Provision failed (${r.status})`;
+        return;
+    }
+    $("onboardingProvisionMsg").innerText = "Tenant and owner account created. Share the temporary password with the owner through your trusted channel.";
+    await loadOnboardingRequests();
+    await loadTenants(false, r.data?.tenantId || "");
+}
+
+document.querySelector("#onboarding-table")?.addEventListener("click", async (e)=>{
+    const btn = e.target.closest("button");
+    if(!btn) return;
+    const requestId = btn.closest("tr")?.dataset?.id;
+    if(!requestId) return;
+    const action = btn.dataset.action;
+    if(action === "select-provision"){
+        selectOnboardingForProvision(requestId);
+        return;
+    }
+    const statusByAction = {
+        contacted: "CONTACTED",
+        approved: "APPROVED",
+        rejected: "REJECTED"
+    };
+    if(statusByAction[action]){
+        try {
+            await updateOnboardingStatus(requestId, statusByAction[action]);
+        } catch (err) {
+            console.error(err);
+            $("onboardingMsg").innerText = err.message || "Update failed";
+        }
+    }
+});
+
+$("loadOnboardingRequests")?.addEventListener("click", () => loadOnboardingRequests().catch(err => {
+    console.error(err);
+    $("onboardingMsg").innerText = err.message || "Load failed";
+}));
+$("clearOnboardingOut")?.addEventListener("click", () => $("onboardingOut").innerText = "");
+$("closeOnboardingProvision")?.addEventListener("click", () => $("onboardingProvisionPanel").classList.add("hidden"));
+$("provisionOnboardingRequest")?.addEventListener("click", () => provisionSelectedOnboardingRequest().catch(err => {
+    console.error(err);
+    $("onboardingProvisionMsg").innerText = err.message || "Provision failed";
+}));
 
 /* ---------------- Tenant select helpers ---------------- */
 function renderTenantSelect(selectId){
@@ -358,7 +554,7 @@ function applyTenantById(tenantId){
 }
 
 function getSelectedTenantIdForMembers(){
-    return state.selectedTenant?.id || $("tenantId")?.value?.trim() || "";
+    return $("tenantSelectMembers")?.value || state.selectedTenant?.id || $("tenantId")?.value?.trim() || "";
 }
 
 /* ---------------- Bot select helpers ---------------- */
@@ -412,10 +608,26 @@ function renderChatbotEditSelect(){
     sel.value = state.editingBotId || "";
 }
 
+function normalizePersonaInput(value){
+    const raw = (value || "").trim();
+    if(!raw) return "{}";
+
+    if(raw.startsWith("{") || raw.startsWith("[")){
+        try{
+            JSON.parse(raw);
+            return raw;
+        }catch(e){
+            throw new Error("Persona must be valid JSON, or enter plain text without { }.");
+        }
+    }
+
+    return JSON.stringify({ note: raw });
+}
+
 function botPayloadFromForm(){
     const name = $("botName").value.trim();
     const channel = $("botChannel").value.trim();
-    const personaJson = ($("botPersona").value || "").trim();
+    const personaJson = normalizePersonaInput($("botPersona").value);
     const responseStyle = $("botResponseStyle").value.trim() || "natural";
     const provider = $("botProvider").value.trim() || "local";
 
@@ -423,26 +635,14 @@ function botPayloadFromForm(){
         throw new Error("Thiáº¿u bot name hoáº·c channel");
     }
 
-    const payload = {
+    // Provider is system-level for Claude, no per-chatbot config fields
+    return {
         name,
         channel,
-        personaJson: personaJson || "{}",
+        personaJson,
         responseStyle,
         provider
     };
-
-    // Only include API config fields if provider is claude and values are non-empty
-    if(provider === "claude"){
-        const apiModel = $("botApiModel").value.trim();
-        const apiKey = $("botApiKey").value.trim();
-        const apiBaseUrl = $("botApiBaseUrl").value.trim();
-
-        if(apiModel) payload.apiModel = apiModel;
-        if(apiKey) payload.apiKey = apiKey;
-        if(apiBaseUrl) payload.apiBaseUrl = apiBaseUrl;
-    }
-
-    return payload;
 }
 
 function populateBotForm(bot){
@@ -454,10 +654,6 @@ function populateBotForm(bot){
         $("botPersona").value = "";
         $("botResponseStyle").value = "natural";
         $("botProvider").value = "local";
-        $("botApiModel").value = "";
-        $("botApiKey").value = "";
-        $("botApiBaseUrl").value = "";
-        toggleApiConfigFields();
         return;
     }
 
@@ -468,10 +664,6 @@ function populateBotForm(bot){
     $("botPersona").value = bot.persona ? JSON.stringify(bot.persona) : "";
     $("botResponseStyle").value = bot.responseStyle || "natural";
     $("botProvider").value = bot.provider || "local";
-    $("botApiModel").value = bot.apiModel || "";
-    $("botApiKey").value = ""; // never populate real key for security
-    $("botApiBaseUrl").value = bot.apiBaseUrl || "";
-    toggleApiConfigFields();
 }
 
 /* ---------------- Helpers ---------------- */
@@ -666,11 +858,13 @@ async function loadTenants(autoPickFirst=false){
 
     if(r.ok && Array.isArray(r.data)){
         state.tenants = r.data;
+        renderTenantSelect("tenantSelectMembers");
         renderTenantSelect("tenantSelectBots");
         renderTenantSelect("tenantSelectBindings");
 
         if(autoPickFirst && state.tenants.length){
             applyTenantById(state.tenants[0].id);
+            $("tenantSelectMembers").value = state.tenants[0].id;
             $("tenantSelectBots").value = state.tenants[0].id;
             $("tenantSelectBindings").value = state.tenants[0].id;
         }
@@ -700,11 +894,14 @@ $("createBot").addEventListener("click", async ()=>{
         const r = await req("POST", "/api/chatbots", payload);
         $("botsOut").innerText = JSON.stringify(r, null, 2);
 
-        await loadBots(false);
-        if(r.ok && r.data){
-            populateBotForm(r.data);
-            showMsg("botsMsg", "Chatbot created");
+        if(!r.ok){
+            showMsg("botsMsg", r.data?.message || `Create failed (${r.status})`);
+            return;
         }
+
+        await loadBots(true);
+        populateBotForm(r.data);
+        showMsg("botsMsg", "Chatbot created");
     }catch(err){
         $("botsMsg").innerText = err.message;
     }
@@ -727,10 +924,47 @@ $("saveBot").addEventListener("click", async ()=>{
         const r = await req("PUT", `/api/chatbots/${state.editingBotId}`, payload);
         $("botsOut").innerText = JSON.stringify(r, null, 2);
 
+        if(!r.ok){
+            showMsg("botsMsg", r.data?.message || `Save failed (${r.status})`);
+            return;
+        }
+
         await loadBots(true);
-        if(r.ok && r.data){
-            populateBotForm(r.data);
-            showMsg("botsMsg", "Chatbot saved");
+        populateBotForm(r.data);
+        showMsg("botsMsg", "Chatbot saved");
+    }catch(err){
+        $("botsMsg").innerText = err.message;
+    }
+});
+
+$("deleteBot").addEventListener("click", async ()=>{
+    $("botsMsg").innerText = "";
+
+    if(!state.selectedTenant){
+        $("botsMsg").innerText = "Chua chon tenant";
+        return;
+    }
+
+    const botId = state.editingBotId || $("chatbotSelectEdit").value;
+    if(!botId){
+        $("botsMsg").innerText = "Select a chatbot first";
+        return;
+    }
+
+    const bot = state.bots.find(x => x.id === botId);
+    const label = bot ? `${bot.name} [${bot.channel}]` : botId;
+    if(!window.confirm(`Delete chatbot "${label}"? This also removes its bindings and conversations.`)){
+        return;
+    }
+
+    try{
+        const r = await req("DELETE", `/api/chatbots/${botId}`);
+        $("botsOut").innerText = JSON.stringify(r, null, 2);
+
+        if(r.ok){
+            populateBotForm(null);
+            await loadBots(true);
+            showMsg("botsMsg", "Chatbot deleted");
         }
     }catch(err){
         $("botsMsg").innerText = err.message;
@@ -806,20 +1040,7 @@ $("botSelect").addEventListener("change", (e)=>{
     setSelectedBot(e.target.value);
 });
 
-// Provider toggle for API config fields
-const providerSelect = $("botProvider");
-if(providerSelect){
-    providerSelect.addEventListener("change", toggleApiConfigFields);
-}
-
-function toggleApiConfigFields(){
-    const provider = $("botProvider")?.value;
-    const show = provider === "claude";
-    const note = $("apiConfigNote");
-    const fields = $("apiConfigFields");
-    if(note) note.style.display = show ? "block" : "none";
-    if(fields) fields.style.display = show ? "grid" : "none";
-}
+// Provider toggle removed - Claude uses system-level env only
 
 $("createTgBinding").addEventListener("click", async ()=>{
     $("bindingsOut").innerText = "";
@@ -1050,6 +1271,7 @@ async function loadTenants(autoPickFirst=false, preferredTenantId=""){
 
     if(r.ok && Array.isArray(r.data)){
         state.tenants = r.data;
+        renderTenantSelect("tenantSelectMembers");
         renderTenantSelect("tenantSelectBots");
         renderTenantSelect("tenantSelectBindings");
 
@@ -1059,6 +1281,7 @@ async function loadTenants(autoPickFirst=false, preferredTenantId=""){
 
         if(tenantToSelect){
             applyTenantById(tenantToSelect.id);
+            $("tenantSelectMembers").value = tenantToSelect.id;
             $("tenantSelectBots").value = tenantToSelect.id;
             $("tenantSelectBindings").value = tenantToSelect.id;
         }
@@ -1109,6 +1332,18 @@ function wireTenantProvisioningUi(){
 }
 
 function wireMemberManagementUi(){
+    $("useTenantMembers")?.addEventListener("click", async ()=>{
+        const tenantId = $("tenantSelectMembers")?.value || "";
+        if(!tenantId){
+            $("membersMsg").innerText = "Select a tenant first";
+            return;
+        }
+        applyTenantById(tenantId);
+        $("tenantSelectMembers").value = tenantId;
+        $("membersMsg").innerText = "Tenant applied";
+        await loadMembersForSelectedTenant();
+    });
+
     $("createMember")?.addEventListener("click", async ()=>{
         const tenantId = getSelectedTenantIdForMembers();
         if(!tenantId){
@@ -1168,6 +1403,11 @@ async function loadMembersForSelectedTenant(){
 
 /* ---------------- Init ---------------- */
 $("saveCfg").addEventListener("click", saveCfg);
+$("toggleDevDebug")?.addEventListener("click", ()=>{
+    const panel = $("devDebugPanel");
+    if(!panel) return;
+    panel.classList.toggle("hidden");
+});
 loadCfg();
 wireTenantProvisioningUi();
 wireMemberManagementUi();

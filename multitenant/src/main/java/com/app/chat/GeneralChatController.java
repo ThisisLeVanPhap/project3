@@ -3,12 +3,11 @@ package com.app.chat;
 import com.app.bots.ChatbotInstance;
 import com.app.bots.ChatbotInstanceRepository;
 import com.app.modelserver.ChatbotUpstreamException;
+import com.app.modelserver.ChatbotMode;
 import com.app.modelserver.LlmInstanceManager;
 import com.app.modelserver.PythonChatClient;
 import com.app.modelserver.PythonChatFallbacks;
 import com.app.modelserver.dto.ChatResponse;
-import com.app.purchases.PurchaseRequestService;
-import com.app.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,26 +23,60 @@ import java.util.*;
 public class GeneralChatController {
 
     private static final UUID SYSTEM_TENANT_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
-    private static final String GENERAL_CHATBOT_MODE = "general_consumer";
+    private static final String LEGACY_GENERAL_CHATBOT_MODE = "general_consumer";
 
     private final ConversationRepository convRepo;
     private final MessageRepository msgRepo;
     private final ChatbotInstanceRepository botRepo;
     private final PythonChatClient pythonChatClient;
     private final LlmInstanceManager llmInstanceManager;
-    private final PurchaseRequestService purchaseRequestService;
 
     private ChatbotInstance getGeneralChatbot() {
-        return botRepo.findByModeAndStatus(GENERAL_CHATBOT_MODE, "ACTIVE")
+        return botRepo.findByModeAndStatus(ChatbotMode.GENERAL_COMPARE, "ACTIVE")
+                .or(() -> botRepo.findByModeAndStatus(LEGACY_GENERAL_CHATBOT_MODE, "ACTIVE"))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "General consumer chatbot not configured. Please set up a chatbot with mode='general_consumer'"));
+                        "General comparison chatbot not configured. Please set up a chatbot with mode='general_compare'"));
+    }
+
+    private ChatbotInstance getChatbotForMode(String requestedMode) {
+        String mode = resolveGeneralMode(requestedMode);
+        if (ChatbotMode.MARKET_PRICE.equals(mode)) {
+            return botRepo.findByModeAndStatus(ChatbotMode.MARKET_PRICE, "ACTIVE")
+                    .or(this::optionalGeneralChatbot)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Market price chatbot not configured. Please set up a chatbot with mode='market_price'"));
+        }
+        return getGeneralChatbot();
+    }
+
+    private Optional<ChatbotInstance> optionalGeneralChatbot() {
+        return botRepo.findByModeAndStatus(ChatbotMode.GENERAL_COMPARE, "ACTIVE")
+                .or(() -> botRepo.findByModeAndStatus(LEGACY_GENERAL_CHATBOT_MODE, "ACTIVE"));
+    }
+
+    private String resolveGeneralMode(String rawMode) {
+        if (rawMode == null || rawMode.isBlank()) {
+            return ChatbotMode.GENERAL_COMPARE;
+        }
+        String normalized = ChatbotMode.normalize(rawMode);
+        return ChatbotMode.MARKET_PRICE.equals(normalized)
+                ? ChatbotMode.MARKET_PRICE
+                : ChatbotMode.GENERAL_COMPARE;
     }
 
     @GetMapping("/conversations")
     public List<Map<String, Object>> listConversations(
-            @RequestParam(defaultValue = "50") int limit
+            @RequestParam(defaultValue = "50") int limit,
+            @RequestParam String userExternalId,
+            @RequestParam(required = false) String mode
     ) {
-        List<Conversation> convs = convRepo.findTop50ByTenantIdAndChatbotIdOrderByCreatedAtDesc(SYSTEM_TENANT_ID, getGeneralChatbot().getId());
+        String owner = requireUserExternalId(userExternalId);
+        ChatbotInstance bot = getChatbotForMode(mode);
+        List<Conversation> convs = convRepo.findTop50ByTenantIdAndChatbotIdAndUserExternalIdOrderByCreatedAtDesc(
+                SYSTEM_TENANT_ID,
+                bot.getId(),
+                owner
+        );
         if (limit > 0 && limit < convs.size()) {
             convs = convs.subList(0, Math.min(limit, convs.size()));
         }
@@ -69,18 +102,12 @@ public class GeneralChatController {
     }
 
     @GetMapping("/conversation/{conversationId}/messages")
-    public List<Map<String, Object>> getMessages(@PathVariable UUID conversationId) {
-        Conversation conv = convRepo.findById(conversationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found"));
-
-        if (!SYSTEM_TENANT_ID.equals(conv.getTenantId())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
-        }
-
-        UUID generalChatbotId = getGeneralChatbot().getId();
-        if (!generalChatbotId.equals(conv.getChatbotId())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
-        }
+    public List<Map<String, Object>> getMessages(
+            @PathVariable UUID conversationId,
+            @RequestParam String userExternalId,
+            @RequestParam(required = false) String mode
+    ) {
+        requireOwnedGeneralConversation(conversationId, userExternalId, getChatbotForMode(mode).getId());
 
         List<Message> msgs = msgRepo.findTop200ByTenantIdAndConversationIdOrderByCreatedAtAsc(SYSTEM_TENANT_ID, conversationId);
         List<Map<String, Object>> out = new ArrayList<>();
@@ -97,16 +124,11 @@ public class GeneralChatController {
     @PutMapping("/conversation/{conversationId}/rename")
     public Map<String, Object> renameConversation(
             @PathVariable UUID conversationId,
+            @RequestParam String userExternalId,
+            @RequestParam(required = false) String mode,
             @RequestBody Map<String, String> req
     ) {
-        Conversation conv = convRepo.findById(conversationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found"));
-        if (!SYSTEM_TENANT_ID.equals(conv.getTenantId())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
-        }
-        if (!getGeneralChatbot().getId().equals(conv.getChatbotId())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
-        }
+        Conversation conv = requireOwnedGeneralConversation(conversationId, userExternalId, getChatbotForMode(mode).getId());
 
         String title = req.get("title");
         if (title == null || title.isBlank()) {
@@ -123,15 +145,12 @@ public class GeneralChatController {
     }
 
     @DeleteMapping("/conversation/{conversationId}")
-    public Map<String, Object> deleteConversation(@PathVariable UUID conversationId) {
-        Conversation conv = convRepo.findById(conversationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found"));
-        if (!SYSTEM_TENANT_ID.equals(conv.getTenantId())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
-        }
-        if (!getGeneralChatbot().getId().equals(conv.getChatbotId())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
-        }
+    public Map<String, Object> deleteConversation(
+            @PathVariable UUID conversationId,
+            @RequestParam String userExternalId,
+            @RequestParam(required = false) String mode
+    ) {
+        Conversation conv = requireOwnedGeneralConversation(conversationId, userExternalId, getChatbotForMode(mode).getId());
 
         // Delete messages first
         msgRepo.deleteByConversationId(conversationId);
@@ -141,13 +160,15 @@ public class GeneralChatController {
     }
 
     @PostMapping("/start")
-    public Map<String, Object> start() {
-        ChatbotInstance bot = getGeneralChatbot();
+    public Map<String, Object> start(@RequestBody Map<String, String> req) {
+        ChatbotInstance bot = getChatbotForMode(req.get("mode"));
+        String owner = requireUserExternalId(req.get("userExternalId"));
 
         Conversation c = new Conversation();
         c.setId(UUID.randomUUID());
         c.setChatbotId(bot.getId());
         c.setTenantId(SYSTEM_TENANT_ID);
+        c.setUserExternalId(owner);
         convRepo.save(c);
 
         return Map.of("conversationId", c.getId());
@@ -166,18 +187,18 @@ public class GeneralChatController {
         }
 
         UUID convId = UUID.fromString(convIdRaw);
-        ChatbotInstance bot = getGeneralChatbot();
-
-        Conversation conv = convRepo.findById(convId)
-                .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
-
-        if (!SYSTEM_TENANT_ID.equals(conv.getTenantId())) {
-            throw new IllegalArgumentException("Forbidden conversation");
-        }
-
-        if (!bot.getId().equals(conv.getChatbotId())) {
-            throw new IllegalArgumentException("Conversation does not belong to general chat");
-        }
+        String requestedMode = resolveGeneralMode(req.get("mode"));
+        ChatbotInstance bot = getChatbotForMode(requestedMode);
+        Conversation conv = requireOwnedGeneralConversation(convId, req.get("userExternalId"), bot.getId());
+        log.info(
+                "General chat selected chatbot conversationId={} selectedChatbotId={} requestedMode={} provider={} baseModel={} adapter={}",
+                convId,
+                bot.getId(),
+                requestedMode,
+                safe(bot.getProvider()),
+                safe(bot.getBaseModel()),
+                safe(bot.getAdapterPath())
+        );
 
         Message mUser = new Message(
                 UUID.randomUUID(),
@@ -209,10 +230,12 @@ public class GeneralChatController {
         }
 
         String baseUrl = "";
+        String runtimeMode = "";
         ChatResponse resp;
         try {
             LlmInstanceManager.Session session = llmInstanceManager.getOrStartSession(SYSTEM_TENANT_ID, bot);
             baseUrl = session.baseUrl();
+            runtimeMode = session.runtimeMode();
             resp = pythonChatClient.chat(
                     baseUrl,
                     userMsg,
@@ -221,12 +244,38 @@ public class GeneralChatController {
                     convId.toString(),
                     "web",
                     SYSTEM_TENANT_ID.toString(),
+                    requestedMode,
                     session.coldStart(),
                     session.warmupWaited()
             );
         } catch (ChatbotUpstreamException ex) {
             baseUrl = ex.getBaseUrl() == null ? "" : ex.getBaseUrl();
             resp = PythonChatFallbacks.forFailure(bot.getBaseModel(), bot.getAdapterPath(), ex.getCategory());
+        }
+
+        String finalMode = ChatbotMode.finalMode(resp, requestedMode);
+        log.info(
+                "Chat mode contract channel=general-web tenant={} conversationId={} selectedChatbotId={} requestedMode={} finalMode={} provider={} baseModel={} adapter={} pythonRuntimeMode={} pythonBaseUrl={} triggerPurchaseRequest={}",
+                SYSTEM_TENANT_ID,
+                convId,
+                bot.getId(),
+                requestedMode,
+                finalMode,
+                safe(bot.getProvider()),
+                safe(bot.getBaseModel()),
+                safe(bot.getAdapterPath()),
+                safe(runtimeMode),
+                safe(baseUrl),
+                resp.trigger_purchase_request()
+        );
+        if (Boolean.TRUE.equals(resp.trigger_purchase_request())) {
+            log.info(
+                    "Blocked purchase request by mode contract tenant={} conversationId={} requestedMode={} finalMode={}",
+                    SYSTEM_TENANT_ID,
+                    convId,
+                    requestedMode,
+                    finalMode
+            );
         }
 
         Message mBot = new Message(
@@ -238,30 +287,6 @@ public class GeneralChatController {
         mBot.setTenantId(SYSTEM_TENANT_ID);
         msgRepo.save(mBot);
 
-        // Create purchase request if triggered by chatbot (lead captured)
-        if (Boolean.TRUE.equals(resp.trigger_purchase_request())) {
-            String phone = resp.captured_phone();
-            if (phone != null && !phone.isBlank()) {
-                try {
-                    String customerName = resp.captured_name();
-                    if (customerName == null || customerName.isBlank()) {
-                        customerName = "Chat User";
-                    }
-                    String transcript = "User: " + userMsg + "\nAssistant: " + resp.reply();
-                    purchaseRequestService.createFromChat(
-                            SYSTEM_TENANT_ID.toString(),
-                            convId.toString(),
-                            phone,
-                            customerName,
-                            transcript
-                    );
-                    log.info("Created purchase request from conversation {}", convId);
-                } catch (Exception e) {
-                    log.warn("Failed to create purchase request for conversation {}", convId, e);
-                }
-            }
-        }
-
         llmInstanceManager.cleanupIdle();
 
         Map<String, Object> out = new LinkedHashMap<>();
@@ -272,5 +297,36 @@ public class GeneralChatController {
         out.put("llmBaseUrl", baseUrl == null ? "" : baseUrl);
 
         return out;
+    }
+
+    private static String requireUserExternalId(String userExternalId) {
+        if (userExternalId == null || userExternalId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userExternalId is required");
+        }
+        return userExternalId.trim();
+    }
+
+    private static String safe(String value) {
+        return value == null || value.isBlank() ? "-" : value;
+    }
+
+    private Conversation requireOwnedGeneralConversation(UUID conversationId, String userExternalId) {
+        return requireOwnedGeneralConversation(conversationId, userExternalId, getGeneralChatbot().getId());
+    }
+
+    private Conversation requireOwnedGeneralConversation(UUID conversationId, String userExternalId, UUID generalChatbotId) {
+        String owner = requireUserExternalId(userExternalId);
+        Conversation conv = convRepo.findById(conversationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found"));
+        if (!SYSTEM_TENANT_ID.equals(conv.getTenantId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
+        }
+        if (!generalChatbotId.equals(conv.getChatbotId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
+        }
+        if (!owner.equals(conv.getUserExternalId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
+        }
+        return conv;
     }
 }

@@ -3,6 +3,7 @@ package com.app.chat;
 import com.app.bots.ChatbotInstance;
 import com.app.bots.ChatbotInstanceRepository;
 import com.app.leads.Lead;
+import com.app.leads.LeadRepository;
 import com.app.leads.LeadService;
 import com.app.modelserver.LlmInstanceManager;
 import com.app.modelserver.PythonChatClient;
@@ -23,6 +24,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,6 +46,8 @@ class ChatControllerConfirmMessageTest {
     private LlmInstanceManager llmInstanceManager;
     @Mock
     private LeadService leadService;
+    @Mock
+    private LeadRepository leadRepo;
     @Mock
     private PurchaseRequestService purchaseRequestService;
 
@@ -64,16 +72,18 @@ class ChatControllerConfirmMessageTest {
 
         Map<String, Object> out = chatController.send(Map.of(
                 "conversationId", fixture.conversationId.toString(),
-                "message", "CONFIRM"
+                "message", "CONFIRM",
+                "userExternalId", fixture.userExternalId
         ));
 
-        assertEquals(
-                "Cáº£m Æ¡n Nguyen Van A. MÃ¬nh Ä‘Ã£ táº¡o yÃªu cáº§u mua hÃ ng cho báº¡n.\nThÃ´ng tin mÃ¬nh Ä‘Ã£ ghi nháº­n:\n- há» tÃªn: Nguyen Van A\n- sá»‘ Ä‘iá»‡n thoáº¡i: 0912345678\n- Ä‘á»‹a chá»‰ nháº­n hÃ ng: 123 Nguyen Trai, Ha Noi\nNhÃ¢n viÃªn bÃªn mÃ¬nh sáº½ sá»›m liÃªn há»‡ Ä‘á»ƒ xÃ¡c nháº­n láº¡i thÃ´ng tin vÃ  hoÃ n táº¥t Ä‘Æ¡n hÃ ng.",
-                out.get("reply")
-        );
+        String reply = String.valueOf(out.get("reply"));
+        assertTrue(reply.contains("Nguyen Van A"));
+        assertTrue(reply.contains("0912345678"));
+        assertTrue(reply.contains("123 Nguyen Trai, Ha Noi"));
         assertEquals(18, out.get("latencyMs"));
         assertEquals("model-a", out.get("model"));
         assertEquals("adapter-a", out.get("adapter"));
+        verify(leadRepo).save(fixture.lead);
     }
 
     @Test
@@ -86,19 +96,58 @@ class ChatControllerConfirmMessageTest {
 
         Map<String, Object> out = chatController.send(Map.of(
                 "conversationId", fixture.conversationId.toString(),
-                "message", "CONFIRM"
+                "message", "CONFIRM",
+                "userExternalId", fixture.userExternalId
         ));
 
-        assertEquals(
-                "MÃ¬nh cÃ³ thá»ƒ táº¡o yÃªu cáº§u mua hÃ ng cho báº¡n, nhÆ°ng trÆ°á»›c khi xÃ¡c nháº­n báº¡n vui lÃ²ng gá»­i Ä‘áº§y Ä‘á»§ há» tÃªn, sá»‘ Ä‘iá»‡n thoáº¡i vÃ  Ä‘á»‹a chá»‰ nháº­n hÃ ng trong Ä‘oáº¡n chat nÃ y nhÃ©.",
-                out.get("reply")
-        );
+        String reply = String.valueOf(out.get("reply"));
+        assertTrue(reply.length() > 20);
+        assertTrue(!"upstream".equals(reply));
         assertEquals(18, out.get("latencyMs"));
         assertEquals("model-a", out.get("model"));
         assertEquals("adapter-a", out.get("adapter"));
+        verify(leadRepo, never()).save(any());
+    }
+
+    @Test
+    void nonTenantSalesModeBlocksPurchaseRequestEvenIfPythonTriggers() {
+        Fixture fixture = Fixture.create();
+        fixture.bot.setMode("general_compare");
+        ChatResponse upstreamResponse = new ChatResponse(
+                "compare reply",
+                18,
+                "model-a",
+                "adapter-a",
+                true,
+                null,
+                null,
+                Map.of("mode", "general_compare")
+        );
+
+        mockBaseConversation(fixture, upstreamResponse, false);
+
+        Map<String, Object> out = chatController.send(Map.of(
+                "conversationId", fixture.conversationId.toString(),
+                "message", "CONFIRM",
+                "userExternalId", fixture.userExternalId
+        ));
+
+        assertEquals("compare reply", out.get("reply"));
+        assertEquals(18, out.get("latencyMs"));
+        verify(leadService, never()).createLeadFromConversation(anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(purchaseRequestService, never()).findOrCreateFromLead(any());
+        verify(leadRepo, never()).save(any());
     }
 
     private void mockBaseConversation(Fixture fixture) {
+        mockBaseConversation(
+                fixture,
+                new ChatResponse("upstream", 18, "model-a", "adapter-a", true, null, null, Map.of("mode", "tenant_sales")),
+                true
+        );
+    }
+
+    private void mockBaseConversation(Fixture fixture, ChatResponse upstreamResponse, boolean stubLeadCapture) {
         TenantContext.set(fixture.tenantId.toString());
 
         when(convRepo.findById(fixture.conversationId)).thenReturn(Optional.of(fixture.conversation));
@@ -117,28 +166,33 @@ class ChatControllerConfirmMessageTest {
                 fixture.tenantId.toString(),
                 false,
                 false
-        )).thenReturn(new ChatResponse("upstream", 18, "model-a", "adapter-a"));
-        when(leadService.createLeadFromConversation(
-                "http://127.0.0.1:8101",
-                fixture.tenantId.toString(),
-                "web",
-                fixture.conversationId.toString(),
-                ""
-        )).thenReturn(fixture.lead);
+        )).thenReturn(upstreamResponse);
+
+        if (stubLeadCapture) {
+            when(leadService.createLeadFromConversation(
+                    "http://127.0.0.1:8101",
+                    fixture.tenantId.toString(),
+                    "web",
+                    fixture.conversationId.toString(),
+                    ""
+            )).thenReturn(fixture.lead);
+        }
     }
 
     private static final class Fixture {
         private final UUID tenantId;
         private final UUID conversationId;
         private final UUID chatbotId;
+        private final String userExternalId;
         private final Conversation conversation;
         private final ChatbotInstance bot;
         private final Lead lead;
 
-        private Fixture(UUID tenantId, UUID conversationId, UUID chatbotId, Conversation conversation, ChatbotInstance bot, Lead lead) {
+        private Fixture(UUID tenantId, UUID conversationId, UUID chatbotId, String userExternalId, Conversation conversation, ChatbotInstance bot, Lead lead) {
             this.tenantId = tenantId;
             this.conversationId = conversationId;
             this.chatbotId = chatbotId;
+            this.userExternalId = userExternalId;
             this.conversation = conversation;
             this.bot = bot;
             this.lead = lead;
@@ -148,17 +202,20 @@ class ChatControllerConfirmMessageTest {
             UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
             UUID conversationId = UUID.randomUUID();
             UUID chatbotId = UUID.randomUUID();
+            String userExternalId = "guest:test-user";
 
             Conversation conversation = new Conversation();
             conversation.setId(conversationId);
             conversation.setTenantId(tenantId);
             conversation.setChatbotId(chatbotId);
+            conversation.setUserExternalId(userExternalId);
 
             ChatbotInstance bot = new ChatbotInstance();
             bot.setId(chatbotId);
+            bot.setMode("tenant_sales");
 
             Lead lead = Lead.createNew(tenantId.toString(), "web", conversationId.toString(), "", "{}", "");
-            return new Fixture(tenantId, conversationId, chatbotId, conversation, bot, lead);
+            return new Fixture(tenantId, conversationId, chatbotId, userExternalId, conversation, bot, lead);
         }
     }
 }

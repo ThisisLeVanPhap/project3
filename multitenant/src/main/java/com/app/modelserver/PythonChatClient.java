@@ -56,19 +56,33 @@ public class PythonChatClient {
     public ChatResponse chat(String baseUrl, ChatRequest request, boolean coldStart, boolean warmupWaited) {
         String baseModel = request.gen() != null ? request.gen().base_model() : "unknown";
         String adapter = request.gen() != null ? request.gen().adapter() : null;
+        String requestedMode = request.gen() != null ? request.gen().mode() : request.mode();
 
         try {
-            return client(baseUrl).post()
+            ChatResponse response = client(baseUrl).post()
                     .uri("/chat")
                     .bodyValue(request)
                     .retrieve()
                     .bodyToMono(ChatResponse.class)
                     .timeout(Duration.ofMillis(props.getResponseTimeoutMs()))
                     .block();
+            log.info(
+                    "Python chat response tenant={} channel={} requestedMode={} finalMode={} provider={} baseModel={} adapter={} baseUrl={} triggerPurchaseRequest={}",
+                    request.tenant_id(),
+                    request.channel(),
+                    ChatbotMode.normalize(requestedMode),
+                    ChatbotMode.finalMode(response, requestedMode),
+                    request.gen() != null ? safe(request.gen().provider()) : "-",
+                    safe(baseModel),
+                    safe(adapter),
+                    safe(baseUrl),
+                    response != null ? response.trigger_purchase_request() : null
+            );
+            return response;
         } catch (Exception ex) {
             ChatbotUpstreamException upstream = classify(baseUrl, request.tenant_id(), coldStart, warmupWaited, ex);
             log.warn(
-                    "Chatbot upstream failure tenant={} baseUrl={} category={} status={} coldStart={} warmupWaited={} channel={} message={}",
+                    "Chatbot upstream failure tenant={} baseUrl={} category={} status={} coldStart={} warmupWaited={} channel={} provider={} baseModel={} adapter={} message={}",
                     upstream.getTenantId(),
                     upstream.getBaseUrl(),
                     upstream.getCategory(),
@@ -76,6 +90,9 @@ public class PythonChatClient {
                     upstream.isColdStart(),
                     upstream.isWarmupWaited(),
                     request.channel(),
+                    request.gen() != null ? safe(request.gen().provider()) : "-",
+                    safe(baseModel),
+                    safe(adapter),
                     upstream.getMessage(),
                     upstream
             );
@@ -92,7 +109,35 @@ public class PythonChatClient {
                              String tenantId,
                              boolean coldStart,
                              boolean warmupWaited) {
+        return chat(
+                baseUrl,
+                message,
+                history,
+                cfg,
+                conversationId,
+                channel,
+                tenantId,
+                ChatbotMode.normalize(cfg.getMode()),
+                coldStart,
+                warmupWaited
+        );
+    }
 
+    public ChatResponse chat(String baseUrl,
+                             String message,
+                             List<String> history,
+                             ChatbotInstance cfg,
+                             String conversationId,
+                             String channel,
+                             String tenantId,
+                             String requestedMode,
+                             boolean coldStart,
+                             boolean warmupWaited) {
+
+        String mode = ChatbotMode.normalize(requestedMode);
+
+        // Claude is system-level provider: do not forward per-chatbot API config fields.
+        // Key/model/base URL are resolved from env in Python.
         GenerationConfig gen = new GenerationConfig(
                 cfg.getBaseModel(),
                 cfg.getAdapterPath(),
@@ -105,10 +150,12 @@ public class PythonChatClient {
                 cfg.getResponseStyle(),
                 List.of("## Instruction:", "## # System:", "## System:", "### Instruction:", "### System:", "</s>"),
                 cfg.getProvider(),
-                cfg.getApiModel(),
-                cfg.getApiKey(),
-                cfg.getApiBaseUrl(),
-                cfg.getMode()  // pass mode through
+                null,  // api_model - system-level env only
+                null,  // api_key - system-level env only
+                null,  // api_base_url - system-level env only
+                mode,
+                ChatbotMode.DEFAULT_RETRIEVAL_MODE,
+                null
         );
 
         ChatRequest request = new ChatRequest(
@@ -118,7 +165,7 @@ public class PythonChatClient {
                 conversationId,
                 channel,
                 tenantId,
-                cfg.getMode()  // pass mode through
+                mode
         );
         return chat(baseUrl, request, coldStart, warmupWaited);
     }
@@ -174,7 +221,7 @@ public class PythonChatClient {
                     responseException
             );
         }
-        if (root instanceof TimeoutException || root instanceof SocketTimeoutException) {
+        if (isTimeout(root)) {
             return new ChatbotUpstreamException(
                     UpstreamFailureCategory.TIMEOUT,
                     tenantId,
@@ -190,7 +237,7 @@ public class PythonChatClient {
             Throwable requestRoot = requestException.getCause() == null
                     ? requestException
                     : Exceptions.unwrap(requestException.getCause());
-            if (requestRoot instanceof TimeoutException || requestRoot instanceof SocketTimeoutException) {
+            if (isTimeout(requestRoot)) {
                 return new ChatbotUpstreamException(
                         UpstreamFailureCategory.TIMEOUT,
                         tenantId,
@@ -229,5 +276,17 @@ public class PythonChatClient {
                 "Chatbot request failed before a valid response was received",
                 root
         );
+    }
+
+    private static boolean isTimeout(Throwable error) {
+        if (error instanceof TimeoutException || error instanceof SocketTimeoutException) {
+            return true;
+        }
+        String className = error == null ? "" : error.getClass().getName();
+        return className.endsWith("TimeoutException");
+    }
+
+    private static String safe(String value) {
+        return value == null || value.isBlank() ? "-" : value;
     }
 }

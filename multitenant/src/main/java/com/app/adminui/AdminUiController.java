@@ -23,4 +23,19 @@ public class AdminUiController {
     public String tenantPurchaseRequests() {
         return "forward:/tenant/purchase-requests/index.html";
     }
+
+    @GetMapping({"/chat", "/chat/"})
+    public String tenantChat() {
+        return "forward:/chat/index.html";
+    }
+
+    @GetMapping({"/chat/general", "/chat/general/"})
+    public String generalChat() {
+        return "forward:/chat/general/index.html";
+    }
+
+    @GetMapping({"/price-check", "/price-check/", "/chat/price-check", "/chat/price-check/"})
+    public String priceCheck() {
+        return "forward:/chat/general/index.html";
+    }
 }

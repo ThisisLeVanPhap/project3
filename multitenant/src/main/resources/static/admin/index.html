@@ -3,27 +3,34 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Create Chatbot Admin</title>
+    <title>Platform Admin Console</title>
     <link rel="stylesheet" href="/admin/styles.css" />
 </head>
 <body>
 <div class="container">
     <header class="topbar">
         <div>
-            <div class="title">Create Chatbot Admin</div>
-            <div class="sub">Mở: http://localhost:8080/admin</div>
+            <div class="title">Platform Admin Console</div>
+            <div class="sub">Quan tri tenant, onboarding, chatbot va van hanh he thong</div>
         </div>
 
         <div class="right">
             <span class="chip">User: <b id="adminIdentity">-</b></span>
             <span class="chip">Selected tenant: <b id="selectedTenantName">—</b></span>
-            <button class="secondary" id="pingHealth" title="Kiểm tra Spring Boot còn sống + actuator health">Ping health</button>
+            <button class="secondary" id="toggleDevDebug" title="Show or hide API headers and manual request settings">Dev debug</button>
             <button class="danger" id="btn-admin-logout" title="Sign out">Logout</button>
         </div>
     </header>
 
-    <!-- CONFIG (chỉ giữ tối thiểu, không gợi ý token trong UI) -->
-    <section class="card">
+    <!-- Developer/API debug: hidden by default for normal admin work -->
+    <section class="card hidden" id="devDebugPanel">
+        <div class="head">
+            <div>
+                <h2>Developer API Debug</h2>
+                <div class="muted">Manual request settings. Normal admin tabs use the selected tenant automatically.</div>
+            </div>
+        </div>
+
         <div class="grid2">
             <div>
                 <label>API Base</label>
@@ -48,18 +55,12 @@
         <div class="row">
             <button id="saveCfg">Save</button>
             <span id="cfgMsg" class="muted"></span>
-            <span class="muted" id="healthMsg"></span>
-        </div>
-
-        <div class="note">
-            <b>Ping health dùng để làm gì?</b>
-            <div>- Xác nhận backend Spring Boot đang chạy.</div>
-            <div>- Nếu health FAIL: thường là lỗi DB, Flyway, port, hoặc app crash.</div>
         </div>
     </section>
 
     <nav class="tabs">
         <button class="tab active" data-tab="tenants">Tenants</button>
+        <button class="tab" data-tab="onboarding">Onboarding</button>
         <button class="tab" data-tab="members">Members</button>
         <button class="tab" data-tab="chatbots">Chatbots</button>
         <button class="tab" data-tab="bindings">Bindings</button>
@@ -120,6 +121,91 @@
             <pre id="tenantsOut" class="out"></pre>
         </section>
 
+        <section id="tab-onboarding" class="card hidden">
+            <div class="head">
+                <h2>Tenant Onboarding Requests</h2>
+                <div class="row">
+                    <button class="secondary" id="clearOnboardingOut">Clear output</button>
+                </div>
+            </div>
+
+            <div class="note">
+                Public store requests arrive here. Review, contact the requester, approve, then provision a tenant and initial owner account.
+            </div>
+
+            <div class="row">
+                <select id="onboardingStatusFilter">
+                    <option value="">All statuses</option>
+                    <option value="NEW">NEW</option>
+                    <option value="CONTACTED">CONTACTED</option>
+                    <option value="APPROVED">APPROVED</option>
+                    <option value="REJECTED">REJECTED</option>
+                    <option value="PROVISIONED">PROVISIONED</option>
+                </select>
+                <button class="secondary" id="loadOnboardingRequests">Load requests</button>
+                <span class="muted" id="onboardingMsg"></span>
+            </div>
+
+            <div class="table-wrap">
+                <table class="table" id="onboarding-table">
+                    <thead>
+                    <tr>
+                        <th>Store</th>
+                        <th>Contact</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div id="onboardingProvisionPanel" class="drawer hidden">
+                <div class="drawer-header">
+                    <h3>Provision tenant from request</h3>
+                    <button id="closeOnboardingProvision" class="secondary">Close</button>
+                </div>
+                <div class="note" id="onboardingSelectedSummary"></div>
+                <div class="grid3">
+                    <div>
+                        <label>Tenant code</label>
+                        <input id="onboardingTenantCode" />
+                    </div>
+                    <div>
+                        <label>Tenant name</label>
+                        <input id="onboardingTenantName" />
+                    </div>
+                    <div>
+                        <label>KB dir (optional)</label>
+                        <input id="onboardingKbDir" placeholder="/opt/app/chatbot/kb/store-code" />
+                    </div>
+                </div>
+                <div class="grid3">
+                    <div>
+                        <label>Owner email</label>
+                        <input id="onboardingOwnerEmail" />
+                    </div>
+                    <div>
+                        <label>Owner display name</label>
+                        <input id="onboardingOwnerDisplayName" />
+                    </div>
+                    <div>
+                        <label>Temporary password</label>
+                        <input id="onboardingOwnerPassword" type="password" />
+                    </div>
+                </div>
+                <label>Admin note</label>
+                <input id="onboardingAdminNote" />
+                <div class="row">
+                    <button id="provisionOnboardingRequest">Provision tenant and owner</button>
+                    <span class="muted" id="onboardingProvisionMsg"></span>
+                </div>
+            </div>
+
+            <pre id="onboardingOut" class="out"></pre>
+        </section>
+
         <section id="tab-members" class="card hidden">
             <div class="head">
                 <h2>Tenant Members</h2>
@@ -129,7 +215,17 @@
             </div>
 
             <div class="note">
-                Select a tenant first from the Tenants tab or the shared tenant selector, then manage members for that tenant.
+                Select a tenant here, then manage members for that tenant.
+            </div>
+
+            <div class="grid2">
+                <div>
+                    <label>Tenant</label>
+                    <select id="tenantSelectMembers"></select>
+                </div>
+                <div class="row end">
+                    <button class="secondary" id="useTenantMembers">Use tenant</button>
+                </div>
             </div>
 
             <div class="grid3">
@@ -218,8 +314,8 @@
                     </select>
                 </div>
                 <div>
-                    <label>personaJson (optional)</label>
-                    <input id="botPersona" />
+                    <label>Persona note / JSON (optional)</label>
+                    <input id="botPersona" placeholder='{"tone":"helpful"} or short note' />
                 </div>
             </div>
 
@@ -239,32 +335,22 @@
                         <option value="local">Local (Hugging Face)</option>
                         <option value="claude">Claude API</option>
                     </select>
-                    <div class="muted">local = sử dụng model local. claude = sử dụng Claude API.</div>
+                    <div class="muted">local = sử dụng model local. claude = sử dụng Claude API với cấu hình hệ thống.</div>
                 </div>
             </div>
 
-            <div class="note" id="apiConfigNote" style="display:none;">
-                Cấu hình Claude API (điền khi chọn provider "claude"):
-            </div>
-
-            <div class="grid3" id="apiConfigFields" style="display:none;">
-                <div>
-                    <label>API Model</label>
-                    <input id="botApiModel" placeholder="claude-3-5-sonnet-20241022" />
-                </div>
-                <div>
-                    <label>API Key</label>
-                    <input id="botApiKey" type="password" placeholder="sk-ant-..." />
-                </div>
-                <div>
-                    <label>API Base URL</label>
-                    <input id="botApiBaseUrl" placeholder="https://api.anthropic.com" />
-                </div>
+            <div class="note">
+                <b>Claude là provider cấp hệ thống</b>
+                <div>Claude lấy cấu hình từ env hệ thống, không nhập/lưu theo từng chatbot:</div>
+                <div>- <code>ANTHROPIC_API_KEY</code> hoặc <code>CLAUDE_API_KEY</code></div>
+                <div>- <code>CLAUDE_MODEL</code> (default: claude-sonnet-4-6)</div>
+                <div>- <code>CLAUDE_API_BASE_URL</code> (default: https://api.anthropic.com)</div>
             </div>
 
             <div class="row">
                 <button id="createBot">Create chatbot</button>
                 <button class="secondary" id="saveBot">Save selected chatbot</button>
+                <button class="danger" id="deleteBot">Delete selected chatbot</button>
                 <button class="secondary" id="loadBots">Load chatbots</button>
                 <span class="muted" id="botsMsg"></span>
             </div>
@@ -335,10 +421,21 @@
 
         <section id="tab-monitor" class="card hidden">
             <div class="head">
-                <h2>Operations</h2>
+                <h2>Monitoring</h2>
                 <div class="row">
                     <button class="secondary" id="clearRuntimeOut">Clear output</button>
                 </div>
+            </div>
+
+            <div class="note">
+                <b>Monitoring dùng để làm gì?</b>
+                <div>- Xem sức khỏe backend, runtime model theo tenant, trạng thái KB và tổng quan purchase requests toàn hệ thống.</div>
+                <div>- Platform admin dùng màn này để vận hành/hỗ trợ, không phải màn xử lý nghiệp vụ hằng ngày của cửa hàng.</div>
+            </div>
+
+            <div class="row">
+                <button class="secondary" id="pingHealth" title="Check Spring Boot actuator health">Check backend health</button>
+                <span class="muted" id="healthMsg"></span>
             </div>
 
             <div class="row">
@@ -350,12 +447,15 @@
 
             <div id="runtimeSummary" class="note hidden"></div>
             <div id="benchmarkSummary" class="note hidden"></div>
-            <pre id="runtimeOut" class="out"></pre>
+            <details class="debug-details">
+                <summary>Raw API output</summary>
+                <pre id="runtimeOut" class="out"></pre>
+            </details>
 
             <div class="note">
-                <b>Ý nghĩa:</b>
+                <b>Runtime controls:</b>
                 <div>- Xem tenant nào đang chạy model server, baseUrl/port/pid, lastUsedAt.</div>
-                <div>- Dùng để demo “cô lập theo tenant”: mỗi tenant map sang port riêng.</div>
+                <div>- Evict runtime dùng khi cần buộc tenant load lại runtime/model sạch hơn.</div>
             </div>
         </section>
 
@@ -366,6 +466,10 @@
                 <div class="row">
                     <button class="secondary" id="btn-refresh-leads">Refresh</button>
                 </div>
+            </div>
+
+            <div class="note">
+                Platform admin can inspect tenant leads for support/audit. Daily handling should be done by tenant admins or tenant members for the selected tenant.
             </div>
 
             <table class="table" id="leads-table">
@@ -395,6 +499,10 @@
         <section id="tab-purchase-requests" class="card hidden">
             <div class="head">
                 <h2>Purchase Requests</h2>
+            </div>
+
+            <div class="note">
+                These records are tenant business data. Platform admin has highest access, but normal workflow belongs to tenant admin/member.
             </div>
 
             <div class="toolbar">

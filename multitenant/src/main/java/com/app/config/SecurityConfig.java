@@ -35,7 +35,10 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/login",
                                 "/login/**",
+                                "/api/login",
                                 "/api/login/**",
+                                "/api/onboarding-requests",
+                                "/api/onboarding-requests/**",
                                 "/favicon.ico",
                                 "/error"
                         ).permitAll()

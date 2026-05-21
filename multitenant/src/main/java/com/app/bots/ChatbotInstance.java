@@ -30,7 +30,7 @@ public class ChatbotInstance extends TenantScoped {
     private String status;
 
     @Column(name = "base_model")
-    private String baseModel;              // vd: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+    private String baseModel;              // local model id/path when local provider is explicitly enabled
 
     @Column(name = "adapter_path")
     private String adapterPath;            // vd: "out/lora_tenant1_styleA"
@@ -55,10 +55,10 @@ public class ChatbotInstance extends TenantScoped {
     private String responseStyle;
 
     @Column(name = "mode")
-    private String mode = "tenant_sales";  // tenant_sales | general_consumer
+    private String mode = "tenant_sales";  // tenant_sales | general_compare | market_price
 
     @Column(name = "provider")
-    private String provider = "local";  // local | claude
+    private String provider = "claude";  // claude | local
 
     @Column(name = "api_model")
     private String apiModel;

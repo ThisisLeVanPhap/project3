@@ -12,7 +12,7 @@ def get_pipeline(
     device: int | None = None,
 ):
     """
-    base: tên/path base model, ví dụ: "Qwen/Qwen2.5-1.5B-Instruct" hoặc path snapshot local
+    base: tên/path base model, ví dụ HuggingFace model id hoặc path snapshot local
     adapter: path đến thư mục LoRA
     tokenizer_path: path tokenizer (nếu None thì tự suy ra như cũ)
     device:

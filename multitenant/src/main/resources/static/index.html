@@ -17,7 +17,7 @@
             justify-content: center;
         }
         .container {
-            max-width: 900px;
+            max-width: 1040px;
             padding: 40px 20px;
             text-align: center;
         }
@@ -54,6 +54,9 @@
         }
         .product-card.tenant {
             border-top: 4px solid #1976d2;
+        }
+        .product-card.price {
+            border-top: 4px solid #00897b;
         }
         .product-icon {
             font-size: 3em;
@@ -92,6 +95,13 @@
         .product-btn.tenant:hover {
             background: #1565c0;
         }
+        .product-btn.price {
+            background: #00897b;
+            color: white;
+        }
+        .product-btn.price:hover {
+            background: #00695c;
+        }
         .footer {
             margin-top: 50px;
             color: rgba(255,255,255,0.7);
@@ -114,18 +124,27 @@
                 <a href="/chat/general/" class="product-btn general">Bắt đầu trò chuyện</a>
             </div>
 
-            <div class="product-card tenant">
-                <div class="product-icon">🏪</div>
-                <div class="product-title">Chat với cửa hàng</div>
+            <div class="product-card price">
+                <div class="product-icon">₫</div>
+                <div class="product-title">Khảo giá nội thất</div>
                 <div class="product-desc">
-                    Kết nối trực tiếp với cửa hàng nội thất. Nhận tư vấn từ nhân viên và xem sản phẩm thực tế.
+                    Kiểm tra khoảng giá tham khảo, so sánh mức cao thấp và nhận diện giá bất thường từ dữ liệu hiện có.
                 </div>
-                <a href="/admin/" class="product-btn tenant">Vào cửa hàng</a>
+                <a href="/price-check/" class="product-btn price">Khảo giá ngay</a>
+            </div>
+
+            <div class="product-card tenant">
+                <div class="product-icon">🛠️</div>
+                <div class="product-title">Cổng vận hành</div>
+                <div class="product-desc">
+                    Đăng nhập theo vai trò để quản trị hệ thống, cấu hình cửa hàng, quản lý chatbot và xử lý yêu cầu mua hàng.
+                </div>
+                <a href="/admin/" class="product-btn tenant">Đăng nhập</a>
             </div>
         </div>
 
         <div class="footer">
-            <p>Hỗ trợ đa tenant • Bảo mật dữ liệu • AI thông minh</p>
+            <p>Phân quyền theo vai trò • Dữ liệu tách theo tenant • Chatbot, khảo giá và yêu cầu mua hàng</p>
         </div>
     </div>
 </body>

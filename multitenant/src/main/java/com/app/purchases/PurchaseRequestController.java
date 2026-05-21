@@ -38,8 +38,12 @@ public class PurchaseRequestController {
             @RequestParam(value = "tenantId", required = false) String tenantId,
             @RequestParam(value = "status", required = false) String status
     ) {
-        principalAccessor.requireTenantOperator();
-        String effectiveTenantId = resolveTenantId(tenantId);
+        AppPrincipal principal = principalAccessor.requireAnyRole(
+                AppRole.PLATFORM_ADMIN,
+                AppRole.TENANT_ADMIN,
+                AppRole.TENANT_MEMBER
+        );
+        String effectiveTenantId = resolveTenantId(tenantId, principal);
         Map<UUID, String> memberDisplayNames = purchaseRequestService.findMemberDisplayNames(effectiveTenantId);
 
         List<PurchaseRequest> purchaseRequests =
@@ -58,8 +62,12 @@ public class PurchaseRequestController {
             @PathVariable("id") Long id,
             @RequestBody PurchaseRequestStatusUpdateRequest request
     ) {
-        principalAccessor.requireTenantOperator();
-        String currentTenantId = resolveTenantId(null);
+        AppPrincipal principal = principalAccessor.requireAnyRole(
+                AppRole.PLATFORM_ADMIN,
+                AppRole.TENANT_ADMIN,
+                AppRole.TENANT_MEMBER
+        );
+        String currentTenantId = resolveTenantId(null, principal);
         PurchaseRequest purchaseRequest = purchaseRequestService.updateStatus(currentTenantId, id, request.status());
         return toResponse(purchaseRequest, purchaseRequestService.findMemberDisplayNames(currentTenantId));
     }
@@ -67,7 +75,7 @@ public class PurchaseRequestController {
     @PutMapping("/{id}/claim")
     public PurchaseRequestResponse claim(@PathVariable("id") Long id) {
         AppPrincipal principal = principalAccessor.requireTenantOperator();
-        String currentTenantId = resolveTenantId(null);
+        String currentTenantId = resolveTenantId(null, principal);
         UUID memberId = requireCurrentMemberId(principal);
         PurchaseRequest purchaseRequest = purchaseRequestService.claim(currentTenantId, id, memberId);
         return toResponse(purchaseRequest, purchaseRequestService.findMemberDisplayNames(currentTenantId));
@@ -78,20 +86,25 @@ public class PurchaseRequestController {
             @PathVariable("id") Long id,
             @RequestBody PurchaseRequestAssignmentRequest request
     ) {
-        principalAccessor.requireTenantAdmin();
-        String currentTenantId = resolveTenantId(null);
+        AppPrincipal principal = principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN);
+        String currentTenantId = resolveTenantId(null, principal);
         UUID memberId = parseMemberId(request.memberId());
         PurchaseRequest purchaseRequest = purchaseRequestService.reassign(currentTenantId, id, memberId);
         return toResponse(purchaseRequest, purchaseRequestService.findMemberDisplayNames(currentTenantId));
     }
 
-    private String resolveTenantId(String tenantId) {
-        String currentTenantId = TenantContext.get();
-        if (currentTenantId == null || currentTenantId.isBlank()) {
-            currentTenantId = principalAccessor.requireTenantId();
+    private String resolveTenantId(String tenantId, AppPrincipal principal) {
+        String currentTenantId = principal.role() == AppRole.PLATFORM_ADMIN
+                ? TenantContext.get()
+                : principal.tenantId();
+        if ((currentTenantId == null || currentTenantId.isBlank())
+                && principal.role() == AppRole.PLATFORM_ADMIN
+                && tenantId != null
+                && !tenantId.isBlank()) {
+            currentTenantId = tenantId;
         }
         if (currentTenantId == null || currentTenantId.isBlank()) {
-            throw new IllegalStateException("Missing tenant context");
+            throw new IllegalStateException("Missing tenant context. Select a tenant first.");
         }
 
         String effectiveTenantId = tenantId;

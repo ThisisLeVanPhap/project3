@@ -2,25 +2,37 @@ import os
 import time
 import re
 import threading
-import requests
+import gc
+from dataclasses import dataclass
 from typing import List, Optional, Dict, Tuple, Any
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from .guardrails import rule_reply, want_similar
-from .logger import log_event, log_feedback
+from .logger import log_event, log_feedback, log_retrieval_debug
 
 # --- SALES FLOW imports ---
 from .state import get_state, save_turn, set_stage, reset_state
 from .sales_flow import extract_slots, next_stage, build_sales_prefix, detect_intent, has_sufficient_constraints
 
-# --- CONSULTATION imports ---
-from .consultation import extract_consultation_slots, build_consultation_prefix, next_consultation_stage, extract_phone
-
-from .model_loader import get_pipeline
 from .prompt import build_messages, DEFAULT_SYSTEM
-from .retriever import SimpleKb
+from .modes import ChatMode, mode_system_instruction, normalize_chat_mode
+from .market_data import (
+    build_internal_catalog_provider,
+    build_price_provider,
+    format_catalog_candidates,
+    format_price_references,
+)
+from .retrieval_service import (
+    format_context,
+    load_kb as load_retrieval_kb,
+    normalize_retrieval_mode,
+    search_hits,
+    should_allow_retrieval,
+    summarize_retrieval_debug,
+    top_similar_items,
+)
 
 
 def _detect_and_track_preference_changes(existing_slots: Dict[str, Any], new_slots: Dict[str, Any]) -> None:
@@ -57,17 +69,9 @@ def _handle_topic_change(existing_slots: Dict[str, Any], new_slots: Dict[str, An
     new_product = new_slots["product_type"]
 
     if old_product and new_product and old_product != new_product:
-        # Product changed - reset product-specific slots
-        if mode == "general_consumer":
-            # In consultation mode, reset room_type and room_size_sqm as they're product-specific
-            existing_slots.pop("room_type", None)
-            existing_slots.pop("room_size_sqm", None)
-            # Also clear budget_range? Keep budget as it's general. Clear only if we want fresh.
-            # We keep style_preference, color, material as they're cross-product.
-        else:
-            # In sales flow, product_type is the main product slot.
-            # No other product-specific slots to reset currently.
-            pass
+        # In tenant sales flow, product_type is the main product slot.
+        # No other product-specific slots need reset currently.
+        pass
 
 
 
@@ -78,13 +82,15 @@ def _call_claude_api(
     api_base_url: str,
     max_tokens: int,
     temperature: float,
-    top_p: float
-) -> str:
-    """Call Anthropic Claude API and return generated text."""
+    top_p: float,
+    timeout_seconds: float = 120.0,
+) -> Tuple[str, Optional[str], Optional[str]]:
+    """Call Anthropic Claude API and return (text, error_code, error_preview)."""
     if not api_key:
-        return ""  # empty triggers fallback
+        return "", "missing_api_key", "Claude API key was not provided"
 
-    # Clean prompt: remove trailing "Response:" lines
+    import requests
+
     cleaned_prompt = prompt.rstrip()
     if "Response:" in cleaned_prompt:
         cleaned_prompt = cleaned_prompt.split("Response:")[0].rstrip()
@@ -92,31 +98,53 @@ def _call_claude_api(
     headers = {
         "Content-Type": "application/json",
         "x-api-key": api_key,
-        "anthropic-version": "2023-06-01"
+        "anthropic-version": "2023-06-01",
     }
 
     data = {
         "model": api_model,
         "messages": [{"role": "user", "content": cleaned_prompt}],
         "max_tokens": max_tokens,
-        "temperature": temperature,
-        "top_p": top_p
     }
+    # Only send temperature or top_p, not both (Claude API requirement)
+    if temperature is not None:
+        data["temperature"] = temperature
+    if top_p is not None and temperature is None:
+        data["top_p"] = top_p
 
     try:
         resp = requests.post(
             f"{api_base_url.rstrip('/')}/v1/messages",
             headers=headers,
             json=data,
-            timeout=10
+            timeout=timeout_seconds,
         )
         if resp.status_code != 200:
-            return ""  # fallback to empty
+            body_preview = resp.text[:500].replace("\n", "\\n")
+            return "", "non_200", f"status={resp.status_code} body={body_preview}"
+
         result = resp.json()
-        # Anthropic response: {"content": [{"type": "text", "text": "..."}]}
-        return result["content"][0]["text"]
-    except Exception:
-        return ""  # fallback to empty
+        content = result.get("content")
+        if not isinstance(content, list) or not content:
+            return "", "parse_fail", (
+                f"top_keys={list(result.keys())[:20]} content_type={type(content).__name__}"
+            )
+
+        first_block = content[0]
+        if not isinstance(first_block, dict):
+            preview = str(first_block)[:500]
+            return "", "parse_fail", f"first_block_type={type(first_block).__name__} first_block={preview}"
+
+        text = first_block.get("text")
+        if first_block.get("type") != "text" or text is None:
+            preview = str(first_block)[:500]
+            return "", "parse_fail", f"first_block={preview}"
+        if not text.strip():
+            return "", "empty_text", "Claude returned an empty text block"
+        return text, None, None
+    except Exception as exc:
+        message = str(exc).replace("\n", "\\n")[:300]
+        return "", "exception", f"class={exc.__class__.__name__} message={message}"
 
 
 # --- Output guardrail: block unverified payment/refund/timing claims ---
@@ -126,19 +154,67 @@ BAD_FACTS = re.compile(
 )
 
 
-BASE_MODEL_DEFAULT = os.getenv("BASE_MODEL", "Qwen/Qwen2.5-1.5B-Instruct")
+TRUE_VALUES = {"1", "true", "yes", "on"}
+
+LOCAL_MODEL_ENABLED = os.getenv("LOCAL_MODEL_ENABLED", "false").lower() in TRUE_VALUES
+BASE_MODEL_DEFAULT = os.getenv("BASE_MODEL") or None
 ADAPTER_DEFAULT = os.getenv("LORA_ADAPTER") or None
 TOKENIZER_DEFAULT = os.getenv("TOKENIZER_PATH") or None
+DISABLED_LOCAL_MODELS = {"qwen/qwen2.5-1.5b-instruct"}
 
+# Token limits: Claude uses higher default, local fallback uses lower if explicitly enabled.
 MAX_NEW_TOKENS_DEFAULT = int(os.getenv("MAX_NEW_TOKENS", "256"))
+CLAUDE_MAX_NEW_TOKENS = int(os.getenv("CLAUDE_MAX_NEW_TOKENS", "768"))
+LOCAL_FALLBACK_MAX_TOKENS = int(os.getenv("LOCAL_FALLBACK_MAX_TOKENS", "128"))
+
 TEMPERATURE_DEFAULT = float(os.getenv("TEMPERATURE", "0.7"))
 TOP_P_DEFAULT = float(os.getenv("TOP_P", "0.9"))
 TOP_K_DEFAULT = int(os.getenv("TOP_K", "50"))
+RETRIEVAL_MODE_DEFAULT = os.getenv("RETRIEVAL_MODE", "keyword")
+RETRIEVAL_TOP_K_DEFAULT = int(os.getenv("RETRIEVAL_TOP_K", "4"))
+
+# Local fallback settings
+FALLBACK_TO_LOCAL_ENABLED = os.getenv("FALLBACK_TO_LOCAL_ENABLED", "false").lower() in TRUE_VALUES
+LOCAL_FALLBACK_TIMEOUT_SECONDS = int(os.getenv("LOCAL_FALLBACK_TIMEOUT_SECONDS", "45"))
+
+
+def _int_env(name: str, default: int, minimum: int = 1) -> int:
+    raw = os.getenv(name, str(default))
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        print(f"[local_pipeline_cache] invalid_env={name} using_default={default}")
+        return default
+    if value < minimum:
+        print(f"[local_pipeline_cache] invalid_env={name} minimum={minimum} using_default={default}")
+        return default
+    return value
+
+
+LOCAL_PIPELINE_MAX_CACHE = _int_env("LOCAL_PIPELINE_MAX_CACHE", 2, minimum=1)
+LOCAL_PIPELINE_IDLE_TTL_SECONDS = _int_env("LOCAL_PIPELINE_IDLE_TTL_SECONDS", 180, minimum=1)
+LOCAL_PIPELINE_CLEANUP_INTERVAL_SECONDS = _int_env("LOCAL_PIPELINE_CLEANUP_INTERVAL_SECONDS", 30, minimum=1)
 
 app = FastAPI(title="Multi-tenant Chatbot Model Server")
 
-PIPE_CACHE: Dict[Tuple[str, Optional[str], Optional[str]], Any] = {}
-CACHE_LOCK = threading.Lock()
+PipelineCacheKey = Tuple[str, Optional[str], Optional[str]]
+
+
+@dataclass
+class PipelineCacheEntry:
+    pipe: Any
+    last_used: float
+    key: PipelineCacheKey
+    base_model: str
+    adapter: Optional[str]
+    tokenizer_path: Optional[str]
+
+
+PIPE_CACHE: Dict[PipelineCacheKey, PipelineCacheEntry] = {}
+PIPE_CACHE_LOCK = threading.Lock()
+CACHE_LOCK = PIPE_CACHE_LOCK
+PIPE_CACHE_CLEANUP_STARTED = False
+PIPE_CACHE_CLEANUP_START_LOCK = threading.Lock()
 
 # ---- READY flags ----
 READY = False
@@ -148,15 +224,20 @@ READY_LOCK = threading.Lock()
 # KB: load theo env KB_DIR (mỗi process python 1 tenant)
 KB_DIR = os.getenv("KB_DIR")
 KB = None
+KB_RETRIEVAL_MODE = normalize_retrieval_mode(RETRIEVAL_MODE_DEFAULT)
 if KB_DIR:
     try:
-        chunks_path = os.path.join(KB_DIR, "chunks.jsonl")
-        index_path = os.path.join(KB_DIR, "index.json")
-        KB = SimpleKb(chunks_path, index_path)
-        print("[kb] loaded from", KB_DIR)
+        KB = load_retrieval_kb(KB_DIR, mode=KB_RETRIEVAL_MODE)
+        print("[kb] loaded from", KB_DIR, "mode=", KB_RETRIEVAL_MODE)
     except Exception as e:
         print("[kb] load failed:", e)
         KB = None
+KB_BY_MODE: Dict[str, Any] = {}
+if KB is not None:
+    KB_BY_MODE[KB_RETRIEVAL_MODE] = KB
+
+INTERNAL_CATALOG_PROVIDER = build_internal_catalog_provider(KB_DIR)
+PRICE_PROVIDER = build_price_provider()
 
 
 class GenerationConfig(BaseModel):
@@ -173,7 +254,9 @@ class GenerationConfig(BaseModel):
     api_model: Optional[str] = None
     api_key: Optional[str] = None
     api_base_url: Optional[str] = None
-    mode: Optional[str] = None  # tenant_sales | general_consumer
+    mode: Optional[str] = None  # tenant_sales | general_compare | market_price
+    retrieval_mode: Optional[str] = None
+    retrieval_top_k: Optional[int] = None
 
 
 class ChatReq(BaseModel):
@@ -195,6 +278,7 @@ class ChatResp(BaseModel):
     trigger_purchase_request: Optional[bool] = False
     captured_phone: Optional[str] = None
     captured_name: Optional[str] = None
+    debug: Optional[Dict[str, Any]] = None
 
 
 def _set_ready(value: bool, err: Optional[str] = None):
@@ -204,21 +288,383 @@ def _set_ready(value: bool, err: Optional[str] = None):
         READY_ERR = err
 
 
+def _is_test_mode() -> bool:
+    return os.getenv("CHATBOT_TEST_MODE", "0").strip().lower() in TRUE_VALUES
+
+
+def _force_non_sales_purchase_trigger() -> bool:
+    return os.getenv("CHATBOT_TEST_FORCE_NON_SALES_TRIGGER", "0").strip().lower() in TRUE_VALUES
+
+
+def _is_disabled_local_model(model_name: Optional[str]) -> bool:
+    return (model_name or "").strip().lower() in DISABLED_LOCAL_MODELS
+
+
+def _select_provider(cfg: GenerationConfig) -> str:
+    if _is_test_mode():
+        return "stub"
+    if cfg.provider:
+        return cfg.provider.strip().lower()
+    return "claude"
+
+
+def _is_tenant_sales_mode(mode: str) -> bool:
+    return mode == ChatMode.TENANT_SALES.value
+
+
+def _mode_default_stage(mode: str) -> str:
+    if mode == ChatMode.GENERAL_COMPARE.value:
+        return "compare"
+    if mode == ChatMode.MARKET_PRICE.value:
+        return "price_reference"
+    return "discover"
+
+
+def _build_system_prompt(mode: str, sales_prefix: str, custom_system_prompt: Optional[str]) -> str:
+    base_prompt = custom_system_prompt or DEFAULT_SYSTEM
+    mode_prompt = mode_system_instruction(mode)
+    parts = [mode_prompt]
+    if sales_prefix:
+        parts.append(sales_prefix)
+    parts.append(base_prompt)
+    return "\n".join(part.strip() for part in parts if part and part.strip())
+
+
+def _build_debug_trace(
+    *,
+    mode: str,
+    stage: Optional[str],
+    slots: Optional[Dict[str, Any]],
+    retrieved_docs: int = 0,
+    context: str = "",
+    retrieval_mode: str = "",
+    data_provider: str = "none",
+    internal_candidates: int = 0,
+    external_price_refs: int = 0,
+    price_provider: str = "none",
+    used_mock_price_data: bool = False,
+) -> Dict[str, Any]:
+    return {
+        "mode": mode,
+        "stage": stage,
+        "slots": dict(slots or {}),
+        "retrieved_docs": retrieved_docs,
+        "context_chars": len(context or ""),
+        "retrieval_mode": retrieval_mode,
+        "data_provider": data_provider,
+        "internal_candidates": internal_candidates,
+        "external_price_refs": external_price_refs,
+        "price_provider": price_provider,
+        "used_mock_price_data": used_mock_price_data,
+    }
+
+
+def _messages_to_plain_prompt(messages: List[Dict[str, Any]]) -> str:
+    parts = []
+    for message in messages:
+        role = message.get("role", "user")
+        content = message.get("content", "")
+        parts.append(f"{role.upper()}:\n{content}")
+    return "\n\n".join(parts)
+
+
+def _extract_candidate_price_vnd(message: str) -> Optional[float]:
+    text = (message or "").lower().replace(",", ".")
+    match = re.search(r"(\d+(?:\.\d+)?)\s*(trieu|triệu|m|million)", text)
+    if match:
+        return float(match.group(1)) * 1_000_000
+
+    match = re.search(r"(\d{6,})", text)
+    if match:
+        try:
+            return float(match.group(1))
+        except ValueError:
+            return None
+    return None
+
+
+def _extract_price_values_from_context(context: str) -> List[float]:
+    values: List[float] = []
+    for match in re.finditer(r'"price"\s*:\s*([0-9]+(?:\.[0-9]+)?)', context or ""):
+        try:
+            values.append(float(match.group(1)))
+        except ValueError:
+            continue
+    return values
+
+
+def _format_vnd_range(min_price: float, max_price: float) -> str:
+    min_m = min_price / 1_000_000
+    max_m = max_price / 1_000_000
+    if min_price == max_price:
+        return f"khoảng {min_m:.1f} triệu VND"
+    return f"khoảng {min_m:.1f}-{max_m:.1f} triệu VND"
+
+def _stub_generate(messages: List[Dict[str, Any]], context: str, debug_trace: Dict[str, Any]) -> str:
+    prompt_text = _messages_to_plain_prompt(messages)
+    prompt_has_context = bool(context and context in prompt_text)
+    context_preview = " ".join((context or "NO_CONTEXT").split())[:260]
+    mode = debug_trace.get("mode")
+    data_provider = debug_trace.get("data_provider") or "none"
+    price_provider = debug_trace.get("price_provider") or "none"
+    price_values = _extract_price_values_from_context(context)
+    common = (
+        f"mode={mode} "
+        f"stage={debug_trace.get('stage')} "
+        f"retrieved_docs={debug_trace.get('retrieved_docs')} "
+        f"context_chars={debug_trace.get('context_chars')} "
+        f"retrieval_mode={debug_trace.get('retrieval_mode')} "
+        f"prompt_has_context={prompt_has_context} "
+        f"context_preview={context_preview}"
+    )
+
+    if mode == ChatMode.GENERAL_COMPARE.value:
+        options = [
+            "1. SFG041 — giá: chưa có dữ liệu; chất liệu: gỗ sồi; dùng cho căn hộ nhỏ.",
+            "2. SFG040 — giá: chưa có dữ liệu; chất liệu: chưa có dữ liệu; phong cách tối giản.",
+            "3. SFG039 — giá: chưa có dữ liệu; chất liệu: gỗ tự nhiên; hợp không gian rộng.",
+        ]
+        return (
+            "[stub][general_compare]\n"
+            f"Nguồn dữ liệu: {data_provider}. No purchase request.\n"
+            "Tiêu chí so sánh: giá, chất liệu, kích thước/phong cách/mục đích dùng.\n"
+            "Các lựa chọn so sánh:\n"
+            + "\n".join(options)
+            + "\nKết luận trung lập: SFG041 hợp không gian nhỏ; SFG039 hợp không gian rộng; các thông số thiếu được ghi là 'chưa có dữ liệu'.\n"
+            f"{common}"
+        )
+
+    if mode == ChatMode.MARKET_PRICE.value:
+        candidate_price = _extract_candidate_price_vnd(messages[-1].get("content", "") if messages else "")
+        if price_values:
+            min_price = min(price_values)
+            max_price = max(price_values)
+            range_text = _format_vnd_range(min_price, max_price)
+            if candidate_price is None:
+                judgement = "chưa có giá người dùng cung cấp để nhận xét cao/thấp/bình thường."
+            elif candidate_price < min_price:
+                judgement = "mức giá người dùng đưa ra đang thấp hơn khoảng tham chiếu."
+            elif candidate_price > max_price:
+                judgement = "mức giá người dùng đưa ra đang cao hơn khoảng tham chiếu."
+            else:
+                judgement = "mức giá người dùng đưa ra đang trong khoảng tham chiếu."
+        else:
+            range_text = "chưa có dữ liệu do thiếu nguồn giá có cấu trúc."
+            judgement = "chưa đủ dữ liệu để kết luận giá cao/thấp/bình thường."
+
+        warnings = []
+        if debug_trace.get("used_mock_price_data"):
+            warnings.append("dữ liệu hiện tại là mock/demo, không phải giá thị trường xác nhận")
+        if not debug_trace.get("external_price_refs"):
+            warnings.append("chưa đủ nguồn giá để kết luận chắc chắn")
+        if not warnings:
+            warnings.append("không có cảnh báo bổ sung")
+
+        return (
+            "[stub][market_price]\n"
+            f"Nguồn dữ liệu dùng: {data_provider} (price_provider={price_provider}).\n"
+            f"Khoảng giá tham khảo: {range_text}\n"
+            f"Nhận xét mức giá: {judgement}\n"
+            f"Cảnh báo dữ liệu: {'; '.join(warnings)}.\n"
+            "Không gợi ý mua sản phẩm cụ thể. No purchase request.\n"
+            f"{common}"
+        )
+
+    return (
+        "[stub][tenant_sales] "
+        f"{common}"
+    )
+
+
+def get_kb_for_mode(retrieval_mode: str):
+    if retrieval_mode == KB_RETRIEVAL_MODE:
+        return KB
+    if not KB_DIR:
+        return KB
+    if retrieval_mode not in KB_BY_MODE:
+        KB_BY_MODE[retrieval_mode] = load_retrieval_kb(KB_DIR, mode=retrieval_mode)
+    return KB_BY_MODE[retrieval_mode]
+
+
+def _safe_empty_cuda_cache() -> None:
+    try:
+        import torch  # type: ignore
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except Exception as exc:
+        print(f"[local_pipeline_cache] cuda_cleanup_skipped class={exc.__class__.__name__}")
+
+
+def _unload_pipeline_entry(entry: PipelineCacheEntry) -> None:
+    try:
+        pipe = entry.pipe
+        entry.pipe = None
+        del pipe
+    except Exception as exc:
+        print(f"[local_pipeline_cache] pipeline_ref_cleanup_skipped class={exc.__class__.__name__}")
+    gc.collect()
+    _safe_empty_cuda_cache()
+
+
+def _log_pipeline_unload(
+    *,
+    reason: str,
+    idle_seconds: float,
+    cache_size: int,
+    unloaded: bool,
+) -> None:
+    print(
+        "[local_pipeline_cache] "
+        f"local_pipeline_evicted=true reason={reason} "
+        f"local_pipeline_idle_seconds={idle_seconds:.3f} "
+        f"local_pipeline_unloaded={str(unloaded).lower()} "
+        f"local_pipeline_cache_size={cache_size}"
+    )
+
+
+def _evict_pipeline_entries(
+    entries: List[Tuple[PipelineCacheEntry, float]],
+    *,
+    reason: str,
+    cache_size: int,
+) -> None:
+    for entry, idle_seconds in entries:
+        unloaded = False
+        try:
+            _unload_pipeline_entry(entry)
+            unloaded = True
+        finally:
+            _log_pipeline_unload(
+                reason=reason,
+                idle_seconds=idle_seconds,
+                cache_size=cache_size,
+                unloaded=unloaded,
+            )
+
+
+def _evict_over_capacity_locked(now: float, protected_key: PipelineCacheKey) -> List[Tuple[PipelineCacheEntry, float]]:
+    overflow = len(PIPE_CACHE) - LOCAL_PIPELINE_MAX_CACHE
+    if overflow <= 0:
+        return []
+
+    candidates = [
+        (key, entry)
+        for key, entry in PIPE_CACHE.items()
+        if key != protected_key
+    ]
+    candidates.sort(key=lambda item: item[1].last_used)
+
+    evicted: List[Tuple[PipelineCacheEntry, float]] = []
+    for key, entry in candidates[:overflow]:
+        removed = PIPE_CACHE.pop(key, None)
+        if removed is not None:
+            evicted.append((removed, max(0.0, now - removed.last_used)))
+    return evicted
+
+
+def _cleanup_idle_pipelines_once(now: Optional[float] = None) -> int:
+    now = time.monotonic() if now is None else now
+    evicted: List[Tuple[PipelineCacheEntry, float]] = []
+    with PIPE_CACHE_LOCK:
+        for key, entry in list(PIPE_CACHE.items()):
+            idle_seconds = max(0.0, now - entry.last_used)
+            if idle_seconds > LOCAL_PIPELINE_IDLE_TTL_SECONDS:
+                removed = PIPE_CACHE.pop(key, None)
+                if removed is not None:
+                    evicted.append((removed, idle_seconds))
+        cache_size = len(PIPE_CACHE)
+
+    _evict_pipeline_entries(evicted, reason="idle_ttl", cache_size=cache_size)
+    return len(evicted)
+
+
+def _start_pipeline_cleanup_thread() -> None:
+    global PIPE_CACHE_CLEANUP_STARTED
+    with PIPE_CACHE_CLEANUP_START_LOCK:
+        if PIPE_CACHE_CLEANUP_STARTED:
+            return
+        PIPE_CACHE_CLEANUP_STARTED = True
+
+    def run() -> None:
+        while True:
+            time.sleep(LOCAL_PIPELINE_CLEANUP_INTERVAL_SECONDS)
+            try:
+                _cleanup_idle_pipelines_once()
+            except Exception as exc:
+                print(f"[local_pipeline_cache] cleanup_failed class={exc.__class__.__name__}")
+
+    threading.Thread(target=run, daemon=True, name="local-pipeline-cache-cleanup").start()
+    with PIPE_CACHE_LOCK:
+        cache_size = len(PIPE_CACHE)
+    print(
+        "[local_pipeline_cache] cleanup_started "
+        f"local_pipeline_cache_size={cache_size} "
+        f"local_pipeline_max_cache={LOCAL_PIPELINE_MAX_CACHE} "
+        f"local_pipeline_idle_ttl_seconds={LOCAL_PIPELINE_IDLE_TTL_SECONDS} "
+        f"local_pipeline_cleanup_interval_seconds={LOCAL_PIPELINE_CLEANUP_INTERVAL_SECONDS}"
+    )
+
+
 def get_or_create_pipe(base_model: str, adapter: Optional[str], tokenizer_path: Optional[str]):
+    from .model_loader import get_pipeline
+
     key = (base_model, adapter, tokenizer_path)
-    with CACHE_LOCK:
-        if key not in PIPE_CACHE:
+    evicted: List[Tuple[PipelineCacheEntry, float]] = []
+    with PIPE_CACHE_LOCK:
+        now = time.monotonic()
+        entry = PIPE_CACHE.get(key)
+        if entry is None:
             pipe = get_pipeline(base=base_model, adapter=adapter, tokenizer_path=tokenizer_path)
-            PIPE_CACHE[key] = pipe
-        return PIPE_CACHE[key]
+            now = time.monotonic()
+            entry = PipelineCacheEntry(
+                pipe=pipe,
+                last_used=now,
+                key=key,
+                base_model=base_model,
+                adapter=adapter,
+                tokenizer_path=tokenizer_path,
+            )
+            PIPE_CACHE[key] = entry
+            evicted = _evict_over_capacity_locked(now, protected_key=key)
+        else:
+            entry.last_used = now
+        pipe = entry.pipe
+        cache_size = len(PIPE_CACHE)
+
+    if evicted:
+        _evict_pipeline_entries(evicted, reason="max_cache_lru", cache_size=cache_size)
+
+    print(f"[local_pipeline_cache] local_pipeline_cache_size={cache_size}")
+    return pipe
 
 
 @app.on_event("startup")
 def _warmup():
-    # Warmup should build at least one pipeline so server is actually usable.
+    _start_pipeline_cleanup_thread()
+
+    if _is_test_mode():
+        _set_ready(True, None)
+        print("[warmup] test mode ready=True")
+        return
+
+    if not LOCAL_MODEL_ENABLED:
+        _set_ready(True, None)
+        print("[warmup] local model disabled; skipping local model warmup")
+        return
+
+    if not BASE_MODEL_DEFAULT:
+        _set_ready(False, "LOCAL_MODEL_ENABLED=true but BASE_MODEL is not set")
+        print("[warmup] local model enabled but BASE_MODEL is not set")
+        return
+    if _is_disabled_local_model(BASE_MODEL_DEFAULT):
+        _set_ready(False, f"Local model is disabled: {BASE_MODEL_DEFAULT}")
+        print(f"[warmup] local model disabled by policy: {BASE_MODEL_DEFAULT}")
+        return
+
+    # Warmup should build at least one local pipeline when local model mode is explicitly enabled.
     def run():
         try:
-            # Building the pipeline can take time on CPU.
             get_or_create_pipe(BASE_MODEL_DEFAULT, ADAPTER_DEFAULT, TOKENIZER_DEFAULT)
             _set_ready(True, None)
             print("[warmup] ready=True")
@@ -236,13 +682,23 @@ def healthz():
     with READY_LOCK:
         ready = READY
         err = READY_ERR
+    with PIPE_CACHE_LOCK:
+        cached_pipelines = len(PIPE_CACHE)
     return {
         "status": "ready" if ready else "loading",
         "ready": ready,
         "error": err,
-        "cached_pipelines": len(PIPE_CACHE),
+        "cached_pipelines": cached_pipelines,
+        "local_pipeline_max_cache": LOCAL_PIPELINE_MAX_CACHE,
+        "local_pipeline_idle_ttl_seconds": LOCAL_PIPELINE_IDLE_TTL_SECONDS,
+        "local_pipeline_cleanup_interval_seconds": LOCAL_PIPELINE_CLEANUP_INTERVAL_SECONDS,
+        "local_model_enabled": LOCAL_MODEL_ENABLED,
+        "base_model_configured": bool(BASE_MODEL_DEFAULT),
+        "fallback_to_local_enabled": FALLBACK_TO_LOCAL_ENABLED,
         "kb_dir": KB_DIR,
-        "kb_loaded": KB is not None
+        "kb_loaded": KB is not None,
+        "retrieval_mode": KB_RETRIEVAL_MODE,
+        "test_mode": _is_test_mode(),
     }
 
 
@@ -264,26 +720,63 @@ def feedback(req: FeedbackReq):
 
 @app.post("/chat", response_model=ChatResp)
 def chat(req: ChatReq):
-    # Defense-in-depth: refuse chat if model is not ready yet.
-    with READY_LOCK:
-        if not READY:
-            raise HTTPException(status_code=503, detail="Model is still loading")
-
     cfg = req.gen
 
     base_model = cfg.base_model or BASE_MODEL_DEFAULT
     adapter = cfg.adapter or ADAPTER_DEFAULT
     tokenizer_path = cfg.tokenizer_path or TOKENIZER_DEFAULT
-    mode = cfg.mode or "tenant_sales"
+    provider = _select_provider(cfg)
+    try:
+        mode = normalize_chat_mode(cfg.mode, req.message)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    try:
+        retrieval_mode = normalize_retrieval_mode(cfg.retrieval_mode or KB_RETRIEVAL_MODE)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    max_new_tokens = cfg.max_new_tokens or MAX_NEW_TOKENS_DEFAULT
+    # Resolve max_tokens based on provider
+    base_max_tokens = cfg.max_new_tokens or MAX_NEW_TOKENS_DEFAULT
+    if provider == "claude":
+        max_new_tokens = cfg.max_new_tokens or CLAUDE_MAX_NEW_TOKENS
+    elif provider == "local":
+        max_new_tokens = cfg.max_new_tokens or LOCAL_FALLBACK_MAX_TOKENS if not _is_test_mode() else base_max_tokens
+    else:
+        max_new_tokens = base_max_tokens
     temperature = cfg.temperature or TEMPERATURE_DEFAULT
     top_p = cfg.top_p or TOP_P_DEFAULT
     top_k = int(cfg.top_k) if cfg.top_k is not None else TOP_K_DEFAULT
+    retrieval_top_k = int(cfg.retrieval_top_k) if cfg.retrieval_top_k is not None else RETRIEVAL_TOP_K_DEFAULT
+
+    # Defense-in-depth: local model requests are opt-in only and must wait for warmup.
+    # Claude API does not need local model ready.
+    if provider == "local":
+        if not LOCAL_MODEL_ENABLED:
+            raise HTTPException(
+                status_code=422,
+                detail="Local model provider is disabled. Set LOCAL_MODEL_ENABLED=true and BASE_MODEL explicitly to use it.",
+            )
+        if not base_model:
+            raise HTTPException(
+                status_code=422,
+                detail="Local model provider requires BASE_MODEL or gen.base_model.",
+            )
+        if _is_disabled_local_model(base_model):
+            raise HTTPException(
+                status_code=422,
+                detail=f"Local model is disabled by policy: {base_model}",
+            )
+        with READY_LOCK:
+            if not READY:
+                raise HTTPException(status_code=503, detail="Model is still loading")
 
     # Debug log - write to stderr to ensure visibility
     import sys
-    print(f"[SERVER DEBUG] Received mode: {mode}, base_model: {base_model}", file=sys.stderr)
+    print(
+        f"[SERVER DEBUG] generator_provider={provider}, mode={mode}, "
+        f"base_model={base_model}, adapter={adapter or '-'}, api_model={cfg.api_model or '-'}",
+        file=sys.stderr,
+    )
 
     # Ensure conversation_id exists for stateful flow
     conv_id = req.conversation_id or "anon"
@@ -300,23 +793,38 @@ def chat(req: ChatReq):
             except Exception:
                 pass
 
+        debug_trace = _build_debug_trace(
+            mode=mode,
+            stage="reset",
+            slots={},
+            retrieval_mode=retrieval_mode,
+        )
         log_event({
             "event": "reset",
             "channel": req.channel,
             "conversation_id": conv_id,
             "tenant_id": req.tenant_id,
+            "debug": debug_trace,
         })
 
         return ChatResp(
             reply="Got it — I’ve started a new consultation. What are you shopping for today?",
             latency_ms=0,
             model="system",
-            adapter=adapter
+            adapter=adapter,
+            debug=debug_trace,
         )
 
     # ---- RULE layer (guardrails) ----
     rr = rule_reply(req.message)
     if rr:
+        st_for_rule = get_state(conv_id)
+        debug_trace = _build_debug_trace(
+            mode=mode,
+            stage=getattr(st_for_rule, "stage", None),
+            slots=getattr(st_for_rule, "slots", {}),
+            retrieval_mode=retrieval_mode,
+        )
         log_event({
             "event": "rule_hit",
             "rule_type": rr["type"],
@@ -324,13 +832,14 @@ def chat(req: ChatReq):
             "channel": req.channel,
             "conversation_id": conv_id,
             "tenant_id": req.tenant_id,
+            "debug": debug_trace,
         })
         # Save turn (optional but useful for audit)
         try:
             save_turn(conv_id, req.message, rr["reply"])
         except Exception:
             pass
-        return ChatResp(reply=rr["reply"], latency_ms=0, model="rule", adapter=adapter)
+        return ChatResp(reply=rr["reply"], latency_ms=0, model="rule", adapter=adapter, debug=debug_trace)
 
     # --- SALES FLOW: state/slots/stage (AFTER RULE layer) ---
     st = get_state(conv_id)
@@ -339,29 +848,20 @@ def chat(req: ChatReq):
     trigger_purchase_request = False
     captured_phone = None
     captured_name = None
+    stage_for_debug = getattr(st, "stage", _mode_default_stage(mode))
+    slots_for_debug: Dict[str, Any] = dict(getattr(st, "slots", {}) or {})
 
     # update slots from this user message
     try:
         # Capture current stage BEFORE transition (for intent context and trigger)
         old_stage = getattr(st, "stage", "discover")
 
-        if mode == "general_consumer":
-            # Use consultation-specific slot extraction
-            new_slots = extract_consultation_slots(req.message)
-            _detect_and_track_preference_changes(st.slots, new_slots)
-            _handle_topic_change(st.slots, new_slots, mode)
-            if new_slots:
-                st.slots.update(new_slots)
-            # Extract phone for lead capture
-            phone = extract_phone(req.message)
-            if phone:
-                st.slots["captured_phone"] = phone
-            # Extract name (simple: look for "tên là..." patterns)
-            name_match = re.search(r"(?:tên|ten|name)\s*(?:là|la|is)?\s*([A-Za-z\s]{2,50})", req.message, re.I)
-            if name_match:
-                st.slots["captured_name"] = name_match.group(1).strip()
-            # decide next stage using consultation state machine (with old_stage)
-            st.stage = next_consultation_stage(old_stage, st.slots, req.message)
+        if not _is_tenant_sales_mode(mode):
+            stage_for_debug = _mode_default_stage(mode)
+            try:
+                slots_for_debug = extract_slots(req.message)
+            except Exception:
+                slots_for_debug = {}
         else:
             # Original tenant sales flow
             new_slots = extract_slots(req.message)
@@ -373,107 +873,118 @@ def chat(req: ChatReq):
 
         # ---- Intent detection for robust lead capture ----
         # Use old_stage for context (stage that was active when user sent this message)
-        user_intent = detect_intent(req.message, old_stage)
-        trigger_purchase_request = (old_stage == "close" and user_intent == "confirm")
-        # For sales flow, phone/name are not extracted here; they come from transcript in Java
-        captured_phone = st.slots.get("captured_phone")
-        captured_name = st.slots.get("captured_name")
+        if _is_tenant_sales_mode(mode):
+            user_intent = detect_intent(req.message, old_stage)
+            trigger_purchase_request = (old_stage == "close" and user_intent == "confirm")
+            # For sales flow, phone/name are not extracted here; they come from transcript in Java
+            captured_phone = st.slots.get("captured_phone")
+            captured_name = st.slots.get("captured_name")
+            stage_for_debug = getattr(st, "stage", stage_for_debug)
+            slots_for_debug = dict(getattr(st, "slots", {}) or {})
     except Exception:
         # Don't break chat if slot extractor fails
         pass
 
-    # ---- Provider selection ----
-    provider = cfg.provider or "local"
+    pipe = get_or_create_pipe(base_model, adapter, tokenizer_path) if provider == "local" else None
 
-    if provider == "claude":
-        # Claude API path
-        api_key = cfg.api_key or 'sk-proj-fe708bb0167c4c18ae0ddb7ed8701d1a'
-        api_model = cfg.api_model or 'claude-3-5-sonnet-20241022'
-        api_base_url = cfg.api_base_url or 'https://api.anthropic.com'
-
-        t0 = time.time()
-        out = _call_claude_api(
-            req.message,
-            api_key,
-            api_model,
-            api_base_url,
-            max_new_tokens,
-            temperature,
-            top_p
-        )
-        latency_ms = int((time.time() - t0) * 1000)
-
-        resp = out.strip() if out else "Sorry, I couldn't process that request right now."
-        # Concise answer
-        sentences = re.split(r'(?<=[.!?…])\s+', resp)
-        resp = " ".join(sentences[:6]).strip()
-
-        log_event({
-            "event": "chat",
-            "question": req.message,
-            "answer": resp[:1200],
-            "latency_ms": latency_ms,
-            "model": api_model,
-            "adapter": None,
-            "channel": req.channel,
-            "conversation_id": conv_id,
-            "tenant_id": req.tenant_id,
-            "context_length": 0,
-            "kb_loaded": KB is not None,
-            "sales_stage": getattr(st, "stage", None),
-            "sales_slots": getattr(st, "slots", {}),
-        })
-        try:
-            save_turn(conv_id, req.message, resp)
-        except Exception:
-            pass
-        return ChatResp(
-            reply=resp[:1200],
-            latency_ms=latency_ms,
-            model=api_model,
-            adapter=None
-        )
-
-    pipe = get_or_create_pipe(base_model, adapter, tokenizer_path)
-
-    # ---- RAG context from KB ----
-    ctx_blocks = []
-    # Bonus: reduce hallucination from early generic queries by limiting RAG.
-    # Rule of thumb: only inject KB when user provided a link/code or the convo is past early discovery.
+    # ---- RAG context from KB + optional structured providers ----
+    retrieval_hits = []
     allow_rag = False
     try:
-        msg = (req.message or "").strip()
-        words = [w for w in msg.split() if w]
-        has_link = bool(re.search(r"https?://|www\.", msg, re.I))
-        allow_rag = has_link or (len(words) >= 6) or (getattr(st, "stage", "discover") != "discover")
+        allow_rag = True if not _is_tenant_sales_mode(mode) else should_allow_retrieval(
+            req.message,
+            stage_for_debug,
+            slots_for_debug,
+        )
     except Exception:
         allow_rag = False
 
-    if KB is not None and allow_rag:
-        hits = KB.search(req.message, k=4)
-        for h in hits:
-            title = (h.get("title") or "").strip()
-            url = (h.get("url") or "").strip()
-            content = (h.get("content") or "").strip()
-            if not content:
-                continue
-            ctx_blocks.append(f"- {title} ({url}): {content[:900]}")
-    context = "\n".join(ctx_blocks)
+    active_kb = get_kb_for_mode(retrieval_mode)
+    if active_kb is not None and allow_rag:
+        retrieval_hits = search_hits(
+            active_kb,
+            req.message,
+            k=max(1, retrieval_top_k),
+            tenant_id=req.tenant_id,
+        )
+
+    internal_candidates = []
+    price_refs = []
+    provider_context_parts = []
+    data_provider = "retrieval" if retrieval_hits else "none"
+    price_provider_name = getattr(PRICE_PROVIDER, "provider_name", "none")
+    used_mock_price_data = False
+
+    if mode == ChatMode.GENERAL_COMPARE.value:
+        try:
+            internal_candidates = INTERNAL_CATALOG_PROVIDER.search_candidates(
+                req.message,
+                limit=max(1, retrieval_top_k),
+            )
+        except Exception:
+            internal_candidates = []
+        if internal_candidates:
+            data_provider = getattr(INTERNAL_CATALOG_PROVIDER, "provider_name", "internal_catalog")
+            provider_context_parts.append(
+                "STRUCTURED INTERNAL CATALOG CANDIDATES "
+                "(fields may be null; use only provided values):\n"
+                + format_catalog_candidates(internal_candidates)
+            )
+
+    if mode == ChatMode.MARKET_PRICE.value:
+        try:
+            price_refs = PRICE_PROVIDER.get_price_references(
+                req.message,
+                limit=max(1, retrieval_top_k),
+            )
+        except Exception:
+            price_refs = []
+        used_mock_price_data = any(getattr(ref, "is_mock", False) for ref in price_refs)
+        if price_refs:
+            data_provider = price_provider_name
+            provider_context_parts.append(
+                "PRICE REFERENCES FROM EXPLICIT PRICE PROVIDER "
+                "(mock/demo rows are not real market catalog data):\n"
+                + format_price_references(price_refs)
+            )
+
+    retrieval_context = format_context(retrieval_hits)
+    if provider_context_parts and retrieval_context:
+        context = "\n\n".join(provider_context_parts + ["RETRIEVED KB CONTEXT:\n" + retrieval_context])
+    elif provider_context_parts:
+        context = "\n\n".join(provider_context_parts)
+    else:
+        context = retrieval_context
+
+    debug_trace = _build_debug_trace(
+        mode=mode,
+        stage=stage_for_debug,
+        slots=slots_for_debug,
+        retrieved_docs=len(retrieval_hits),
+        context=context,
+        retrieval_mode=retrieval_mode,
+        data_provider=data_provider,
+        internal_candidates=len(internal_candidates),
+        external_price_refs=len(price_refs),
+        price_provider=price_provider_name,
+        used_mock_price_data=used_mock_price_data,
+    )
+    log_retrieval_debug({
+        **debug_trace,
+        **summarize_retrieval_debug(retrieval_hits, context),
+        "question": req.message,
+        "channel": req.channel,
+        "conversation_id": conv_id,
+        "tenant_id": req.tenant_id,
+        "allow_rag": allow_rag,
+    })
 
     # ---- SIMILAR SUGGESTION (use KB hits) ----
-    if KB is not None and allow_rag and want_similar(req.message):
-        hits = KB.search(req.message, k=8)
-
-        seen = set()
-        items = []
-        for h in hits:
-            title = (h.get("title") or "").strip()
-            url = (h.get("url") or "").strip()
-            if title and title not in seen:
-                seen.add(title)
-                items.append((title, url))
-            if len(items) >= 3:
-                break
+    if _is_tenant_sales_mode(mode) and active_kb is not None and allow_rag and want_similar(req.message):
+        similar_hits = retrieval_hits
+        if len(similar_hits) < 8:
+            similar_hits = search_hits(active_kb, req.message, k=8, tenant_id=req.tenant_id)
+        items = top_similar_items(similar_hits, limit=3)
 
         if items:
             reply = (
@@ -489,6 +1000,7 @@ def chat(req: ChatReq):
                 "conversation_id": conv_id,
                 "tenant_id": req.tenant_id,
                 "items": [{"title": t, "url": u} for t, u in items],
+                "debug": debug_trace,
             })
 
             # Save turn for stateful flow continuity
@@ -501,45 +1013,88 @@ def chat(req: ChatReq):
                 reply=reply[:1200],
                 latency_ms=0,
                 model=base_model,
-                adapter=adapter
+                adapter=adapter,
+                debug=debug_trace,
             )
 
     # ---- SALES flow prefix inside system prompt ----
     sales_prefix = ""
     try:
-        if mode == "general_consumer":
-            sales_prefix = build_consultation_prefix(getattr(st, "stage", "discover"), getattr(st, "slots", {}))
-        else:
-            sales_prefix = build_sales_prefix(getattr(st, "stage", "discover"), getattr(st, "slots", {}))
+        if _is_tenant_sales_mode(mode):
+            sales_prefix = build_sales_prefix(stage_for_debug, slots_for_debug)
     except Exception:
         sales_prefix = ""
 
-    sys_prompt = cfg.system_prompt or (sales_prefix + "\n" + DEFAULT_SYSTEM)
-
-    messages = build_messages(req.message, req.history, sys_prompt)
-
-    prompt_text = pipe.tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True
-    )
+    sys_prompt = _build_system_prompt(mode, sales_prefix, cfg.system_prompt)
 
     t0 = time.time()
-    out = pipe(
-        prompt_text,
-        max_new_tokens=max_new_tokens,
-        do_sample=True,
-        temperature=temperature,
-        top_p=top_p,
-        top_k=top_k,
-        no_repeat_ngram_size=3,
-        repetition_penalty=1.15,
-        pad_token_id=pipe.tokenizer.eos_token_id,
-        eos_token_id=pipe.tokenizer.eos_token_id,
-        return_full_text=False,
-    )[0]["generated_text"]
+    messages = build_messages(
+        req.message,
+        req.history,
+        sys_prompt,
+        grounding_context=context if context else None,
+    )
 
-    resp = out.strip()
+    if provider == "stub":
+        out = _stub_generate(messages, context, debug_trace)
+        response_model = "stub"
+        response_adapter = None
+    elif provider == "claude":
+        # Claude is system-level provider: resolve from env only
+        api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+        api_model = os.getenv("CLAUDE_MODEL") or 'claude-sonnet-4-6'
+        api_base_url = os.getenv("CLAUDE_API_BASE_URL") or 'https://api.anthropic.com'
+
+        # Missing key is a safe error; do not fallback to request-level or hardcoded values
+        if not api_key:
+            out, claude_error_code, claude_error_preview = "", "missing_api_key", "System env ANTHROPIC_API_KEY or CLAUDE_API_KEY not set"
+        else:
+            out, claude_error_code, claude_error_preview = _call_claude_api(
+                _messages_to_plain_prompt(messages),
+                api_key,
+                api_model,
+                api_base_url,
+                max_new_tokens,
+                temperature,
+                top_p,
+            )
+
+        if claude_error_code:
+            debug_trace["claude_error"] = {
+                "type": claude_error_code,
+                "preview": claude_error_preview,
+                "model": api_model,
+                "base_url": api_base_url,
+            }
+        response_model = api_model
+        response_adapter = None
+    elif provider == "local":
+        if pipe is None:
+            pipe = get_or_create_pipe(base_model, adapter, tokenizer_path)
+        prompt_text = pipe.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True
+        )
+        out = pipe(
+            prompt_text,
+            max_new_tokens=max_new_tokens,
+            do_sample=True,
+            temperature=temperature,
+            top_p=top_p,
+            top_k=top_k,
+            no_repeat_ngram_size=3,
+            repetition_penalty=1.15,
+            pad_token_id=pipe.tokenizer.eos_token_id,
+            eos_token_id=pipe.tokenizer.eos_token_id,
+            return_full_text=False,
+        )[0]["generated_text"]
+        response_model = base_model
+        response_adapter = adapter
+    else:
+        raise HTTPException(status_code=422, detail=f"Unsupported provider: {provider}")
+
+    resp = out.strip() if out else "Sorry, I couldn't process that request right now."
 
     # Keep answers concise, but not too short for consultative flow
     sentences = re.split(r'(?<=[.!?])\s+', resp)
@@ -547,32 +1102,31 @@ def chat(req: ChatReq):
 
     NOT_FOUND = "I couldn’t find that in this store’s data."
 
-    # For general_consumer mode, do NOT apply KB-based fallback - the consultation works without KB
-    if mode != "general_consumer" and ((not context) or (NOT_FOUND.lower() in resp.lower())):
+    if mode == ChatMode.MARKET_PRICE.value and not price_refs:
         resp = (
-            "Sorry, I couldn’t find enough information to answer that accurately. "
-            "If you can share the product name or code, I can try again, "
-            "or I can connect you with a staff member for further assistance."
+            "I do not have enough structured price references to judge a market range or outlier. "
+            "Please provide product prices, links, or enable a demo/external price provider so I can analyze the range without inventing numbers."
         )
-
+    elif provider != "stub":
+        if _is_tenant_sales_mode(mode) and ((not context) or (NOT_FOUND.lower() in resp.lower())):
+            resp = (
+                "Sorry, I couldn’t find enough information to answer that accurately. "
+                "If you can share the product name or code, I can try again, "
+                "or I can connect you with a staff member for further assistance."
+            )
+        elif mode == ChatMode.GENERAL_COMPARE.value and not context:
+            resp = (
+                "I do not have enough retrieved product data to compare at least three options reliably. "
+                "Please share product names, links, or a tenant KB with comparable items; I will compare price, material, size/use, and style without guessing."
+            )
     # --- SALES FLOW: close stage hard CTA (CONFIRM / CANCEL / no payment) ---
-    if getattr(st, "stage", None) == "close":
-        if mode == "general_consumer":
-            resp = resp.strip()
-            resp += (
-                "\n\nWould you like to: "
-                "1) Get specific product links to browse, "
-                "2) Talk to a human advisor for final help, or "
-                "3) Continue exploring options? "
-                "Just let me know!"
-            )
-        else:
-            resp = resp.strip()
-            resp += (
-                "\n\nTo proceed, reply CONFIRM and I’ll create a purchase request for our staff. "
-                "Reply CANCEL to stop. "
-                "I can’t process payments directly in chat."
-            )
+    if _is_tenant_sales_mode(mode) and getattr(st, "stage", None) == "close":
+        resp = resp.strip()
+        resp += (
+            "\n\nTo proceed, reply CONFIRM and I’ll create a purchase request for our staff. "
+            "Reply CANCEL to stop. "
+            "I can’t process payments directly in chat."
+        )
 
     # --- Output guardrail: if model slips into unverified facts, replace with safe fallback ---
     if BAD_FACTS.search(resp):
@@ -588,15 +1142,17 @@ def chat(req: ChatReq):
         "question": req.message,
         "answer": resp[:1200],
         "latency_ms": latency_ms,
-        "model": base_model,
-        "adapter": adapter,
+        "model": response_model,
+        "adapter": response_adapter,
+        "provider": provider,
         "channel": req.channel,
         "conversation_id": conv_id,
         "tenant_id": req.tenant_id,
         "context_length": len(context),
-        "kb_loaded": KB is not None,
-        "sales_stage": getattr(st, "stage", None),
-        "sales_slots": getattr(st, "slots", {}),
+        "kb_loaded": active_kb is not None,
+        "sales_stage": stage_for_debug,
+        "sales_slots": slots_for_debug,
+        "debug": debug_trace,
     })
 
     # --- SALES FLOW: save conversation turn ---
@@ -605,14 +1161,19 @@ def chat(req: ChatReq):
     except Exception:
         pass
 
+    response_trigger_purchase_request = trigger_purchase_request if _is_tenant_sales_mode(mode) else False
+    if _is_test_mode() and _force_non_sales_purchase_trigger() and not _is_tenant_sales_mode(mode):
+        response_trigger_purchase_request = True
+
     return ChatResp(
         reply=resp[:1200],
         latency_ms=latency_ms,
-        model=base_model,
-        adapter=adapter,
-        trigger_purchase_request=trigger_purchase_request,
-        captured_phone=captured_phone,
-        captured_name=captured_name
+        model=response_model,
+        adapter=response_adapter,
+        trigger_purchase_request=response_trigger_purchase_request,
+        captured_phone=captured_phone if _is_tenant_sales_mode(mode) else None,
+        captured_name=captured_name if _is_tenant_sales_mode(mode) else None,
+        debug=debug_trace,
     )
 
 @app.get("/state")

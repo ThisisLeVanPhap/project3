@@ -6,6 +6,7 @@ import com.app.leads.Lead;
 import com.app.leads.LeadRepository;
 import com.app.leads.LeadService;
 import com.app.modelserver.ChatbotUpstreamException;
+import com.app.modelserver.ChatbotMode;
 import com.app.modelserver.LlmInstanceManager;
 import com.app.modelserver.PythonChatClient;
 import com.app.modelserver.PythonChatFallbacks;
@@ -45,7 +46,7 @@ public class ChatController {
     public List<Map<String, Object>> listConversations(
             @RequestParam UUID chatbotId,
             @RequestParam(defaultValue = "50") int limit,
-            @RequestParam(required = false) String userExternalId
+            @RequestParam String userExternalId
     ) {
         String tenantRaw = TenantContext.get();
         if (tenantRaw == null || tenantRaw.isBlank()) {
@@ -53,13 +54,9 @@ public class ChatController {
         }
         UUID tenantId = UUID.fromString(tenantRaw);
 
-        List<Conversation> convs;
-        if (userExternalId != null && !userExternalId.isBlank()) {
-            convs = convRepo.findTop50ByTenantIdAndChatbotIdAndUserExternalIdOrderByCreatedAtDesc(
-                    tenantId, chatbotId, userExternalId);
-        } else {
-            convs = convRepo.findTop50ByTenantIdAndChatbotIdOrderByCreatedAtDesc(tenantId, chatbotId);
-        }
+        String owner = requireUserExternalId(userExternalId);
+        List<Conversation> convs = convRepo.findTop50ByTenantIdAndChatbotIdAndUserExternalIdOrderByCreatedAtDesc(
+                tenantId, chatbotId, owner);
         if (limit > 0 && limit < convs.size()) {
             convs = convs.subList(0, Math.min(limit, convs.size()));
         }
@@ -85,14 +82,17 @@ public class ChatController {
     }
 
     @GetMapping("/conversation/{conversationId}/messages")
-    public List<Map<String, Object>> getMessages(@PathVariable UUID conversationId) {
+    public List<Map<String, Object>> getMessages(
+            @PathVariable UUID conversationId,
+            @RequestParam String userExternalId
+    ) {
         String tenantRaw = TenantContext.get();
         if (tenantRaw == null || tenantRaw.isBlank()) {
             throw new IllegalStateException("Missing tenant context");
         }
         UUID tenantId = UUID.fromString(tenantRaw);
 
-        Conversation conv = requireConversationOwnership(tenantId, conversationId);
+        Conversation conv = requireConversationOwnership(tenantId, conversationId, userExternalId);
 
         List<Message> msgs = msgRepo.findTop200ByTenantIdAndConversationIdOrderByCreatedAtAsc(tenantId, conversationId);
         List<Map<String, Object>> out = new ArrayList<>();
@@ -109,6 +109,7 @@ public class ChatController {
     @PutMapping("/conversation/{conversationId}/rename")
     public Map<String, Object> renameConversation(
             @PathVariable UUID conversationId,
+            @RequestParam String userExternalId,
             @RequestBody Map<String, String> req
     ) {
         String tenantRaw = TenantContext.get();
@@ -117,7 +118,7 @@ public class ChatController {
         }
         UUID tenantId = UUID.fromString(tenantRaw);
 
-        Conversation conv = requireConversationOwnership(tenantId, conversationId);
+        Conversation conv = requireConversationOwnership(tenantId, conversationId, userExternalId);
 
         String title = req.get("title");
         if (title == null || title.isBlank()) {
@@ -134,14 +135,17 @@ public class ChatController {
     }
 
     @DeleteMapping("/conversation/{conversationId}")
-    public Map<String, Object> deleteConversation(@PathVariable UUID conversationId) {
+    public Map<String, Object> deleteConversation(
+            @PathVariable UUID conversationId,
+            @RequestParam String userExternalId
+    ) {
         String tenantRaw = TenantContext.get();
         if (tenantRaw == null || tenantRaw.isBlank()) {
             throw new IllegalStateException("Missing tenant context");
         }
         UUID tenantId = UUID.fromString(tenantRaw);
 
-        Conversation conv = requireConversationOwnership(tenantId, conversationId);
+        Conversation conv = requireConversationOwnership(tenantId, conversationId, userExternalId);
 
         // Delete messages first (no cascade configured)
         msgRepo.deleteByConversationId(conversationId);
@@ -162,7 +166,7 @@ public class ChatController {
             throw new IllegalArgumentException("chatbotId is required");
         }
 
-        String userExternalId = req.get("userExternalId"); // optional
+        String userExternalId = requireUserExternalId(req.get("userExternalId"));
 
         UUID tenantId = UUID.fromString(tenantRaw);
         UUID chatbotId = UUID.fromString(chatbotIdRaw);
@@ -178,9 +182,7 @@ public class ChatController {
         c.setId(UUID.randomUUID());
         c.setChatbotId(chatbotId);
         c.setTenantId(tenantId);
-        if (userExternalId != null && !userExternalId.isBlank()) {
-            c.setUserExternalId(userExternalId);
-        }
+        c.setUserExternalId(userExternalId);
         convRepo.save(c);
 
         return Map.of("conversationId", c.getId());
@@ -206,7 +208,7 @@ public class ChatController {
         UUID tenantId = UUID.fromString(tenantRaw);
         UUID convId = UUID.fromString(convIdRaw);
 
-        Conversation conv = requireConversationOwnership(tenantId, convId);
+        Conversation conv = requireConversationOwnership(tenantId, convId, req.get("userExternalId"));
 
         ChatbotInstance bot = botRepo.findById(conv.getChatbotId())
                 .orElseThrow(() -> new IllegalArgumentException("Chatbot not found"));
@@ -261,7 +263,18 @@ public class ChatController {
             resp = PythonChatFallbacks.forFailure(bot.getBaseModel(), bot.getAdapterPath(), ex.getCategory());
         }
 
-        if (Boolean.TRUE.equals(resp.trigger_purchase_request()) && !baseUrl.isBlank()) {
+        String requestedMode = ChatbotMode.normalize(bot.getMode());
+        String finalMode = ChatbotMode.finalMode(resp, requestedMode);
+        log.info(
+                "Chat mode contract channel=web tenant={} conversationId={} requestedMode={} finalMode={} triggerPurchaseRequest={}",
+                tenantId,
+                convId,
+                requestedMode,
+                finalMode,
+                resp.trigger_purchase_request()
+        );
+
+        if (ChatbotMode.allowsPurchaseRequest(requestedMode, resp) && !baseUrl.isBlank()) {
             // Check if lead already created for this conversation (duplicate prevention)
             if (conv.isLeadCreated()) {
                 resp = new ChatResponse(
@@ -271,7 +284,8 @@ public class ChatController {
                         resp.adapter(),
                         false,
                         null,
-                        null
+                        null,
+                        resp.debug()
                 );
             } else {
                 try {
@@ -299,7 +313,8 @@ public class ChatController {
                             resp.adapter(),
                             false,
                             null,
-                            null
+                            null,
+                            resp.debug()
                     );
                 } catch (IllegalStateException ex) {
                     log.info("Blocked purchase request tenant={} conversationId={} reason={}", tenantId, convId, ex.getMessage());
@@ -310,7 +325,8 @@ public class ChatController {
                             resp.adapter(),
                             false,
                             null,
-                            null
+                            null,
+                            resp.debug()
                     );
                 } catch (Exception ex) {
                     log.error("Failed to persist purchase request tenant={} conversationId={}", tenantId, convId, ex);
@@ -321,10 +337,19 @@ public class ChatController {
                             resp.adapter(),
                             false,
                             null,
-                            null
+                            null,
+                            resp.debug()
                     );
                 }
             }
+        } else if (Boolean.TRUE.equals(resp.trigger_purchase_request())) {
+            log.info(
+                    "Blocked purchase request by mode contract tenant={} conversationId={} requestedMode={} finalMode={}",
+                    tenantId,
+                    convId,
+                    requestedMode,
+                    finalMode
+            );
         }
 
         Message mBot = new Message(
@@ -348,11 +373,21 @@ public class ChatController {
         return out;
     }
 
-    // Helper: check tenant ownership AND optional userExternalId ownership
-    private Conversation requireConversationOwnership(UUID tenantId, UUID conversationId) {
+    private static String requireUserExternalId(String userExternalId) {
+        if (userExternalId == null || userExternalId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userExternalId is required");
+        }
+        return userExternalId.trim();
+    }
+
+    private Conversation requireConversationOwnership(UUID tenantId, UUID conversationId, String userExternalId) {
+        String owner = requireUserExternalId(userExternalId);
         Conversation conv = convRepo.findById(conversationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found"));
         if (!tenantId.equals(conv.getTenantId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
+        }
+        if (!owner.equals(conv.getUserExternalId())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
         }
         return conv;

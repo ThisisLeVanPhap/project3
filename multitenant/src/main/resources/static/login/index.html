@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <title>Login</title>
+    <title>Đăng nhập hệ thống</title>
     <link rel="stylesheet" href="/login/styles.css"/>
 </head>
 <body>
@@ -11,26 +11,68 @@
 <div class="login-wrapper">
     <div class="login-card">
         <div class="login-head">
-            <h2 class="login-title">Welcome back</h2>
-            <div class="login-sub">Tenant login uses email + password. Platform admin can still use the admin login.</div>
+            <h2 class="login-title">Đăng nhập hệ thống</h2>
+            <div class="login-sub">Dành cho quản trị hệ thống, chủ cửa hàng và nhân viên cửa hàng đã được cấp tài khoản.</div>
         </div>
 
         <div class="form-group">
-            <label for="name">Email or Admin Username</label>
-            <input id="name" placeholder="member@tenant.local or admin" autocomplete="username"/>
+            <label for="name">Tài khoản</label>
+            <input id="name" placeholder="Email hoặc mã tài khoản được cấp" autocomplete="username"/>
         </div>
 
         <div class="form-group">
-            <label for="code">Password</label>
-            <input id="code" type="password" placeholder="Password" autocomplete="current-password"/>
+            <label for="tenantCode">Mã cửa hàng / tenant code</label>
+            <input id="tenantCode" placeholder="Chỉ cần nhập khi email dùng ở nhiều cửa hàng" autocomplete="organization"/>
+        </div>
+
+        <div class="form-group">
+            <label for="code">Mật khẩu</label>
+            <input id="code" type="password" placeholder="Nhập mật khẩu" autocomplete="current-password"/>
         </div>
 
         <div class="login-actions">
-            <button id="btn-tenant" type="button">Login as Tenant</button>
-            <button id="btn-admin" type="button" class="secondary">Login as Admin</button>
+            <button id="btn-login" type="button">Đăng nhập</button>
         </div>
 
         <div id="msg" class="muted login-msg"></div>
+
+        <div class="access-note">
+            <div class="access-title">Chưa có tài khoản?</div>
+            <div>
+                Chủ cửa hàng cần liên hệ quản trị hệ thống để tạo tenant, cấu hình cửa hàng và cấp tài khoản quản trị ban đầu.
+            </div>
+            <button id="btn-show-onboarding" class="link-button" type="button">Yêu cầu mở cửa hàng</button>
+        </div>
+
+        <div id="onboarding-form" class="onboarding-form hidden">
+            <div class="access-title">Thông tin yêu cầu</div>
+            <div class="form-group">
+                <label for="requestStoreName">Tên cửa hàng</label>
+                <input id="requestStoreName" placeholder="VD: Nội thất An Gia" autocomplete="organization"/>
+            </div>
+            <div class="form-group">
+                <label for="requestContactName">Người liên hệ</label>
+                <input id="requestContactName" placeholder="Họ tên chủ cửa hàng hoặc người phụ trách" autocomplete="name"/>
+            </div>
+            <div class="form-group">
+                <label for="requestEmail">Email liên hệ</label>
+                <input id="requestEmail" type="email" placeholder="owner@example.com" autocomplete="email"/>
+            </div>
+            <div class="form-group">
+                <label for="requestPhone">Số điện thoại/Zalo</label>
+                <input id="requestPhone" placeholder="Số điện thoại để quản trị hệ thống liên hệ" autocomplete="tel"/>
+            </div>
+            <div class="form-group">
+                <label for="requestWebsiteUrl">Website/Facebook cửa hàng (nếu có)</label>
+                <input id="requestWebsiteUrl" placeholder="https://..."/>
+            </div>
+            <div class="form-group">
+                <label for="requestNote">Ghi chú nhu cầu</label>
+                <textarea id="requestNote" rows="3" placeholder="Mô tả ngắn dữ liệu sản phẩm, kênh chat cần kết nối hoặc nhu cầu triển khai"></textarea>
+            </div>
+            <button id="btn-submit-onboarding" type="button">Gửi yêu cầu</button>
+            <div id="onboardingMsg" class="muted login-msg"></div>
+        </div>
     </div>
 </div>
 

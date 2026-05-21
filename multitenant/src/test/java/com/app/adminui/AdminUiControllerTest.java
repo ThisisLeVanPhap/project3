@@ -33,4 +33,25 @@ class AdminUiControllerTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/index.html"));
     }
+
+    @Test
+    void forwardsTenantChatRoute() throws Exception {
+        mvc.perform(get("/chat"))
+                .andExpect(status().isOk())
+                .andExpect(forwardedUrl("/chat/index.html"));
+    }
+
+    @Test
+    void forwardsGeneralChatRoute() throws Exception {
+        mvc.perform(get("/chat/general/"))
+                .andExpect(status().isOk())
+                .andExpect(forwardedUrl("/chat/general/index.html"));
+    }
+
+    @Test
+    void forwardsPriceCheckRouteThroughGeneralChatComponent() throws Exception {
+        mvc.perform(get("/price-check"))
+                .andExpect(status().isOk())
+                .andExpect(forwardedUrl("/chat/general/index.html"));
+    }
 }

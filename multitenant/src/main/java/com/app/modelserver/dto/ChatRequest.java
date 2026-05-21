@@ -11,5 +11,5 @@ public record ChatRequest(
         String conversation_id,
         String channel,
         String tenant_id,
-        String mode  // tenant_sales | general_consumer
+        String mode  // tenant_sales | general_compare | market_price
 ) {}

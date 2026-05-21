@@ -1,0 +1,32 @@
+{
+  "notice": "DEMO/REFERENCE ONLY. These rows are mock market-price references for tests and demos; they are not a real market catalog.",
+  "references": [
+    {
+      "product_id": "SFG041",
+      "name": "Demo reference sofa SFG041",
+      "category": "sofa",
+      "price": 12000000,
+      "currency": "VND",
+      "source": "mock://demo-market-price/SFG041-a",
+      "notes": "Demo/reference only, not an absolute market price."
+    },
+    {
+      "product_id": "SFG041",
+      "name": "Demo comparable sofa SFG041 style",
+      "category": "sofa",
+      "price": 13500000,
+      "currency": "VND",
+      "source": "mock://demo-market-price/SFG041-b",
+      "notes": "Demo/reference only, separate from tenant KB."
+    },
+    {
+      "product_id": "SOFA-OAK-REF",
+      "name": "Demo oak sofa reference",
+      "category": "sofa go soi",
+      "price": 15000000,
+      "currency": "VND",
+      "source": "mock://demo-market-price/oak-sofa",
+      "notes": "Demo/reference only for price-check workflow."
+    }
+  ]
+}

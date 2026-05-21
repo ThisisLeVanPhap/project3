@@ -22,38 +22,48 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      chatbot-api:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-global_admin}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-admin}
       SERVER_PORT: 8080
-      PYTHON_BIN: /usr/bin/python3
-      MODEL_SERVER_DIR: /opt/app/chatbot
-      BASE_MODEL: ${BASE_MODEL:-TinyLlama/TinyLlama-1.1B-Chat-v1.0}
-      LLM_HOST: 127.0.0.1
-      LLM_PORT_START: ${LLM_PORT_START:-8101}
-      LLM_PORT_END: ${LLM_PORT_END:-8199}
-      LLM_STARTUP_TIMEOUT_MS: ${LLM_STARTUP_TIMEOUT_MS:-600000}
+      PYTHON_LLM_BASE_URL: ${PYTHON_LLM_BASE_URL:-http://chatbot-api:8000}
+      LLM_HEALTH_PATH: ${LLM_HEALTH_PATH:-/healthz}
+      LLM_CONNECT_TIMEOUT_MS: ${LLM_CONNECT_TIMEOUT_MS:-2000}
+      LLM_RESPONSE_TIMEOUT_MS: ${LLM_RESPONSE_TIMEOUT_MS:-120000}
       MESSENGER_VERIFY_TOKEN: ${MESSENGER_VERIFY_TOKEN:-woodchat_secret}
     ports:
       - "${APP_PORT:-8080}:8080"
-    volumes:
-      - ./chatbot/kb:/opt/app/chatbot/kb
-      - ./chatbot/adapters:/opt/app/chatbot/adapters
-      - ./chatbot/out:/opt/app/chatbot/out
-      - ./chatbot/logs:/opt/app/chatbot/logs
-      - huggingface-cache:/root/.cache/huggingface
 
   chatbot-api:
-    profiles: ["chatbot-api"]
     build:
       context: .
       dockerfile: chatbot/Dockerfile
+    init: true
     environment:
       KB_DIR: ${CHATBOT_KB_DIR:-/app/kb/article}
-      BASE_MODEL: ${CHATBOT_BASE_MODEL:-TinyLlama/TinyLlama-1.1B-Chat-v1.0}
+      LOCAL_MODEL_ENABLED: ${LOCAL_MODEL_ENABLED:-false}
       LORA_ADAPTER: ${CHATBOT_LORA_ADAPTER:-}
       TOKENIZER_PATH: ${CHATBOT_TOKENIZER_PATH:-}
+      RETRIEVAL_MODE: ${RETRIEVAL_MODE:-keyword}
+      RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K:-4}
+      CHATBOT_TEST_MODE: ${CHATBOT_TEST_MODE:-0}
+      MARKET_PRICE_PROVIDER: ${MARKET_PRICE_PROVIDER:-}
+      MAX_NEW_TOKENS: ${MAX_NEW_TOKENS:-256}
+      CLAUDE_MAX_NEW_TOKENS: ${CLAUDE_MAX_NEW_TOKENS:-768}
+      LOCAL_FALLBACK_MAX_TOKENS: ${LOCAL_FALLBACK_MAX_TOKENS:-128}
+      TEMPERATURE: ${TEMPERATURE:-0.7}
+      TOP_P: ${TOP_P:-0.9}
+      TOP_K: ${TOP_K:-50}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      FALLBACK_TO_LOCAL_ENABLED: ${FALLBACK_TO_LOCAL_ENABLED:-false}
+      LOCAL_FALLBACK_TIMEOUT_SECONDS: ${LOCAL_FALLBACK_TIMEOUT_SECONDS:-45}
+      LOCAL_PIPELINE_MAX_CACHE: ${LOCAL_PIPELINE_MAX_CACHE:-2}
+      LOCAL_PIPELINE_IDLE_TTL_SECONDS: ${LOCAL_PIPELINE_IDLE_TTL_SECONDS:-180}
+      LOCAL_PIPELINE_CLEANUP_INTERVAL_SECONDS: ${LOCAL_PIPELINE_CLEANUP_INTERVAL_SECONDS:-30}
     ports:
       - "${CHATBOT_PORT:-8000}:8000"
     volumes:
@@ -61,7 +71,14 @@ services:
       - ./chatbot/adapters:/app/adapters
       - ./chatbot/out:/app/out
       - ./chatbot/logs:/app/logs
+      - ${CHATBOT_MODELS_HOST_DIR:-./chatbot/models}:/models
       - huggingface-cache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json, urllib.request; data=json.load(urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)); raise SystemExit(0 if data.get('ready') else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 120
+      start_period: 30s
 
 volumes:
   postgres-data:

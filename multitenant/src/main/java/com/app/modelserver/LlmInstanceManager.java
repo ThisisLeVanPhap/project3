@@ -23,6 +23,9 @@ import java.util.concurrent.locks.ReentrantLock;
 @RequiredArgsConstructor
 public class LlmInstanceManager {
 
+    public static final String RUNTIME_EXTERNAL_HTTP = "external_http";
+    public static final String RUNTIME_SPAWNED_PROCESS = "spawned_process";
+
     private final LlmProperties props;
     private final TenantRepository tenantRepo;
 
@@ -30,7 +33,11 @@ public class LlmInstanceManager {
 
     public record Running(String baseUrl, long pid, Instant lastUsedAt) {}
 
-    public record Session(String baseUrl, boolean coldStart, boolean warmupWaited) {}
+    public record Session(String baseUrl, boolean coldStart, boolean warmupWaited, String runtimeMode) {
+        public Session(String baseUrl, boolean coldStart, boolean warmupWaited) {
+            this(baseUrl, coldStart, warmupWaited, "unknown");
+        }
+    }
 
     public record RuntimeStatusSnapshot(
             UUID tenantId,
@@ -53,10 +60,42 @@ public class LlmInstanceManager {
     }
 
     public Session getOrStartSession(UUID tenantId, ChatbotInstance botCfg) {
+        String externalBaseUrl = normalizedExternalBaseUrl();
+        if (!externalBaseUrl.isBlank()) {
+            log.info(
+                    "LLM runtime selected mode={} tenant={} baseUrl={} healthPath={}",
+                    RUNTIME_EXTERNAL_HTTP,
+                    tenantId,
+                    externalBaseUrl,
+                    props.getHealthPath()
+            );
+            if (isHealthy(externalBaseUrl)) {
+                return new Session(externalBaseUrl, false, false, RUNTIME_EXTERNAL_HTTP);
+            }
+            throw new ChatbotUpstreamException(
+                    UpstreamFailureCategory.UNAVAILABLE,
+                    tenantId.toString(),
+                    externalBaseUrl,
+                    null,
+                    false,
+                    false,
+                    "Configured PYTHON_LLM_BASE_URL is not healthy at " + externalBaseUrl + props.getHealthPath()
+                            + ". Start chatbot-api, check the health endpoint, or unset PYTHON_LLM_BASE_URL for local spawn fallback.",
+                    null
+            );
+        }
+
         Running current = runningByTenant.get(tenantId);
         if (current != null && isHealthy(current.baseUrl())) {
             runningByTenant.put(tenantId, new Running(current.baseUrl(), current.pid(), Instant.now()));
-            return new Session(current.baseUrl(), false, false);
+            log.info(
+                    "LLM runtime selected mode={} tenant={} baseUrl={} pid={} reused=true",
+                    RUNTIME_SPAWNED_PROCESS,
+                    tenantId,
+                    current.baseUrl(),
+                    current.pid()
+            );
+            return new Session(current.baseUrl(), false, false, RUNTIME_SPAWNED_PROCESS);
         }
         runningByTenant.remove(tenantId);
 
@@ -71,15 +110,29 @@ public class LlmInstanceManager {
             Running existing = runningByTenant.get(tenantId);
             if (existing != null && isHealthy(existing.baseUrl())) {
                 runningByTenant.put(tenantId, new Running(existing.baseUrl(), existing.pid(), Instant.now()));
-                return new Session(existing.baseUrl(), false, warmupWaited);
+                log.info(
+                        "LLM runtime selected mode={} tenant={} baseUrl={} pid={} reused=true warmupWaited={}",
+                        RUNTIME_SPAWNED_PROCESS,
+                        tenantId,
+                        existing.baseUrl(),
+                        existing.pid(),
+                        warmupWaited
+                );
+                return new Session(existing.baseUrl(), false, warmupWaited, RUNTIME_SPAWNED_PROCESS);
             }
             runningByTenant.remove(tenantId);
 
-            log.info("LLM props tenant={} pythonBin={} modelServerDir={}", tenantId, props.getPythonBin(), props.getModelServerDir());
+            log.info(
+                    "LLM runtime selected mode={} tenant={} pythonBin={} modelServerDir={}",
+                    RUNTIME_SPAWNED_PROCESS,
+                    tenantId,
+                    props.getPythonBin(),
+                    props.getModelServerDir()
+            );
 
             Running spawned = spawn(tenantId, warmupWaited);
             runningByTenant.put(tenantId, spawned);
-            return new Session(spawned.baseUrl(), true, warmupWaited);
+            return new Session(spawned.baseUrl(), true, warmupWaited, RUNTIME_SPAWNED_PROCESS);
         } finally {
             tenantLock.unlock();
         }
@@ -118,10 +171,16 @@ public class LlmInstanceManager {
 
     private Running spawn(UUID tenantId, boolean warmupWaited) {
         if (props.getPythonBin() == null || props.getPythonBin().isBlank()) {
-            throw new IllegalStateException("Missing config: python.llm.python-bin");
+            throw spawnConfigException(
+                    tenantId,
+                    "Missing PYTHON_BIN for local spawned Python mode. Set PYTHON_LLM_BASE_URL to use an external chatbot-api service, or set PYTHON_BIN for local fallback."
+            );
         }
         if (props.getModelServerDir() == null || props.getModelServerDir().isBlank()) {
-            throw new IllegalStateException("Missing config: python.llm.model-server-dir");
+            throw spawnConfigException(
+                    tenantId,
+                    "Missing MODEL_SERVER_DIR for local spawned Python mode. Set PYTHON_LLM_BASE_URL to use an external chatbot-api service, or set MODEL_SERVER_DIR for local fallback."
+            );
         }
 
         int port;
@@ -143,7 +202,11 @@ public class LlmInstanceManager {
             File dir = new File(props.getModelServerDir()).getAbsoluteFile();
             log.info("Resolved model-server-dir={}", dir.getAbsolutePath());
             if (!dir.isDirectory()) {
-                throw new IllegalStateException("Invalid model-server-dir: " + dir.getAbsolutePath());
+                throw spawnConfigException(
+                        tenantId,
+                        "Invalid MODEL_SERVER_DIR for local spawned Python mode: " + dir.getAbsolutePath()
+                                + ". Set PYTHON_LLM_BASE_URL to use an external chatbot-api service, or fix MODEL_SERVER_DIR."
+                );
             }
 
             ProcessBuilder pb = new ProcessBuilder(
@@ -247,16 +310,33 @@ public class LlmInstanceManager {
             throw e;
         } catch (Exception e) {
             processByTenant.remove(tenantId);
-            throw new RuntimeException(
-                    "Failed to start LLM instance for tenant=" + tenantId
-                            + " (python=" + props.getPythonBin()
-                            + ", modelServerDir=" + props.getModelServerDir()
-                            + ", port=" + port + ")",
+            throw new ChatbotUpstreamException(
+                    UpstreamFailureCategory.UNAVAILABLE,
+                    tenantId.toString(),
+                    baseUrl,
+                    null,
+                    true,
+                    warmupWaited,
+                    "Failed to start local Python chatbot process. Prefer PYTHON_LLM_BASE_URL for deploy/runtime; otherwise verify PYTHON_BIN="
+                            + props.getPythonBin() + ", MODEL_SERVER_DIR=" + props.getModelServerDir() + ", port=" + port,
                     e
             );
         } finally {
             reservedPorts.remove(port);
         }
+    }
+
+    private ChatbotUpstreamException spawnConfigException(UUID tenantId, String message) {
+        return new ChatbotUpstreamException(
+                UpstreamFailureCategory.UNAVAILABLE,
+                tenantId.toString(),
+                null,
+                null,
+                true,
+                false,
+                message,
+                null
+        );
     }
 
     private int pickPortReserved() {
@@ -270,6 +350,18 @@ public class LlmInstanceManager {
         }
         throw new IllegalStateException("No free port in range " +
                 props.getPortRangeStart() + "-" + props.getPortRangeEnd());
+    }
+
+    private String normalizedExternalBaseUrl() {
+        String baseUrl = props.getBaseUrl();
+        if (baseUrl == null || baseUrl.isBlank()) {
+            return "";
+        }
+        String normalized = baseUrl.trim();
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 
     private boolean isPortFree(int port) {

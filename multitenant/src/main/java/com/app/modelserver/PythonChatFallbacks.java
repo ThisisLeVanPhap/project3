@@ -17,7 +17,7 @@ public final class PythonChatFallbacks {
     }
 
     public static ChatResponse forFailure(String baseModel, String adapter, UpstreamFailureCategory category) {
-        return new ChatResponse(messageFor(category), 0, defaultString(baseModel), defaultString(adapter), false, null, null);
+        return new ChatResponse(messageFor(category), 0, defaultString(baseModel), defaultString(adapter), false, null, null, null);
     }
 
     private static String messageFor(UpstreamFailureCategory category) {

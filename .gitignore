@@ -5,6 +5,7 @@ venv/
 env/
 chatbot/.venv-1/
 chatbot/.venv/
+chatbot/models/
 
 # Python cache
 __pycache__/
@@ -16,6 +17,8 @@ __pycache__/
 
 # Logs
 *.log
+chatbot/logs/
+*.jsonl.tmp
 
 # Node / Frontend
 node_modules/
@@ -24,5 +27,35 @@ node_modules/
 # Next.js
 .next/
 out/
-.claude
+
+# Local env (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Claude local workspace
+.claude/
 CLAUDE.md
+
+# Test/runtime scratch data
+chatbot/tests/.tmp/
+chatbot/out/
+
+# Data pipeline generated artifacts
+data_pipeline/raw/**/*.html
+data_pipeline/raw/**/*.json
+data_pipeline/output/**/*.jsonl
+data_pipeline/output/**/*.md
+data_pipeline/output/tenants/**
+!data_pipeline/output/tenants/
+!data_pipeline/output/tenants/.gitkeep
+data_pipeline/output/reference/products.clean.jsonl
+data_pipeline/output/reference/knowledge_docs.clean.jsonl
+
+# Build outputs and deploy secrets
+target/
+*.pem
+*.key
+id_rsa*
+*.p12
+*.jks

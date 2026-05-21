@@ -214,6 +214,46 @@
             padding: 40px 20px;
             font-size: 0.9em;
         }
+        .page-intro {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e8e8e8;
+            background: #faf7ff;
+            color: #3d2561;
+        }
+        .page-intro h3 {
+            margin: 0 0 6px 0;
+            font-size: 1em;
+        }
+        .page-intro p {
+            margin: 0;
+            line-height: 1.4;
+            font-size: 0.9em;
+        }
+        .source-note {
+            margin-top: 8px;
+            color: #6d5b83;
+            font-size: 0.82em;
+        }
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px 12px;
+            border-top: 1px solid #eee;
+            background: #fff;
+        }
+        .suggestion-btn {
+            border: 1px solid #d8c8ef;
+            background: #faf7ff;
+            color: #4a148c;
+            border-radius: 16px;
+            padding: 7px 10px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        .suggestion-btn:hover {
+            background: #f3e5f5;
+        }
     </style>
 </head>
 <body>
@@ -230,7 +270,13 @@
             <ul class="conversations" id="convList"></ul>
         </div>
         <div class="chat-area">
+            <div class="page-intro" id="pageIntro" hidden>
+                <h3 id="pageTitle"></h3>
+                <p id="pageDescription"></p>
+                <div class="source-note" id="sourceNote"></div>
+            </div>
             <div class="messages" id="messages"></div>
+            <div class="suggestions" id="suggestions" hidden></div>
             <div class="input-area">
                 <input id="msg" type="text" placeholder="Ví dụ: 'Tôi cần sofa cho phòng khách 20m², ngân sách 5-7 triệu'" autocomplete="off" />
                 <button id="send">Gửi</button>
@@ -239,7 +285,50 @@
     </div>
 
     <script>
-        const GUEST_TOKEN_KEY = `guest_token_general`;
+        const isPriceCheckPage = location.pathname.includes('price-check');
+        const CHAT_CONFIG = isPriceCheckPage
+            ? {
+                mode: 'market_price',
+                storagePrefix: 'price_check_chat',
+                heading: 'Khảo giá nội thất',
+                subtitle: 'Kiểm tra khoảng giá tham khảo',
+                introTitle: 'Khảo giá',
+                description: 'Kiểm tra khoảng giá tham khảo và phát hiện mức giá cao/thấp bất thường dựa trên dữ liệu hiện có.',
+                sourceNote: 'Kết quả chỉ mang tính tham khảo từ dữ liệu hiện có/demo provider, không khẳng định là giá thị trường tuyệt đối.',
+                placeholder: 'Ví dụ: Giá sofa SFG041 khoảng bao nhiêu là hợp lý?',
+                welcome: 'Xin chào! Tôi có thể hỗ trợ khảo giá tham khảo cho sản phẩm nội thất dựa trên dữ liệu hiện có/demo provider. Hãy nhập mã sản phẩm, mô tả sản phẩm, vật liệu hoặc mức giá bạn muốn kiểm tra.',
+                suggestions: [
+                    'Giá sofa SFG041 khoảng bao nhiêu là hợp lý?',
+                    'Sản phẩm này giá 8 triệu có cao bất thường không?',
+                    'So sánh giá sofa gỗ sồi với mặt bằng chung.',
+                    'Bàn ăn gỗ tự nhiên 6 ghế khoảng giá nào là hợp lý?',
+                    'Tủ quần áo MDF chống ẩm giá 5 triệu có thấp bất thường không?'
+                ]
+            }
+            : {
+                mode: 'general_compare',
+                storagePrefix: 'general_chat',
+                heading: '💬 AI Interior Shopping Advisor',
+                subtitle: 'Tư vấn mua sắm cá nhân hóa',
+                introTitle: '',
+                description: '',
+                sourceNote: '',
+                placeholder: "Ví dụ: 'Tôi cần sofa cho phòng khách 20m², ngân sách 5-7 triệu'",
+                welcome: "Xin chào! Tôi là AI Interior Shopping Advisor. Tôi sẽ giúp bạn tìm nội thất phù hợp.\n\n" +
+                    "Hãy cho tôi biết:\n" +
+                    "- Phòng bạn muốn trang trí (phòng khách, phòng ngủ, v.v.)\n" +
+                    "- Diện tích roughly (nếu biết)\n" +
+                    "- Ngân sách của bạn\n" +
+                    "- Phong cách bạn thích\n\n" +
+                    "Ví dụ: 'Tôi cần sofa cho phòng khách 20m², ngân sách 5-7 triệu, phong cách hiện đại'",
+                suggestions: []
+            };
+
+        document.title = CHAT_CONFIG.introTitle || 'AI Interior Advisor';
+        document.querySelector('.topbar h2').textContent = CHAT_CONFIG.heading;
+        document.getElementById('config-info').textContent = CHAT_CONFIG.subtitle;
+
+        const GUEST_TOKEN_KEY = `guest_token_${CHAT_CONFIG.storagePrefix}`;
 
         function getOrCreateUserExternalId() {
             let guestToken = localStorage.getItem(GUEST_TOKEN_KEY);
@@ -256,11 +345,24 @@
         const sendBtn = document.getElementById('send');
         const configInfo = document.getElementById('config-info');
         const convList = document.getElementById('convList');
+        const pageIntro = document.getElementById('pageIntro');
+        const pageTitle = document.getElementById('pageTitle');
+        const pageDescription = document.getElementById('pageDescription');
+        const sourceNote = document.getElementById('sourceNote');
+        const suggestionsDiv = document.getElementById('suggestions');
 
         let conversationId = null;
         let waiting = false;
-        const STORAGE_KEY = `general_chat`;
-        const SELECTED_KEY = `general_chat_selected`;
+        const STORAGE_KEY = `${CHAT_CONFIG.storagePrefix}`;
+        const SELECTED_KEY = `${CHAT_CONFIG.storagePrefix}_selected`;
+
+        function ownerQuery() {
+            const params = new URLSearchParams({
+                userExternalId,
+                mode: CHAT_CONFIG.mode
+            });
+            return params.toString();
+        }
 
         function clearMessages() {
             messagesDiv.innerHTML = '';
@@ -302,6 +404,10 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
+        function addWelcomeMessage() {
+            addMessage(CHAT_CONFIG.welcome, 'assistant');
+        }
+
         function setLoading(isLoading) {
             waiting = isLoading;
             sendBtn.disabled = isLoading || !conversationId;
@@ -316,7 +422,12 @@
 
         async function fetchConversations() {
             try {
-                const resp = await fetch(`/api/general/chat/conversations?limit=50`);
+                const params = new URLSearchParams({
+                    limit: '50',
+                    userExternalId,
+                    mode: CHAT_CONFIG.mode
+                });
+                const resp = await fetch(`/api/general/chat/conversations?${params.toString()}`);
                 if (!resp.ok) {
                     throw new Error('Không thể tải danh sách cuộc trò chuyện');
                 }
@@ -349,12 +460,20 @@
                         <div class="conv-meta">${date} · ${c.messageCount} tin nhắn</div>
                     </div>
                     <div class="conv-actions">
-                        <button class="conv-btn rename" title="Đổi tên" onclick="event.stopPropagation(); renameConversation('${c.id}')">✏️</button>
-                        <button class="conv-btn delete" title="Xóa" onclick="event.stopPropagation(); deleteConversation('${c.id}')">🗑️</button>
+                        <button class="conv-btn rename" title="Đổi tên" data-action="rename">✏️</button>
+                        <button class="conv-btn delete" title="Xóa" data-action="delete">🗑️</button>
                     </div>
                 `;
                 li.addEventListener('click', async () => {
                     await selectConversation(c.id);
+                });
+                li.querySelector('[data-action="rename"]')?.addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    await renameConversation(c.id);
+                });
+                li.querySelector('[data-action="delete"]')?.addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    await deleteConversation(c.id);
                 });
                 convList.appendChild(li);
             }
@@ -374,13 +493,16 @@
             const newTitle = prompt('Đổi tên cuộc trò chuyện:', currentTitle);
             if (newTitle && newTitle.trim() !== '') {
                 try {
-                    await fetch(`/api/general/chat/conversation/${convId}/rename`, {
+                    const resp = await fetch(`/api/general/chat/conversation/${convId}/rename?${ownerQuery()}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({ title: newTitle.trim() })
                     });
+                    if (!resp.ok) {
+                        throw new Error(await resp.text());
+                    }
                     // Refresh list
                     const convs = await fetchConversations();
                     renderConversationList(convs);
@@ -395,9 +517,12 @@
                 return;
             }
             try {
-                await fetch(`/api/general/chat/conversation/${convId}`, {
+                const resp = await fetch(`/api/general/chat/conversation/${convId}?${ownerQuery()}`, {
                     method: 'DELETE'
                 });
+                if (!resp.ok) {
+                    throw new Error(await resp.text());
+                }
                 // If deleted conversation was active, clear state and start new
                 if (conversationId === convId) {
                     conversationId = null;
@@ -417,7 +542,7 @@
 
         async function loadConversationHistory(convId) {
             try {
-                const resp = await fetch(`/api/general/chat/conversation/${convId}/messages`);
+                const resp = await fetch(`/api/general/chat/conversation/${convId}/messages?${ownerQuery()}`);
                 if (!resp.ok) {
                     throw new Error('Không thể tải lịch sử chat');
                 }
@@ -438,6 +563,9 @@
             for (const m of msgs) {
                 addMessage(m.content, m.role);
             }
+            if (msgs.length === 0) {
+                addWelcomeMessage();
+            }
 
             const convs = await fetchConversations();
             renderConversationList(convs);
@@ -449,7 +577,8 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                        body: JSON.stringify({ userExternalId, mode: CHAT_CONFIG.mode })
                 });
                 if (!resp.ok) {
                     const err = await resp.text();
@@ -466,16 +595,7 @@
 
                 // Show welcome message if chat is empty
                 if (messagesDiv.children.length === 0) {
-                    addMessage(
-                        "Xin chào! Tôi là AI Interior Shopping Advisor. Tôi sẽ giúp bạn tìm nội thất phù hợp.\n\n" +
-                        "Hãy cho tôi biết:\n" +
-                        "- Phòng bạn muốn trang trí (phòng khách, phòng ngủ, v.v.)\n" +
-                        "- Diện tích roughly (nếu biết)\n" +
-                        "- Ngân sách của bạn\n" +
-                        "- Phong cách bạn thích\n\n" +
-                        "Ví dụ: 'Tôi cần sofa cho phòng khách 20m², ngân sách 5-7 triệu, phong cách hiện đại'",
-                        'assistant'
-                    );
+                    addWelcomeMessage();
                 }
             } catch (e) {
                 addError(e.message);
@@ -503,7 +623,9 @@
                     },
                     body: JSON.stringify({
                         conversationId: conversationId,
-                        message: text
+                        message: text,
+                        userExternalId,
+                        mode: CHAT_CONFIG.mode
                     })
                 });
 
@@ -539,47 +661,84 @@
             }
         }
 
-        // Init
-        const selected = localStorage.getItem(SELECTED_KEY);
-        if (selected) {
-            conversationId = selected;
-        }
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            conversationId = saved;
-        }
+        function bindChatEvents() {
+            sendBtn.addEventListener('click', () => sendMessage());
+            msgInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
 
-        // Load conversation list
-        const convs = await fetchConversations();
-        renderConversationList(convs);
-
-        if (conversationId) {
-            const exists = convs.some(c => c.id === conversationId);
-            if (exists) {
-                await selectConversation(conversationId);
-            } else {
-                conversationId = null;
-                localStorage.removeItem(STORAGE_KEY);
-                localStorage.removeItem(SELECTED_KEY);
+            const newChatBtn = document.getElementById('newChatBtn');
+            if (newChatBtn) {
+                newChatBtn.addEventListener('click', async () => {
+                    await startConversation();
+                });
             }
         }
 
-        if (!conversationId) {
-            await startConversation();
+        function renderPageChrome() {
+            msgInput.placeholder = CHAT_CONFIG.placeholder;
+            if (CHAT_CONFIG.description) {
+                pageIntro.hidden = false;
+                pageTitle.textContent = CHAT_CONFIG.introTitle;
+                pageDescription.textContent = CHAT_CONFIG.description;
+                sourceNote.textContent = CHAT_CONFIG.sourceNote;
+            }
+
+            suggestionsDiv.innerHTML = '';
+            if (CHAT_CONFIG.suggestions.length > 0) {
+                suggestionsDiv.hidden = false;
+                for (const suggestion of CHAT_CONFIG.suggestions) {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'suggestion-btn';
+                    button.textContent = suggestion;
+                    button.addEventListener('click', () => {
+                        msgInput.value = suggestion;
+                        msgInput.focus();
+                    });
+                    suggestionsDiv.appendChild(button);
+                }
+            }
         }
 
-        msgInput.focus();
-        sendBtn.addEventListener('click', sendMessage);
-        msgInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
+        async function bootstrapGeneralChat() {
+            renderPageChrome();
+            const selected = localStorage.getItem(SELECTED_KEY);
+            if (selected) {
+                conversationId = selected;
+            }
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                conversationId = saved;
+            }
 
-        const newChatBtn = document.getElementById('newChatBtn');
-        if (newChatBtn) {
-            newChatBtn.addEventListener('click', async () => {
+            const convs = await fetchConversations();
+            renderConversationList(convs);
+
+            if (conversationId) {
+                const exists = convs.some(c => c.id === conversationId);
+                if (exists) {
+                    await selectConversation(conversationId);
+                } else {
+                    conversationId = null;
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(SELECTED_KEY);
+                }
+            }
+
+            if (!conversationId) {
                 await startConversation();
-            });
+            }
+
+            msgInput.focus();
         }
+
+        bindChatEvents();
+        bootstrapGeneralChat().catch((e) => {
+            console.error(e);
+            addError(e.message || 'Khong the khoi tao chat');
+            setLoading(false);
+        });
     </script>
 </body>
 </html>

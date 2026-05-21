@@ -149,7 +149,7 @@ class MessengerWebhookControllerContinuityTest {
 
             if (firstText.equals(prompt)) {
                 assertEquals(List.of(firstText), history);
-                return new ChatResponse("What style and budget are you aiming for?", 12, "model-a", "adapter-a");
+                return new ChatResponse("What style and budget are you aiming for?", 12, "model-a", "adapter-a", false, null, null, Map.of("mode", "tenant_sales"));
             }
             if (secondText.equals(prompt)) {
                 assertEquals(List.of(firstText, secondText), history);
@@ -157,7 +157,11 @@ class MessengerWebhookControllerContinuityTest {
                         "For a small apartment, a modern sofa that's easy to clean and under $800 is a strong fit.",
                         14,
                         "model-a",
-                        "adapter-a"
+                        "adapter-a",
+                        false,
+                        null,
+                        null,
+                        Map.of("mode", "tenant_sales")
                 );
             }
 
@@ -222,6 +226,7 @@ class MessengerWebhookControllerContinuityTest {
     private static MessengerProperties messengerProperties() {
         MessengerProperties properties = new MessengerProperties();
         properties.setVerifyToken("woodchat_secret");
+        properties.setDemoMode(false);
         return properties;
     }
 

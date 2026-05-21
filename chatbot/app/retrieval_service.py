@@ -2,7 +2,12 @@ import os
 import re
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
-from .retrievers import BaseRetriever, BaselineRetriever, HybridRetriever, HybridRerankRetriever, RetrievalResult, VectorRetriever, fold_accents
+from .retrievers.base import BaseRetriever
+from .retrievers.baseline import BaselineRetriever
+from .retrievers.hybrid import HybridRetriever
+from .retrievers.hybrid_rerank import HybridRerankRetriever
+from .retrievers.schemas import RetrievalResult
+from .retrievers.text import fold_accents
 
 
 PRODUCT_HINTS = [
@@ -39,15 +44,21 @@ def load_kb(
     normalized_mode = normalize_retrieval_mode(mode, use_heuristics=use_heuristics)
 
     if normalized_mode == "vector":
+        from .retrievers.vector import VectorRetriever
+
         return VectorRetriever(chunks_path)
 
     if normalized_mode == "hybrid":
+        from .retrievers.vector import VectorRetriever
+
         return HybridRetriever(
             keyword_retriever=BaselineRetriever(chunks_path, index_path, use_heuristics=True),
             vector_retriever=VectorRetriever(chunks_path),
         )
 
     if normalized_mode == "hybrid_rerank":
+        from .retrievers.vector import VectorRetriever
+
         return HybridRerankRetriever(
             hybrid_retriever=HybridRetriever(
                 keyword_retriever=BaselineRetriever(chunks_path, index_path, use_heuristics=True),
@@ -69,9 +80,12 @@ def should_allow_retrieval(message: str, stage: str, slots: Dict[str, Any]) -> b
     words = [w for w in msg_raw.split() if w]
 
     has_link = bool(re.search(r"https?://|www\.", msg_raw, re.I))
-    mentions_specific = (len(words) >= 6) and any(
-        hint in msg_low or fold_accents(hint) in msg_folded
-        for hint in PRODUCT_HINTS
+    has_product_code = bool(re.search(r"\b[A-Z]{2,}\d{2,}\b", msg_raw, re.I))
+    mentions_specific = has_product_code or (
+        (len(words) >= 6) and any(
+            hint in msg_low or fold_accents(hint) in msg_folded
+            for hint in PRODUCT_HINTS
+        )
     )
     asks_policy_or_compare = any(
         hint in msg_low or fold_accents(hint) in msg_folded

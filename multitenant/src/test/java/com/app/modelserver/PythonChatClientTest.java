@@ -1,5 +1,6 @@
 package com.app.modelserver;
 
+import com.app.bots.ChatbotInstance;
 import com.app.modelserver.dto.ChatRequest;
 import com.app.modelserver.dto.ChatResponse;
 import com.app.modelserver.dto.GenerationConfig;
@@ -14,7 +15,9 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PythonChatClientTest {
 
@@ -75,6 +78,45 @@ class PythonChatClientTest {
         }
     }
 
+    @Test
+    void sendsNormalizedModeAndRetrievalModeToPython() throws Exception {
+        AtomicReference<String> requestBody = new AtomicReference<>("");
+        HttpServer server = server(exchange -> {
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            writeJson(exchange, 200, """
+                    {"reply":"ok","latency_ms":1,"model":"m","adapter":null,"trigger_purchase_request":true,"debug":{"mode":"general_compare"}}
+                    """);
+        });
+        try {
+            ChatbotInstance bot = new ChatbotInstance();
+            bot.setBaseModel("base-model");
+            bot.setAdapterPath("adapter-path");
+            bot.setProvider("local");
+            bot.setMode("general_consumer");
+
+            PythonChatClient client = new PythonChatClient(WebClient.builder(), properties(2_000, 10_000));
+
+            ChatResponse response = client.chat(
+                    baseUrl(server),
+                    "compare these sofas",
+                    List.of("hello"),
+                    bot,
+                    "conv-1",
+                    "web",
+                    "tenant-1",
+                    false,
+                    false
+            );
+
+            assertEquals("general_compare", response.debug().get("mode"));
+            assertTrue(requestBody.get().contains("\"mode\":\"general_compare\""));
+            assertTrue(requestBody.get().contains("\"retrieval_mode\":\"keyword\""));
+            assertTrue(requestBody.get().contains("\"tenant_id\":\"tenant-1\""));
+        } finally {
+            server.stop(0);
+        }
+    }
+
     private static ChatRequest request() {
         return new ChatRequest(
                 "hello",
@@ -94,7 +136,9 @@ class PythonChatClientTest {
                         null,      // api_model
                         null,      // api_key
                         null,      // api_base_url
-                        "tenant_sales"  // mode
+                        "tenant_sales",  // mode
+                        "keyword",
+                        null
                 ),
                 "conv-1",
                 "web",

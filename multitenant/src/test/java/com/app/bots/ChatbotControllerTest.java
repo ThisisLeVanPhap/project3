@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -141,7 +142,7 @@ class ChatbotControllerTest {
     void deniesTenantMemberOnTenantConfigEndpoint() throws Exception {
         TenantContext.set(UUID.randomUUID().toString());
         doThrow(new ResponseStatusException(FORBIDDEN, "Insufficient role"))
-                .when(principalAccessor).requireTenantAdmin();
+                .when(principalAccessor).requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN);
 
         MockMvc mvc = MockMvcBuilders.standaloneSetup(new ChatbotController(repo, new ObjectMapper(), principalAccessor))
                 .setControllerAdvice(new ApiExceptionHandler())
@@ -165,7 +166,7 @@ class ChatbotControllerTest {
         UUID tenantId = UUID.randomUUID();
         TenantContext.set(tenantId.toString());
         when(repo.save(any(ChatbotInstance.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(principalAccessor.requireTenantAdmin()).thenReturn(
+        when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN)).thenReturn(
                 new AppPrincipal("user-1", AppRole.TENANT_ADMIN, tenantId.toString(), "Tenant Admin", "admin@tenant.local")
         );
 
@@ -185,5 +186,62 @@ class ChatbotControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.responseStyle").value("balanced"));
+    }
+
+    @Test
+    void allowsPlatformAdminWithSelectedTenantOnTenantConfigEndpoint() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        TenantContext.set(tenantId.toString());
+        when(repo.save(any(ChatbotInstance.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN)).thenReturn(
+                new AppPrincipal("platform-admin", AppRole.PLATFORM_ADMIN, null, "Platform Admin", "admin")
+        );
+
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new ChatbotController(repo, new ObjectMapper(), principalAccessor))
+                .setControllerAdvice(new ApiExceptionHandler())
+                .build();
+
+        mvc.perform(post("/api/chatbots")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Sales Bot",
+                                  "channel": "telegram",
+                                  "personaJson": "{}",
+                                  "responseStyle": "balanced"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tenantId").value(tenantId.toString()))
+                .andExpect(jsonPath("$.channel").value("telegram"));
+    }
+
+    @Test
+    void deletesChatbotForCurrentTenant() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID chatbotId = UUID.randomUUID();
+        TenantContext.set(tenantId.toString());
+
+        ChatbotInstance chatbot = new ChatbotInstance();
+        chatbot.setId(chatbotId);
+        chatbot.setTenantId(tenantId);
+        chatbot.setName("Extra Bot");
+        chatbot.setChannel("telegram");
+
+        when(repo.findById(chatbotId)).thenReturn(Optional.of(chatbot));
+        when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN)).thenReturn(
+                new AppPrincipal("platform-admin", AppRole.PLATFORM_ADMIN, null, "Platform Admin", "admin")
+        );
+
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new ChatbotController(repo, new ObjectMapper(), principalAccessor))
+                .setControllerAdvice(new ApiExceptionHandler())
+                .build();
+
+        mvc.perform(delete("/api/chatbots/{id}", chatbotId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deleted").value(true))
+                .andExpect(jsonPath("$.id").value(chatbotId.toString()));
+
+        verify(repo).delete(chatbot);
     }
 }

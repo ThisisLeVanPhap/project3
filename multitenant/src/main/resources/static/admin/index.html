@@ -497,38 +497,100 @@
 
         <section id="tab-kb-dirs" class="card hidden">
             <div class="head">
-                <h2>KB Directories</h2>
+                <div>
+                    <h2>KB Directories</h2>
+                    <div class="muted">Resolved tenant KB directory from active KB version, legacy tenant kbDir, or default fallback.</div>
+                </div>
+                <div class="row">
+                    <button class="secondary" id="loadActiveKbDirectory">Load active KB directory</button>
+                </div>
             </div>
-            <div class="note">
-                Tenant KB directories are configured through the tenant <code>kbDir</code> field. Active KB version details still appear with tenant records and Monitoring until the dedicated KB API wiring is split out.
-            </div>
+            <div class="note tenant-context-notice" id="kbDirsTenantNotice"></div>
+            <div id="activeKbDirectoryPanel" class="kb-panel"></div>
+            <span class="muted" id="kbDirsMsg"></span>
         </section>
 
         <section id="tab-kb-versions" class="card hidden">
             <div class="head">
-                <h2>KB Versions</h2>
+                <div>
+                    <h2>KB Versions</h2>
+                    <div class="muted">Review build outputs and switch the selected tenant's active KB version.</div>
+                </div>
+                <div class="row">
+                    <button class="secondary" id="loadKbVersions">Load KB versions</button>
+                </div>
             </div>
-            <div class="note">
-                KB versions will be connected to the KB versions API in a later phase. For now, version summary signals remain visible in Monitoring.
-            </div>
+            <div class="note tenant-context-notice" id="kbVersionsTenantNotice"></div>
+            <div id="kbVersionsTablePanel" class="table-wrap"></div>
+            <div id="kbVersionDetailPanel" class="dataset-detail-panel hidden"></div>
+            <span class="muted" id="kbVersionsMsg"></span>
         </section>
 
         <section id="tab-kb-rebuild" class="card hidden">
             <div class="head">
-                <h2>KB Rebuild</h2>
+                <div>
+                    <h2>KB Rebuild</h2>
+                    <div class="muted">Manage tenant source URLs and trigger a tenant KB rebuild.</div>
+                </div>
+                <div class="row">
+                    <button class="secondary" id="loadKbSourceUrls">Load source URLs</button>
+                    <button id="rebuildKb">Rebuild KB</button>
+                    <button class="secondary" id="loadKbRebuildStatus">Load rebuild status</button>
+                </div>
             </div>
+            <div class="note tenant-context-notice" id="kbRebuildTenantNotice"></div>
             <div class="note">
-                KB rebuild controls will be connected in a later phase. Current rebuild history and status summaries remain available in Monitoring.
+                Source URLs are read from the tenant KB directory <code>raw_urls.txt</code>. Rebuild status history is currently exposed through Monitoring snapshots only; there is no standalone KB rebuild-status endpoint.
             </div>
+            <div id="kbSourceUrlsPanel" class="kb-panel"></div>
+            <div id="kbRebuildStatusPanel" class="kb-panel"></div>
+            <span class="muted" id="kbRebuildMsg"></span>
         </section>
 
         <section id="tab-product-datasets" class="card hidden">
             <div class="head">
-                <h2>Product Datasets</h2>
+                <div>
+                    <h2>Product Datasets</h2>
+                    <div class="muted">Datasets are offline crawled product catalogs that can be assigned to a tenant KB.</div>
+                </div>
+                <div class="row">
+                    <button class="secondary" id="toggleProductDatasetsOut">Show raw response</button>
+                </div>
             </div>
-            <div class="note">
-                Product dataset registry will be connected in next phase.
+
+            <div class="note tenant-context-notice" id="productDatasetsTenantNotice"></div>
+
+            <div class="grid2">
+                <div>
+                    <label>Dataset ID</label>
+                    <input id="datasetIdInput" placeholder="gotrangtri-20260610" />
+                </div>
+                <div>
+                    <label>Dataset path</label>
+                    <input id="datasetPathInput" placeholder="data_pipeline/output/datasets/gotrangtri-20260610" />
+                </div>
             </div>
+            <div class="grid2">
+                <div>
+                    <label>Optional source</label>
+                    <input id="datasetSourceInput" placeholder="gotrangtri" />
+                </div>
+                <div>
+                    <label>Optional version</label>
+                    <input id="datasetVersionInput" placeholder="20260610" />
+                </div>
+            </div>
+            <div class="row">
+                <button id="registerProductDataset">Register dataset</button>
+                <button class="secondary" id="loadProductDatasets">Load datasets</button>
+                <button class="secondary" id="clearProductDatasetForm">Clear</button>
+                <span class="muted" id="productDatasetsMsg"></span>
+            </div>
+
+            <div id="productDatasetsTablePanel" class="table-wrap"></div>
+            <div id="productDatasetDetailPanel" class="dataset-detail-panel hidden"></div>
+            <div id="productDatasetAssignPanel" class="assign-result-panel hidden"></div>
+            <pre id="productDatasetsOut" class="out debug-output hidden"></pre>
         </section>
 
         <section id="tab-monitor" class="card hidden">
@@ -575,11 +637,18 @@
         <!-- ✅ NEW: LEADS -->
         <section id="tab-runtime" class="card hidden">
             <div class="head">
-                <h2>Runtime</h2>
+                <div>
+                    <h2>Runtime</h2>
+                    <div class="muted">Selected tenant KB runtime status and cache eviction.</div>
+                </div>
+                <div class="row">
+                    <button class="secondary" id="loadKbRuntimeStatus">Load runtime status</button>
+                    <button class="secondary" id="evictSelectedTenantRuntime">Evict selected tenant runtime</button>
+                </div>
             </div>
-            <div class="note">
-                Current runtime controls are still available in Monitoring.
-            </div>
+            <div class="note tenant-context-notice" id="kbRuntimeTenantNotice"></div>
+            <div id="kbRuntimeStatusPanel" class="kb-panel"></div>
+            <span class="muted" id="kbRuntimeMsg"></span>
         </section>
 
         <section id="tab-health" class="card hidden">

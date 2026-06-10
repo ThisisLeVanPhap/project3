@@ -16,7 +16,7 @@ def read_manifest(dataset_dir: Path) -> Dict[str, Any]:
     manifest_path = dataset_dir / "manifest.json"
     if not manifest_path.is_file():
         raise FileNotFoundError(f"manifest.json not found: {manifest_path}")
-    return json.loads(manifest_path.read_text(encoding="utf-8"))
+    return json.loads(manifest_path.read_text(encoding="utf-8-sig"))
 
 
 def manifest_file(dataset_dir: Path, manifest: Dict[str, Any], key: str, fallback: str) -> Path:

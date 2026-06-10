@@ -14,4 +14,6 @@ public class Tenant {
     private String status;
     @Column(name = "kb_dir")
     private String kbDir;
+    @Column(name = "active_kb_version_id")
+    private UUID activeKbVersionId;
 }

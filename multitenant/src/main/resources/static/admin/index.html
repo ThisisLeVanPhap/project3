@@ -38,13 +38,13 @@
             </div>
             <div>
                 <label>Authorization (Basic) – nếu bạn bật security</label>
-                <input id="basicAuth" />
+                <input id="basicAuth" type="password" />
             </div>
         </div>
         <div class="grid2">
             <div>
                 <label>X-API-Key (ưu tiên dùng)</label>
-                <input id="apiKey" />
+                <input id="apiKey" type="password" />
             </div>
             <div>
                 <label>X-Tenant-Id (nếu muốn truyền trực tiếp)</label>
@@ -58,25 +58,82 @@
         </div>
     </section>
 
-    <nav class="tabs">
-        <button class="tab active" data-tab="tenants">Tenants</button>
-        <button class="tab" data-tab="onboarding">Onboarding</button>
-        <button class="tab" data-tab="members">Members</button>
-        <button class="tab" data-tab="chatbots">Chatbots</button>
-        <button class="tab" data-tab="bindings">Bindings</button>
-        <button class="tab" data-tab="monitor">Monitoring</button>
-        <button class="tab" data-tab="leads">Leads</button>
-        <button class="tab" data-tab="purchase-requests">Purchase Requests</button>
-        <button class="tab" data-tab="stats">Statistics</button>
+    <nav class="primary-tabs">
+        <button class="primary-tab active" data-group="dashboard">Dashboard</button>
+        <button class="primary-tab" data-group="tenantManagement">Tenant Management</button>
+        <button class="primary-tab" data-group="chatbotChannels">Chatbot &amp; Channels</button>
+        <button class="primary-tab" data-group="knowledgeBase">Knowledge Base</button>
+        <button class="primary-tab" data-group="businessData">Business Data</button>
+        <button class="primary-tab" data-group="operations">Operations</button>
+    </nav>
+
+    <nav class="sub-tabs">
+        <button class="sub-tab active" data-group="dashboard" data-tab="overview">Overview</button>
+        <button class="sub-tab" data-group="dashboard" data-tab="monitor">Monitoring</button>
+        <button class="sub-tab" data-group="dashboard" data-tab="stats">Statistics</button>
+
+        <button class="sub-tab hidden" data-group="tenantManagement" data-tab="tenants">Tenants</button>
+        <button class="sub-tab hidden" data-group="tenantManagement" data-tab="members">Members</button>
+        <button class="sub-tab hidden" data-group="tenantManagement" data-tab="onboarding">Onboarding</button>
+
+        <button class="sub-tab hidden" data-group="chatbotChannels" data-tab="chatbots">Chatbots</button>
+        <button class="sub-tab hidden" data-group="chatbotChannels" data-tab="bindings">Bindings</button>
+        <button class="sub-tab hidden" data-group="chatbotChannels" data-tab="messenger-status">Messenger Status</button>
+        <button class="sub-tab hidden" data-group="chatbotChannels" data-tab="telegram-status">Telegram Status</button>
+
+        <button class="sub-tab hidden" data-group="knowledgeBase" data-tab="kb-dirs">KB Directories</button>
+        <button class="sub-tab hidden" data-group="knowledgeBase" data-tab="kb-versions">KB Versions</button>
+        <button class="sub-tab hidden" data-group="knowledgeBase" data-tab="kb-rebuild">KB Rebuild</button>
+        <button class="sub-tab hidden" data-group="knowledgeBase" data-tab="product-datasets">Product Datasets</button>
+
+        <button class="sub-tab hidden" data-group="businessData" data-tab="leads">Leads</button>
+        <button class="sub-tab hidden" data-group="businessData" data-tab="purchase-requests">Purchase Requests</button>
+
+        <button class="sub-tab hidden" data-group="operations" data-tab="runtime">Runtime</button>
+        <button class="sub-tab hidden" data-group="operations" data-tab="health">Health</button>
+        <button class="sub-tab hidden" data-group="operations" data-tab="benchmark">Benchmark</button>
+        <button class="sub-tab hidden" data-group="operations" data-tab="dev-debug">Dev Debug</button>
     </nav>
 
     <main>
+        <section id="tab-overview" class="card">
+            <div class="head">
+                <h2>Overview</h2>
+            </div>
+
+            <div class="grid3">
+                <div class="card2">
+                    <div class="muted">Selected tenant</div>
+                    <div class="big" id="overviewSelectedTenant">-</div>
+                </div>
+                <div class="card2">
+                    <div class="muted">System status</div>
+                    <div>Use Monitoring to load the latest platform status, runtime, KB, and benchmark summary.</div>
+                </div>
+                <div class="card2">
+                    <div class="muted">Admin focus</div>
+                    <div>Pick a group above, then use the sub-tabs for the related workflow.</div>
+                </div>
+            </div>
+
+            <div class="note">
+                <b>Quick links</b>
+                <div class="quick-links">
+                    <button class="secondary" data-nav-tab="monitor">Load Monitoring</button>
+                    <button class="secondary" data-nav-tab="tenants">Manage Tenants</button>
+                    <button class="secondary" data-nav-tab="chatbots">Manage Chatbots</button>
+                    <button class="secondary" data-nav-tab="bindings">Configure Bindings</button>
+                    <button class="secondary" data-nav-tab="product-datasets">Manage Product Datasets</button>
+                </div>
+            </div>
+        </section>
 
         <!-- TENANTS -->
-        <section id="tab-tenants" class="card">
+        <section id="tab-tenants" class="card hidden">
             <div class="head">
                 <h2>Tenants</h2>
                 <div class="row">
+                    <button class="secondary" id="toggleTenantsOut">Show raw response</button>
                     <button class="secondary" id="clearTenantsOut">Clear output</button>
                 </div>
             </div>
@@ -92,7 +149,7 @@
                 </div>
                 <div>
                     <label>API Key (optional)</label>
-                    <input id="tenantApiKey" placeholder="Auto-generate if blank" />
+                    <input id="tenantApiKey" type="password" placeholder="Auto-generate if blank" />
                 </div>
             </div>
 
@@ -115,16 +172,19 @@
 
             <div class="row">
                 <button class="secondary" id="loadTenants">Load tenants</button>
+                <input id="tenantFilter" placeholder="Filter tenants by code, name, id, status..." />
                 <span class="muted" id="tenantsMsg"></span>
             </div>
 
-            <pre id="tenantsOut" class="out"></pre>
+            <div id="tenantsTablePanel" class="table-wrap"></div>
+            <pre id="tenantsOut" class="out debug-output hidden"></pre>
         </section>
 
         <section id="tab-onboarding" class="card hidden">
             <div class="head">
                 <h2>Tenant Onboarding Requests</h2>
                 <div class="row">
+                    <button class="secondary" id="toggleOnboardingOut">Show raw response</button>
                     <button class="secondary" id="clearOnboardingOut">Clear output</button>
                 </div>
             </div>
@@ -203,30 +263,19 @@
                 </div>
             </div>
 
-            <pre id="onboardingOut" class="out"></pre>
+            <pre id="onboardingOut" class="out debug-output hidden"></pre>
         </section>
 
         <section id="tab-members" class="card hidden">
             <div class="head">
                 <h2>Tenant Members</h2>
                 <div class="row">
+                    <button class="secondary" id="toggleMembersOut">Show raw response</button>
                     <button class="secondary" id="clearMembersOut">Clear output</button>
                 </div>
             </div>
 
-            <div class="note">
-                Select a tenant here, then manage members for that tenant.
-            </div>
-
-            <div class="grid2">
-                <div>
-                    <label>Tenant</label>
-                    <select id="tenantSelectMembers"></select>
-                </div>
-                <div class="row end">
-                    <button class="secondary" id="useTenantMembers">Use tenant</button>
-                </div>
-            </div>
+            <div class="note tenant-context-notice" id="membersTenantNotice"></div>
 
             <div class="grid3">
                 <div>
@@ -268,7 +317,7 @@
                 <span class="muted" id="membersMsg"></span>
             </div>
 
-            <pre id="membersOut" class="out"></pre>
+            <pre id="membersOut" class="out debug-output hidden"></pre>
         </section>
 
         <!-- CHATBOTS -->
@@ -276,6 +325,7 @@
             <div class="head">
                 <h2>Chatbots</h2>
                 <div class="row">
+                    <button class="secondary" id="toggleBotsOut">Show raw response</button>
                     <button class="secondary" id="clearBotsOut">Clear output</button>
                 </div>
             </div>
@@ -289,6 +339,8 @@
                     <button class="secondary" id="useTenantBots">Use tenant</button>
                 </div>
             </div>
+
+            <div class="note tenant-context-notice" id="botsTenantNotice"></div>
 
             <div class="grid2">
                 <div>
@@ -352,10 +404,12 @@
                 <button class="secondary" id="saveBot">Save selected chatbot</button>
                 <button class="danger" id="deleteBot">Delete selected chatbot</button>
                 <button class="secondary" id="loadBots">Load chatbots</button>
+                <input id="botFilter" placeholder="Filter chatbots by name, id, channel, provider..." />
                 <span class="muted" id="botsMsg"></span>
             </div>
 
-            <pre id="botsOut" class="out"></pre>
+            <div id="botsTablePanel" class="table-wrap"></div>
+            <pre id="botsOut" class="out debug-output hidden"></pre>
         </section>
 
         <!-- BINDINGS -->
@@ -363,6 +417,7 @@
             <div class="head">
                 <h2>Bindings</h2>
                 <div class="row">
+                    <button class="secondary" id="toggleBindingsOut">Show raw response</button>
                     <button class="secondary" id="clearBindingsOut">Clear output</button>
                 </div>
             </div>
@@ -380,6 +435,7 @@
             <div class="grid2">
                 <div>
                     <label>Chatbot (thuộc tenant đã chọn)</label>
+                    <div class="note tenant-context-notice" id="bindingsTenantNotice"></div>
                     <select id="botSelect"></select>
                     <div class="muted">Selected bot channel: <b id="selectedBotChannel">—</b></div>
                 </div>
@@ -393,7 +449,7 @@
                 <div class="card2">
                     <h3>Telegram</h3>
                     <label>Bot token</label>
-                    <input id="tgToken" />
+                    <input id="tgToken" type="password" />
                     <label>Public base URL (ngrok)</label>
                     <input id="tgPublicBase" placeholder="https://xxxx.ngrok-free.app" />
                     <div class="row">
@@ -408,7 +464,7 @@
                     <label>Page ID</label>
                     <input id="pageId" />
                     <label>Page access token</label>
-                    <input id="pageToken" />
+                    <input id="pageToken" type="password" />
                     <div class="row">
                         <button id="createMsgBinding">Create Messenger binding</button>
                         <button class="secondary" id="loadMsgBindings">Load Messenger bindings</button>
@@ -416,7 +472,63 @@
                 </div>
             </div>
 
-            <pre id="bindingsOut" class="out"></pre>
+            <div id="messengerBindingsPanel" class="note hidden"></div>
+            <div id="messengerBindingStatusPanel" class="note hidden"></div>
+            <pre id="bindingsOut" class="out debug-output hidden"></pre>
+        </section>
+
+        <section id="tab-messenger-status" class="card hidden">
+            <div class="head">
+                <h2>Messenger Status</h2>
+            </div>
+            <div class="note">
+                Messenger binding status is still available in Bindings for this phase. Open Bindings, select a tenant and chatbot, then load Messenger bindings to inspect connection details.
+            </div>
+        </section>
+
+        <section id="tab-telegram-status" class="card hidden">
+            <div class="head">
+                <h2>Telegram Status</h2>
+            </div>
+            <div class="note">
+                Telegram webhook and token checks remain in Bindings for this phase. This tab reserves the channel status view for the next UI pass.
+            </div>
+        </section>
+
+        <section id="tab-kb-dirs" class="card hidden">
+            <div class="head">
+                <h2>KB Directories</h2>
+            </div>
+            <div class="note">
+                Tenant KB directories are configured through the tenant <code>kbDir</code> field. Active KB version details still appear with tenant records and Monitoring until the dedicated KB API wiring is split out.
+            </div>
+        </section>
+
+        <section id="tab-kb-versions" class="card hidden">
+            <div class="head">
+                <h2>KB Versions</h2>
+            </div>
+            <div class="note">
+                KB versions will be connected to the KB versions API in a later phase. For now, version summary signals remain visible in Monitoring.
+            </div>
+        </section>
+
+        <section id="tab-kb-rebuild" class="card hidden">
+            <div class="head">
+                <h2>KB Rebuild</h2>
+            </div>
+            <div class="note">
+                KB rebuild controls will be connected in a later phase. Current rebuild history and status summaries remain available in Monitoring.
+            </div>
+        </section>
+
+        <section id="tab-product-datasets" class="card hidden">
+            <div class="head">
+                <h2>Product Datasets</h2>
+            </div>
+            <div class="note">
+                Product dataset registry will be connected in next phase.
+            </div>
         </section>
 
         <section id="tab-monitor" class="card hidden">
@@ -445,6 +557,7 @@
                 <span class="muted" id="runtimeMsg"></span>
             </div>
 
+            <div id="systemStatusSummary" class="note hidden"></div>
             <div id="runtimeSummary" class="note hidden"></div>
             <div id="benchmarkSummary" class="note hidden"></div>
             <details class="debug-details">
@@ -460,6 +573,42 @@
         </section>
 
         <!-- ✅ NEW: LEADS -->
+        <section id="tab-runtime" class="card hidden">
+            <div class="head">
+                <h2>Runtime</h2>
+            </div>
+            <div class="note">
+                Current runtime controls are still available in Monitoring.
+            </div>
+        </section>
+
+        <section id="tab-health" class="card hidden">
+            <div class="head">
+                <h2>Health</h2>
+            </div>
+            <div class="note">
+                Backend health checks are still available in Monitoring for this phase.
+            </div>
+        </section>
+
+        <section id="tab-benchmark" class="card hidden">
+            <div class="head">
+                <h2>Benchmark</h2>
+            </div>
+            <div class="note">
+                Benchmark summary currently appears in Monitoring.
+            </div>
+        </section>
+
+        <section id="tab-dev-debug" class="card hidden">
+            <div class="head">
+                <h2>Dev Debug</h2>
+            </div>
+            <div class="note">
+                Developer API debug is still controlled by the topbar Dev debug button. This tab keeps the Operations group structure ready without moving the existing panel.
+            </div>
+        </section>
+
         <section id="tab-leads" class="card hidden">
             <div class="head">
                 <h2>Purchase Requests (Leads)</h2>
@@ -471,6 +620,7 @@
             <div class="note">
                 Platform admin can inspect tenant leads for support/audit. Daily handling should be done by tenant admins or tenant members for the selected tenant.
             </div>
+            <div class="note tenant-context-notice" id="leadsTenantNotice"></div>
 
             <table class="table" id="leads-table">
                 <thead>
@@ -504,6 +654,7 @@
             <div class="note">
                 These records are tenant business data. Platform admin has highest access, but normal workflow belongs to tenant admin/member.
             </div>
+            <div class="note tenant-context-notice" id="purchaseRequestsTenantNotice"></div>
 
             <div class="toolbar">
                 <div class="purchase-request-controls">

@@ -110,7 +110,7 @@ class OperationsControllerTest {
     @Test
     void tenantAdminCanLoadTenantSnapshot() throws Exception {
         UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
-        when(principalAccessor.requireTenantAdmin()).thenReturn(
+        when(principalAccessor.requireTenantOperator()).thenReturn(
                 new AppPrincipal("tenant-admin", AppRole.TENANT_ADMIN, tenantId.toString(), "Tenant Admin", "tenant@example.com")
         );
         when(operationsSnapshotService.getTenantSnapshot(tenantId)).thenReturn(
@@ -155,7 +155,7 @@ class OperationsControllerTest {
                 .andExpect(jsonPath("$.purchaseRequests.totalRequests").value(3))
                 .andExpect(jsonPath("$.purchaseRequests.unassignedCount").value(1));
 
-        verify(principalAccessor).requireTenantAdmin();
+        verify(principalAccessor).requireTenantOperator();
         verify(operationsSnapshotService).getTenantSnapshot(tenantId);
     }
 

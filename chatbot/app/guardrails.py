@@ -2,6 +2,7 @@ import re
 from typing import Optional, Dict, Any
 
 from .prompt import is_vietnamese_text
+from .sales_flow import _match_text
 
 # Categories for price lookup - kept in sync with price_reference.json
 PRICE_CATEGORIES = [
@@ -37,6 +38,10 @@ RX_HUMAN = re.compile(
 RX_SIMILAR = re.compile(
     r"\b(similar|alternative|close to|like this|tương tự|na ná|gần giống|giống mẫu này|"
     r"phương án khác)\b",
+    re.I,
+)
+RX_GREETING = re.compile(
+    r"^\s*(hi|hello|hey|xin chao|xin chào|chao|chào|alo|a lô|good morning|good afternoon|good evening)\s*[!.?]*\s*$",
     re.I,
 )
 
@@ -171,8 +176,18 @@ def _format_price_reply(category: str, info: Dict, user_msg: str, user_price: Op
 
 def rule_reply(user_msg: str) -> Optional[Dict[str, Any]]:
     m = user_msg.strip()
+    folded = _match_text(m)
 
-    if RX_HUMAN.search(m):
+    if RX_GREETING.search(m) or re.search(r"^\s*(hi|hello|hey|xin chao|chao|alo|a lo)\s*$", folded, re.I):
+        return {
+            "type": "greeting",
+            "reply": (
+                "Chào bạn, mình là trợ lý tư vấn nội thất. "
+                "Bạn đang cần tìm sản phẩm nào: sofa, bàn ăn, giường, tủ hay món khác?"
+            ),
+        }
+
+    if RX_HUMAN.search(m) or re.search(r"\b(human|agent|staff|nhan vien|tu van vien|nguoi that)\b", folded, re.I):
         return {
             "type": "handoff",
             "reply": _localized_reply(
@@ -184,7 +199,7 @@ def rule_reply(user_msg: str) -> Optional[Dict[str, Any]]:
             ),
         }
 
-    if RX_INVENTORY.search(m):
+    if RX_INVENTORY.search(m) or re.search(r"\b(con hang|ton kho|san hang|availability|in stock)\b", folded, re.I):
         return {
             "type": "inventory_mock",
             "reply": _localized_reply(
@@ -198,7 +213,7 @@ def rule_reply(user_msg: str) -> Optional[Dict[str, Any]]:
             ),
         }
 
-    if RX_BARGAIN.search(m):
+    if RX_BARGAIN.search(m) or re.search(r"\b(giam gia|khuyen mai|bot gia|gia tot|re hon|discount|cheaper)\b", folded, re.I):
         return {
             "type": "bargain_policy",
             "reply": _localized_reply(
@@ -214,4 +229,9 @@ def rule_reply(user_msg: str) -> Optional[Dict[str, Any]]:
 
 
 def want_similar(user_msg: str) -> bool:
-    return RX_SIMILAR.search(user_msg or "") is not None
+    folded = _match_text(user_msg or "")
+    return RX_SIMILAR.search(user_msg or "") is not None or re.search(
+        r"\b(tuong tu|na na|gan giong|giong mau nay|phuong an khac|similar|alternative)\b",
+        folded,
+        re.I,
+    ) is not None

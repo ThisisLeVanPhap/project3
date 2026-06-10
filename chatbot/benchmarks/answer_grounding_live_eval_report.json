@@ -1,0 +1,746 @@
+{
+  "summary": {
+    "total_answers": 26,
+    "pass_rate": 0.153846,
+    "citation_validity_rate": 1.0,
+    "price_consistency_rate": 0.576923,
+    "hallucination_failure_count": 14
+  },
+  "answers": [
+    {
+      "id": "listing_001",
+      "query": "Có rèm nào dưới 1 triệu không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1",
+          "P5"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "listing_002",
+      "query": "Có sofa không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": false,
+        "citation_validity": true,
+        "source_link_presence": false,
+        "price_consistency": true,
+        "product_name_grounded": false,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "listing_003",
+      "query": "Có kệ tivi gỗ không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P2",
+          "P5"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "listing_004",
+      "query": "Có đèn trang trí phòng khách không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P5"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "listing_005",
+      "query": "Có bàn trà nào hợp phòng khách nhỏ không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P2"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "price_001",
+      "query": "Có thảm dưới 2 triệu không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P2",
+          "P3"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "price_002",
+      "query": "Có bàn trà từ 1 đến 3 triệu không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P2",
+          "P3"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "price_003",
+      "query": "Có đèn dưới 500k không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P4",
+          "P5"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "price_004",
+      "query": "Có ghế thư giãn dưới 3 triệu không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1",
+          "P2"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "price_005",
+      "query": "Có rèm cửa dưới 700k không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1",
+          "P3"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "comparison_001",
+      "query": "So sánh sofa và ghế thư giãn",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": false,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P1",
+          "P4"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "comparison_002",
+      "query": "So sánh rèm cuốn và rèm sáo",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": false,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P1",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "comparison_003",
+      "query": "So sánh bàn trà gỗ tự nhiên và gỗ công nghiệp",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": false,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P1",
+          "P4"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "comparison_004",
+      "query": "So sánh kệ tivi thấp và kệ tivi treo tường",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": false,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "matching_001",
+      "query": "Có bàn trà nào hợp với kệ tivi không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P1",
+          "P3"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "matching_002",
+      "query": "Tôi muốn bàn ăn và ghế ăn",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P1",
+          "P4"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "matching_003",
+      "query": "Tư vấn rèm và đèn cho phòng khách",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": false,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P2",
+          "P3",
+          "P4"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "matching_004",
+      "query": "Tôi muốn sofa, bàn trà và thảm cho phòng khách",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P1",
+          "P3",
+          "P4"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "missing_001",
+      "query": "Sản phẩm này bảo hành bao lâu?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "missing_002",
+      "query": "Kệ tivi này có miễn phí vận chuyển không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": false,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P2",
+          "P5"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "missing_003",
+      "query": "Rèm này có lắp đặt tận nhà không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": false,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": false,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "missing_004",
+      "query": "Sofa này còn hàng ở showroom không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": false,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "policy_001",
+      "query": "Chính sách đổi trả thế nào?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": false,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "policy_002",
+      "query": "Cửa hàng ở đâu?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": false,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "policy_003",
+      "query": "Có tuyển nhân viên không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": false,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    },
+    {
+      "id": "policy_004",
+      "query": "Tôi muốn mua điện thoại",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": false,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": false,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5
+      }
+    }
+  ]
+}

@@ -16,4 +16,6 @@ public interface ChatbotInstanceRepository extends JpaRepository<ChatbotInstance
     Optional<ChatbotInstance> findFirstByChannelAndStatus(String channel, String status);
 
     Optional<ChatbotInstance> findByModeAndStatus(String mode, String status);
+
+    List<ChatbotInstance> findAllByModeAndStatusOrderByNameAsc(String mode, String status);
 }

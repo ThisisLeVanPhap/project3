@@ -140,6 +140,16 @@
             border-radius: 18px;
             line-height: 1.5;
             word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .msg .price-title {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #2d1b47;
+        }
+        .msg .price-line {
+            margin: 4px 0;
         }
         .msg .meta {
             font-size: 0.75em;
@@ -297,13 +307,7 @@
                 sourceNote: 'Kết quả chỉ mang tính tham khảo từ dữ liệu hiện có/demo provider, không khẳng định là giá thị trường tuyệt đối.',
                 placeholder: 'Ví dụ: Giá sofa SFG041 khoảng bao nhiêu là hợp lý?',
                 welcome: 'Xin chào! Tôi có thể hỗ trợ khảo giá tham khảo cho sản phẩm nội thất dựa trên dữ liệu hiện có/demo provider. Hãy nhập mã sản phẩm, mô tả sản phẩm, vật liệu hoặc mức giá bạn muốn kiểm tra.',
-                suggestions: [
-                    'Giá sofa SFG041 khoảng bao nhiêu là hợp lý?',
-                    'Sản phẩm này giá 8 triệu có cao bất thường không?',
-                    'So sánh giá sofa gỗ sồi với mặt bằng chung.',
-                    'Bàn ăn gỗ tự nhiên 6 ghế khoảng giá nào là hợp lý?',
-                    'Tủ quần áo MDF chống ẩm giá 5 triệu có thấp bất thường không?'
-                ]
+                suggestions: []
             }
             : {
                 mode: 'general_compare',
@@ -371,8 +375,8 @@
         function addMessage(text, role, meta = null) {
             const div = document.createElement('div');
             div.className = 'msg ' + role;
-            div.textContent = text;
-            if (meta && role === 'assistant') {
+            renderMessageContent(div, text, role);
+            if (meta && role === 'assistant' && !isPriceCheckPage) {
                 const metaDiv = document.createElement('span');
                 metaDiv.className = 'meta';
                 metaDiv.textContent = `${meta.model || 'unknown'} · ${meta.latency || '?'}ms`;
@@ -380,6 +384,27 @@
             }
             messagesDiv.appendChild(div);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function renderMessageContent(container, text, role) {
+            const value = text || '';
+            if (!isPriceCheckPage || role !== 'assistant') {
+                container.textContent = value;
+                return;
+            }
+
+            const lines = value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+            if (lines.length === 0) {
+                container.textContent = value;
+                return;
+            }
+
+            for (const line of lines) {
+                const item = document.createElement(line.startsWith('## ') ? 'strong' : 'p');
+                item.className = line.startsWith('## ') ? 'price-title' : 'price-line';
+                item.textContent = line.replace(/^##\s+/, '');
+                container.appendChild(item);
+            }
         }
 
         function addTypingIndicator() {
@@ -453,10 +478,11 @@
                 li.dataset.id = c.id;
                 const date = new Date(c.createdAt).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
                 const displayTitle = c.title || 'Cuộc trò chuyện mới';
+                const preview = formatConversationPreview(c.lastPreview || '');
                 li.innerHTML = `
                     <div class="conv-info">
                         <div class="conv-title">${escapeHtml(displayTitle)}</div>
-                        <div class="conv-preview">${escapeHtml(c.lastPreview)}</div>
+                        <div class="conv-preview">${escapeHtml(preview)}</div>
                         <div class="conv-meta">${date} · ${c.messageCount} tin nhắn</div>
                     </div>
                     <div class="conv-actions">
@@ -484,6 +510,13 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function formatConversationPreview(text) {
+            return String(text || '')
+                .replace(/^##\s+/, '')
+                .replace(/\s+/g, ' ')
+                .trim();
         }
 
         async function renameConversation(convId) {

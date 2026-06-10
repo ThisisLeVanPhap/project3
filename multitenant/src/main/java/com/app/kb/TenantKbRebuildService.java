@@ -15,6 +15,8 @@ import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -23,6 +25,10 @@ import java.util.UUID;
 
 @Service
 public class TenantKbRebuildService {
+
+    private static final DateTimeFormatter VERSION_TAG_FORMATTER = DateTimeFormatter
+            .ofPattern("'v'yyyyMMddHHmmss")
+            .withZone(ZoneOffset.UTC);
 
     public record KbStatusSnapshot(
             String kbDir,
@@ -41,17 +47,20 @@ public class TenantKbRebuildService {
     private final LlmProperties llmProperties;
     private final LlmInstanceManager llmInstanceManager;
     private final TenantKbRebuildStatusService tenantKbRebuildStatusService;
+    private final TenantKbVersionRepository tenantKbVersionRepository;
 
     public TenantKbRebuildService(
             TenantRepository tenantRepository,
             LlmProperties llmProperties,
             LlmInstanceManager llmInstanceManager,
-            TenantKbRebuildStatusService tenantKbRebuildStatusService
+            TenantKbRebuildStatusService tenantKbRebuildStatusService,
+            TenantKbVersionRepository tenantKbVersionRepository
     ) {
         this.tenantRepository = tenantRepository;
         this.llmProperties = llmProperties;
         this.llmInstanceManager = llmInstanceManager;
         this.tenantKbRebuildStatusService = tenantKbRebuildStatusService;
+        this.tenantKbVersionRepository = tenantKbVersionRepository;
     }
 
     public RebuildResponse rebuild(UUID tenantId) {
@@ -67,14 +76,20 @@ public class TenantKbRebuildService {
             throw new IllegalStateException("Invalid model-server-dir: " + chatbotDir.getAbsolutePath());
         }
 
-        Path kbDir = Path.of(kbDirValue).normalize();
-        Path rawUrls = kbDir.resolve("raw_urls.txt");
-        Path docsJsonl = kbDir.resolve("docs.jsonl");
-        Path chunksJsonl = kbDir.resolve("chunks.jsonl");
-        Path indexJson = kbDir.resolve("index.json");
-
-        String shop = kbDir.getFileName() == null ? tenant.getCode() : kbDir.getFileName().toString();
+        Path rootKbDir = Path.of(kbDirValue).toAbsolutePath().normalize();
+        Path rootRawUrls = rootKbDir.resolve("raw_urls.txt");
         Instant startedAt = Instant.now();
+        String versionTag = nextVersionTag(tenantId, startedAt);
+        Path versionDir = rootKbDir.resolve("versions").resolve(versionTag).normalize();
+        Path rawUrls = versionDir.resolve("raw_urls.txt");
+        Path docsJsonl = versionDir.resolve("docs.jsonl");
+        Path chunksJsonl = versionDir.resolve("chunks.jsonl");
+        Path indexJson = versionDir.resolve("index.json");
+
+        prepareVersionDirectory(versionDir, rootRawUrls, rawUrls);
+
+        String shop = rootKbDir.getFileName() == null ? tenant.getCode() : rootKbDir.getFileName().toString();
+        TenantKbVersion kbVersion = createStartedVersion(tenantId, versionTag, versionDir, rootRawUrls);
         tenantKbRebuildStatusService.markStarted(tenantId, startedAt, "KB rebuild started");
 
         try {
@@ -105,6 +120,7 @@ public class TenantKbRebuildService {
             llmInstanceManager.evictTenant(tenantId);
             Instant finishedAt = Instant.now();
             String message = "KB rebuilt successfully. The next tenant chat request will start with the updated KB.";
+            markVersionReady(kbVersion, finishedAt, message, chunksJsonl, docsJsonl);
             tenantKbRebuildStatusService.markFinished(tenantId, startedAt, finishedAt, "SUCCESS", message);
 
             return new RebuildResponse(
@@ -119,9 +135,115 @@ public class TenantKbRebuildService {
         } catch (RuntimeException ex) {
             Instant finishedAt = Instant.now();
             String message = ex.getMessage() == null ? "KB rebuild failed" : ex.getMessage();
+            markVersionFailed(kbVersion, finishedAt, message);
             tenantKbRebuildStatusService.markFinished(tenantId, startedAt, finishedAt, "FAILED", message);
             throw ex;
         }
+    }
+
+    private void prepareVersionDirectory(Path versionDir, Path rootRawUrls, Path versionRawUrls) {
+        try {
+            Files.createDirectories(versionDir);
+            if (Files.exists(rootRawUrls)) {
+                Files.copy(rootRawUrls, versionRawUrls, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } else {
+                Files.writeString(versionRawUrls, "");
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to prepare KB version directory: " + versionDir);
+        }
+    }
+
+    private TenantKbVersion createStartedVersion(UUID tenantId, String versionTag, Path versionDir, Path rootRawUrls) {
+        TenantKbVersion version = new TenantKbVersion();
+        version.setTenantId(tenantId);
+        version.setVersionTag(versionTag);
+        version.setKbDir(versionDir.toAbsolutePath().normalize().toString());
+        version.setSourceUrlSnapshot(readSourceUrlSnapshot(rootRawUrls));
+        version.setStatus(TenantKbVersionStatus.BUILDING);
+        version.setBuildMessage("Rebuild started");
+        return tenantKbVersionRepository.save(version);
+    }
+
+    private String nextVersionTag(UUID tenantId, Instant startedAt) {
+        String baseTag = VERSION_TAG_FORMATTER.format(startedAt);
+        String candidate = baseTag;
+        int suffix = 2;
+        while (tenantKbVersionRepository.findByTenantIdAndVersionTag(tenantId, candidate).isPresent()) {
+            candidate = baseTag + "-" + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
+    private String readSourceUrlSnapshot(Path rawUrls) {
+        if (!Files.exists(rawUrls)) {
+            return "[]";
+        }
+        try {
+            List<String> urls = Files.readAllLines(rawUrls).stream()
+                    .map(String::trim)
+                    .filter(line -> !line.isBlank())
+                    .toList();
+            return toJsonArray(urls);
+        } catch (IOException ignored) {
+            return "[]";
+        }
+    }
+
+    private String toJsonArray(List<String> values) {
+        return values.stream()
+                .map(value -> "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
+                .reduce((left, right) -> left + "," + right)
+                .map(json -> "[" + json + "]")
+                .orElse("[]");
+    }
+
+    private void markVersionReady(TenantKbVersion version, Instant finishedAt, String message, Path chunksJsonl, Path docsJsonl) {
+        version.setStatus(TenantKbVersionStatus.READY);
+        version.setBuiltAt(finishedAt);
+        version.setBuildMessage(message);
+        version.setArtifactCount(countArtifactLines(chunksJsonl, docsJsonl));
+        tenantKbVersionRepository.save(version);
+    }
+
+    private void markVersionFailed(TenantKbVersion version, Instant finishedAt, String message) {
+        version.setStatus(TenantKbVersionStatus.FAILED);
+        version.setBuiltAt(finishedAt);
+        version.setBuildMessage(summarizeMessage(message));
+        tenantKbVersionRepository.save(version);
+    }
+
+    private Integer countArtifactLines(Path chunksJsonl, Path docsJsonl) {
+        Integer chunks = countLines(chunksJsonl);
+        if (chunks != null) {
+            return chunks;
+        }
+        return countLines(docsJsonl);
+    }
+
+    private Integer countLines(Path path) {
+        if (!Files.exists(path)) {
+            return null;
+        }
+        try {
+            long count;
+            try (var lines = Files.lines(path)) {
+                count = lines.filter(line -> !line.isBlank()).count();
+            }
+            return Math.toIntExact(count);
+        } catch (IOException | ArithmeticException ignored) {
+            return null;
+        }
+    }
+
+    private String summarizeMessage(String message) {
+        String normalized = message == null ? "KB rebuild failed" : message.trim();
+        if (normalized.isBlank()) {
+            return "KB rebuild failed";
+        }
+        int maxLength = 1000;
+        return normalized.length() <= maxLength ? normalized : normalized.substring(0, maxLength);
     }
 
     public KbStatusSnapshot inspectStatus(UUID tenantId) {

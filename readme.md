@@ -1,124 +1,86 @@
-# Multi-tenant RAG Chatbot tư vấn sản phẩm nội thất
+# Multi-tenant RAG chatbot hỗ trợ tư vấn bán hàng, so sánh và tham chiếu giá sản phẩm nội thất
 
-Hệ thống chatbot AI hỗ trợ tư vấn bán hàng, gợi ý sản phẩm và quản lý yêu cầu mua hàng cho các cửa hàng nội thất. Sản phẩm được xây dựng theo mô hình multi-tenant: mỗi cửa hàng có dữ liệu, chatbot, cấu hình mô hình và kênh giao tiếp riêng, trong khi vẫn dùng chung một nền tảng backend và giao diện quản trị.
+Đồ án tốt nghiệp kỳ 2025.2 của sinh viên Lê Văn Pháp, MSSV 20226118. Đề tài tập trung xây dựng hệ thống chatbot AI cho cửa hàng nội thất nhỏ và vừa, nơi khách hàng thường cần tư vấn đa lượt trước khi ra quyết định mua: hỏi theo nhu cầu, thay đổi ngân sách, đổi loại sản phẩm, từ chối gợi ý, yêu cầu so sánh và cuối cùng để lại thông tin mua hàng.
 
-Chatbot sử dụng RAG để truy xuất knowledge base của từng cửa hàng, kết hợp mô hình ngôn ngữ để trả lời theo ngữ cảnh hội thoại. Hệ thống phù hợp với các kịch bản tư vấn nội thất đa lượt, nơi khách hàng có thể thay đổi ngân sách, đổi nhu cầu, hỏi sản phẩm tương tự, yêu cầu so sánh hoặc để lại thông tin mua hàng.
+Sản phẩm trong repo hiện tại là một hệ thống multi-tenant gồm backend Spring Boot và AI service FastAPI. Mỗi cửa hàng/tenant có chatbot, dữ liệu knowledge base, cấu hình model và kênh giao tiếp riêng, nhưng vận hành trên cùng một platform.
 
-## Tính năng chính
+## Mục tiêu đề tài
 
-- Quản lý nhiều tenant/cửa hàng trên cùng một hệ thống.
-- Quản lý chatbot theo từng tenant, gồm persona, kênh, mode, provider và cấu hình sinh câu trả lời.
-- Xây dựng knowledge base riêng cho từng cửa hàng từ dữ liệu website hoặc tài liệu sản phẩm.
-- Chatbot RAG tư vấn sản phẩm nội thất dựa trên dữ liệu cửa hàng.
-- Hội thoại đa lượt có trạng thái, ghi nhớ nhu cầu, ngân sách, phong cách, không gian và các ràng buộc của khách hàng.
-- Hỗ trợ luồng tư vấn bán hàng: khám phá nhu cầu, đề xuất, so sánh, chốt nhu cầu và chuyển tiếp nhân viên.
-- Tạo purchase request từ hội thoại khi khách xác nhận mua hàng.
-- Quản lý danh sách yêu cầu mua hàng và cập nhật trạng thái xử lý.
-- Tích hợp web chat, Facebook Messenger và Telegram.
-- Giao diện quản trị cho platform admin và tenant admin.
-- Công cụ crawl dữ liệu, build knowledge base và đánh giá chất lượng retrieval.
-- Hỗ trợ chạy model local bằng Hugging Face/LoRA hoặc dùng provider API theo cấu hình chatbot.
+Hệ thống cần giải quyết ba nhóm nhu cầu chính:
 
-## Ba chế độ hoạt động
+- Tư vấn bán hàng theo từng cửa hàng nội thất: chatbot dùng knowledge base riêng của cửa hàng, ghi nhớ hội thoại, gợi ý sản phẩm và tạo yêu cầu mua hàng khi đủ thông tin.
+- Tư vấn và so sánh chung: chatbot trên website hệ thống hỗ trợ người dùng tham khảo, so sánh sản phẩm nội thất từ dữ liệu tổng hợp, không tạo lead/purchase request.
+- Tham chiếu thị trường: phân tích khoảng giá, mức giá phổ biến và cảnh báo giá bất thường cho từng nhóm sản phẩm.
 
-### 1. Tư vấn bán hàng theo cửa hàng
+Repo hiện đã hiện thực rõ nhất luồng `tenant_sales` và phần lớn hạ tầng multi-tenant/API/UI. Luồng `general_consumer` đang đóng vai trò tư vấn nội thất tổng quát và là nền cho chế độ tư vấn/so sánh chung. Dữ liệu tham chiếu giá đã có trong `chatbot/kb/price_reference.json` và logic hỗ trợ nằm trong `chatbot/app/guardrails.py`, nhưng hiện chưa được tách thành REST API tham chiếu giá độc lập.
 
-Chế độ này phục vụ từng tenant/cửa hàng riêng. Chatbot sử dụng knowledge base của cửa hàng để tư vấn sản phẩm, trả lời câu hỏi về sản phẩm/chính sách, ghi nhớ nhu cầu khách hàng và hỗ trợ chốt yêu cầu mua hàng.
+## Chức năng chính
 
-Các khả năng chính:
-
-- Tư vấn theo nhu cầu, phòng sử dụng, ngân sách, phong cách, chất liệu và kích thước.
-- Gợi ý sản phẩm từ knowledge base riêng của cửa hàng.
-- Xử lý hội thoại đa lượt khi khách đổi ngân sách, đổi nhu cầu hoặc từ chối đề xuất.
-- Gợi ý sản phẩm tương tự khi khách muốn lựa chọn khác.
-- Thu thập thông tin khách hàng và tạo purchase request khi khách xác nhận.
-- Tích hợp với web chat, Messenger và Telegram của từng cửa hàng.
-
-### 2. Tư vấn và so sánh chung
-
-Chế độ này phục vụ người dùng trên website hệ thống. Chatbot hỗ trợ tư vấn nội thất tổng quát, gợi ý hướng lựa chọn và so sánh các phương án theo nhu cầu của người dùng.
-
-Các khả năng chính:
-
-- Tư vấn cách chọn sản phẩm nội thất theo diện tích, công năng, phong cách và ngân sách.
-- Hỗ trợ so sánh các lựa chọn theo tiêu chí như giá, chất liệu, kích thước, phong cách và mức phù hợp với không gian.
-- Gợi ý nhiều phương án để người dùng tham khảo trước khi quyết định.
-- Duy trì hội thoại tư vấn mà không gắn với quy trình tạo đơn mua hàng của một cửa hàng cụ thể.
-
-### 3. Tham chiếu thị trường và giá
-
-Chế độ này hỗ trợ người dùng tham khảo mặt bằng giá cho các nhóm sản phẩm nội thất. Hệ thống dùng dữ liệu giá tham chiếu để trả lời các câu hỏi về khoảng giá, mức giá phổ biến và đánh giá sơ bộ một mức giá cụ thể.
-
-Các khả năng chính:
-
-- Trả lời khoảng giá điển hình của các nhóm sản phẩm như sofa, bàn, ghế, giường, tủ.
-- So sánh giá người dùng đưa ra với mức trung bình tham chiếu.
-- Phân loại mức giá theo hướng thấp hơn, nằm trong khoảng phổ biến hoặc cao hơn mặt bằng tham chiếu.
-- Hỗ trợ câu hỏi bằng tiếng Việt và tiếng Anh cho các tình huống tham khảo giá.
+- Quản lý tenant/cửa hàng, chatbot, thành viên, hội thoại và yêu cầu mua hàng.
+- Chatbot RAG theo tenant: mỗi tenant trỏ tới một `kb_dir` riêng gồm `docs.jsonl`, `chunks.jsonl`, `index.json`.
+- AI service xử lý hội thoại đa lượt, ghi nhớ stage/slot như loại sản phẩm, ngân sách, phong cách, không gian, trẻ em/thú cưng.
+- Tư vấn theo flow bán hàng: discover, propose, compare, close, handoff.
+- Tạo purchase request khi khách xác nhận trong luồng chốt đơn.
+- Tích hợp web chat, Facebook Messenger webhook và Telegram webhook.
+- Giao diện quản trị platform và tenant để xem tenant, chatbot, hội thoại, knowledge base, runtime và purchase request.
+- Công cụ crawl website, build knowledge base và benchmark retrieval.
+- Hỗ trợ nhiều cấu hình model: local Hugging Face model + LoRA hoặc provider API như Claude.
 
 ## Kiến trúc hệ thống
 
 ```mermaid
 flowchart LR
-    User["Web Chat / Messenger / Telegram"] --> Backend["Spring Boot Multi-tenant Backend"]
-    Admin["Admin / Tenant UI"] --> Backend
-    Backend --> DB["PostgreSQL + Flyway"]
-    Backend --> Runtime["LLM Runtime Manager"]
-    Runtime --> AI["Python FastAPI AI Service"]
-    AI --> KB["Tenant Knowledge Base"]
-    AI --> Retrieval["RAG Retrieval"]
-    AI --> Model["Local LLM + LoRA / Provider API"]
-    Backend --> Purchase["Lead / Purchase Request"]
+    Customer["Người dùng / Web Chat / Messenger / Telegram"] --> Spring["Spring Boot Multi-tenant Backend"]
+    Admin["Platform Admin / Tenant Admin UI"] --> Spring
+    Spring --> DB["PostgreSQL + Flyway"]
+    Spring --> Runtime["LlmInstanceManager"]
+    Runtime --> FastAPI["Python FastAPI model server theo tenant"]
+    FastAPI --> KB["Tenant Knowledge Base"]
+    FastAPI --> Retriever["Keyword / Vector / Hybrid Retrieval"]
+    FastAPI --> LLM["Local LLM + LoRA hoặc Claude API"]
+    Spring --> PR["Purchase Request / Lead"]
 ```
 
-Luồng xử lý chat:
+Luồng chat chính:
 
-1. Người dùng gửi tin nhắn qua web chat, Messenger hoặc Telegram.
-2. Backend xác định tenant, chatbot và conversation tương ứng.
-3. Backend lấy cấu hình chatbot và knowledge base của tenant.
-4. Python AI service truy xuất dữ liệu liên quan từ knowledge base.
-5. Prompt được dựng từ system prompt, lịch sử hội thoại, trạng thái tư vấn và context RAG.
-6. Mô hình ngôn ngữ sinh câu trả lời.
-7. Backend lưu hội thoại, trả phản hồi cho người dùng và tạo purchase request khi hội thoại đạt điều kiện chốt nhu cầu.
+1. Người dùng gửi tin qua web chat hoặc webhook Messenger/Telegram.
+2. Spring Boot xác định tenant bằng `X-API-Key`, session đăng nhập hoặc channel binding.
+3. Spring lấy chatbot config và `kb_dir` của tenant từ PostgreSQL.
+4. `LlmInstanceManager` khởi động Python FastAPI process riêng cho tenant nếu chưa có.
+5. Spring gọi Python `POST /chat` với `message`, `history`, `gen`, `conversation_id`, `channel`, `tenant_id`.
+6. Python áp dụng guardrails, state machine tư vấn, retrieval từ KB và gọi model để sinh câu trả lời.
+7. Spring lưu hội thoại, trả response cho client và tạo purchase request nếu AI service trigger điều kiện chốt đơn.
 
 ## Công nghệ sử dụng
 
-Backend:
+Backend nghiệp vụ:
 
 - Java 21.
 - Spring Boot 3.5.7.
 - Spring Web, Spring WebFlux.
-- Spring Security.
+- Spring Security, session/RBAC cho platform admin, tenant admin, tenant member.
 - Spring Data JPA.
-- PostgreSQL 16.
 - Flyway.
+- PostgreSQL 16.
 - Lombok.
 
-AI service:
+AI service và RAG:
 
 - Python 3.11.
-- FastAPI 0.115.0.
-- Uvicorn 0.30.6.
-- Transformers 4.44.2.
-- PEFT 0.12.0.
-- Accelerate 0.34.2.
-- PyTorch >= 2.3.0.
-- BeautifulSoup4, lxml, requests.
+- FastAPI 0.115.0, Uvicorn 0.30.6.
+- Transformers 4.44.2, PEFT 0.12.0, Accelerate 0.34.2, PyTorch >= 2.3.0.
+- Qwen/Qwen2.5-1.5B-Instruct làm model local mặc định trong code.
+- TinyLlama/TinyLlama-1.1B-Chat-v1.0 làm default Docker demo để cold start nhẹ hơn.
+- Claude 3.5 Sonnet qua Anthropic-compatible API khi chatbot config dùng provider API.
+- BeautifulSoup4, lxml, requests để thu thập dữ liệu.
+- Retriever keyword baseline, vector, hybrid, hybrid rerank trong `chatbot/app/retrievers`.
 
-RAG và đánh giá:
+Triển khai và kiểm thử:
 
-- Keyword/Baseline retrieval.
-- Vector retrieval.
-- Hybrid retrieval.
-- Hybrid rerank retrieval.
-- Recall@k và MRR cho benchmark retrieval.
-
-Triển khai:
-
-- Docker.
-- Docker Compose.
+- Docker Desktop, Docker Compose.
 - Maven.
-- Postman.
+- Postman collection trong `multitenant/docs/postman`.
+- Python eval runner trong `chatbot/eval`.
 
 ## Cấu trúc thư mục
 
@@ -127,25 +89,39 @@ Triển khai:
 ├── README.md
 ├── docker-compose.yml
 ├── docs/
+│   ├── docker-local-demo.md
+│   ├── REGRESSION_CHECKLIST.md
+│   └── vietnamese-buyer-progress-summary.md
 ├── diagram/
+│   ├── Kiến trúc tổng thể.png
+│   ├── erd.png
+│   ├── MainClassDiagram.png
+│   └── SequenceDiagram.png
 ├── chatbot/
 │   ├── app/
-│   │   ├── server.py
-│   │   ├── model_loader.py
-│   │   ├── retriever.py
-│   │   ├── retrieval_service.py
-│   │   ├── retrievers/
-│   │   ├── sales_flow.py
-│   │   ├── consultation.py
-│   │   ├── state.py
-│   │   ├── guardrails.py
+│   │   ├── server.py                  # FastAPI /chat, /healthz, /state, /feedback
+│   │   ├── model_loader.py            # Load local model/LoRA pipeline
+│   │   ├── retriever.py               # SimpleKb đang được server.py dùng trực tiếp
+│   │   ├── retrieval_service.py       # Boundary mới cho retriever chuẩn hóa
+│   │   ├── retrievers/                # baseline, vector, hybrid, hybrid_rerank
+│   │   ├── sales_flow.py              # Flow tenant_sales
+│   │   ├── consultation.py            # Flow general_consumer
+│   │   ├── state.py                   # State hội thoại theo conversation_id
+│   │   ├── guardrails.py              # Handoff, tồn kho, mặc cả, giá tham chiếu
 │   │   └── prompt.py
 │   ├── kb/
 │   │   ├── article/
 │   │   ├── castlery/
-│   │   └── noithatcaco/
+│   │   ├── noithatcaco/
+│   │   └── price_reference.json
 │   ├── tools/
+│   │   ├── scrape_site.py
+│   │   ├── build_kb.py
+│   │   └── run_vietnamese_retrieval_regression.py
 │   ├── eval/
+│   │   ├── dataset.jsonl
+│   │   ├── runner.py
+│   │   └── results-summary.md
 │   ├── training/
 │   ├── adapters/
 │   ├── tests/
@@ -154,85 +130,118 @@ Triển khai:
 │   └── Dockerfile
 ├── multitenant/
 │   ├── src/main/java/com/app/
-│   │   ├── admin/
-│   │   ├── auth/
-│   │   ├── bots/
-│   │   ├── chat/
-│   │   ├── kb/
-│   │   ├── leads/
-│   │   ├── messenger/
-│   │   ├── modelserver/
-│   │   ├── ops/
-│   │   ├── purchases/
-│   │   ├── telegram/
+│   │   ├── admin/                     # Platform admin APIs
+│   │   ├── auth/                      # Login/session/RBAC
+│   │   ├── bots/                      # ChatbotInstance APIs
+│   │   ├── chat/                      # Tenant chat + general chat
+│   │   ├── kb/                        # Source URLs + rebuild KB
+│   │   ├── leads/                     # Lead flow
+│   │   ├── messenger/                 # Messenger binding/webhook/send
+│   │   ├── modelserver/               # Spawn/call Python model server
+│   │   ├── ops/                       # Runtime/benchmark/platform ops
+│   │   ├── purchases/                 # Purchase request lifecycle
+│   │   ├── telegram/                  # Telegram binding/webhook/send
 │   │   └── tenants/
 │   ├── src/main/resources/
 │   │   ├── application.yml
 │   │   ├── db/migration/
-│   │   └── static/
+│   │   └── static/                    # admin, tenant, login, chat UI
 │   ├── docs/
 │   ├── pom.xml
 │   └── Dockerfile
-└── datasetv2/
+├── datasetv2/
+└── references/
 ```
+
+## Các chế độ sản phẩm
+
+### 1. Tư vấn bán hàng theo cửa hàng
+
+Mode: `tenant_sales`.
+
+Đây là luồng bám sát code nhất trong repo. Chatbot được cấu hình theo tenant và dùng KB riêng để tư vấn. Python service quản lý stage/slot, Spring lưu hội thoại và tạo purchase request khi khách gửi xác nhận trong giai đoạn close.
+
+Các tình huống đã có hỗ trợ:
+
+- Hỏi sản phẩm theo nhu cầu, phòng sử dụng, phong cách.
+- Nhận diện ngân sách, không gian nhỏ, trẻ em/thú cưng, chất liệu/phong cách.
+- Thay đổi nhu cầu hoặc chủ đề sản phẩm.
+- Từ chối gợi ý, hỏi sản phẩm tương tự.
+- Handoff sang nhân viên.
+- Chốt nhu cầu và tạo purchase request.
+
+### 2. Tư vấn và so sánh chung
+
+Mode: `general_consumer`.
+
+Code hiện tại có `GeneralChatController` và mode `general_consumer` trong Python để trả lời tư vấn nội thất tổng quát, không dùng flow purchase request của tenant sales. Đây là nền cho yêu cầu trong phiếu: chatbot website dùng dữ liệu tổng hợp để tư vấn/so sánh và không tạo lead tự động.
+
+Trong repo, khả năng so sánh đang nằm ở mức hội thoại/RAG và prompt, chưa có endpoint so sánh sản phẩm dạng bảng riêng. Các truy vấn so sánh vẫn đi qua `/api/general/chat/send` hoặc Python `/chat`.
+
+### 3. Tham chiếu thị trường và giá
+
+Phiếu giao nhiệm vụ yêu cầu phân tích khoảng giá, mức phổ biến và phát hiện giá bất thường. Repo hiện có:
+
+- File dữ liệu: `chatbot/kb/price_reference.json`.
+- Logic nhận diện danh mục/giá và format phản hồi trong `chatbot/app/guardrails.py`.
+- Demo scenario trong `chatbot/docs/demo-scenarios.md`.
+
+Trạng thái theo code hiện tại: phần tham chiếu giá chưa được expose thành nhóm REST API riêng trong Spring Boot; nếu cần đúng hoàn toàn với phiếu, bước tiếp theo là nối logic price reference vào `rule_reply` hoặc tạo endpoint/API riêng cho tham chiếu giá.
 
 ## Biến môi trường
 
-### Backend Spring Boot
+### Spring Boot
 
-| Biến | Mặc định | Mô tả |
+| Biến | Mặc định | Ý nghĩa |
 | --- | --- | --- |
 | `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/global_admin` | JDBC URL PostgreSQL |
-| `SPRING_DATASOURCE_USERNAME` | `postgres` | Tài khoản database |
-| `SPRING_DATASOURCE_PASSWORD` | `admin` | Mật khẩu database |
+| `SPRING_DATASOURCE_USERNAME` | `postgres` | User DB |
+| `SPRING_DATASOURCE_PASSWORD` | `admin` | Password DB |
 | `SERVER_PORT` | `8080` | Port backend |
-| `PYTHON_BIN` | `python` | Python runtime chạy AI service |
-| `MODEL_SERVER_DIR` | `../chatbot` | Thư mục Python chatbot |
-| `LLM_HOST` | `127.0.0.1` | Host model server |
-| `LLM_PORT_START` | `8101` | Port bắt đầu cho model server theo tenant |
-| `LLM_PORT_END` | `8199` | Port kết thúc cho model server theo tenant |
-| `LLM_HEALTH_PATH` | `/healthz` | Health endpoint |
+| `PYTHON_BIN` | `python` | Python runtime có cài dependencies của `chatbot` |
+| `MODEL_SERVER_DIR` | `../chatbot` | Thư mục chứa `app/server.py` |
+| `LLM_HOST` | `127.0.0.1` | Host cho Python process |
+| `LLM_PORT_START` | `8101` | Port bắt đầu cho tenant model server |
+| `LLM_PORT_END` | `8199` | Port kết thúc cho tenant model server |
+| `LLM_HEALTH_PATH` | `/healthz` | Health endpoint của Python |
 | `LLM_UVICORN_MODULE` | `app.server:app` | Uvicorn module |
-| `LLM_CONNECT_TIMEOUT_MS` | `2000` | Timeout kết nối tới AI service |
+| `LLM_CONNECT_TIMEOUT_MS` | `2000` | Timeout connect |
 | `LLM_RESPONSE_TIMEOUT_MS` | `120000` | Timeout phản hồi chat |
-| `LLM_STARTUP_TIMEOUT_MS` | `120000` | Timeout chờ warmup |
+| `LLM_STARTUP_TIMEOUT_MS` | `120000` local, `600000` Docker | Timeout chờ model warmup |
 | `MESSENGER_VERIFY_TOKEN` | `woodchat_secret` | Token verify webhook Messenger |
 
 ### Python AI service
 
-| Biến | Mặc định | Mô tả |
+| Biến | Mặc định | Ý nghĩa |
 | --- | --- | --- |
-| `KB_DIR` | rỗng | Thư mục knowledge base của process |
-| `BASE_MODEL` | `Qwen/Qwen2.5-1.5B-Instruct` | Model local |
+| `KB_DIR` | rỗng | KB của process Python hiện tại |
+| `BASE_MODEL` | `Qwen/Qwen2.5-1.5B-Instruct` | Model local mặc định |
 | `LORA_ADAPTER` | rỗng | Đường dẫn LoRA adapter |
-| `TOKENIZER_PATH` | rỗng | Tokenizer tùy chỉnh |
+| `TOKENIZER_PATH` | rỗng | Tokenizer riêng |
 | `MAX_NEW_TOKENS` | `256` | Số token sinh tối đa |
 | `TEMPERATURE` | `0.7` | Sampling temperature |
 | `TOP_P` | `0.9` | Nucleus sampling |
 | `TOP_K` | `50` | Top-k sampling |
 
-Các biến Docker Compose thường dùng:
+Docker Compose còn hỗ trợ:
 
-- `POSTGRES_DB`
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
-- `POSTGRES_PORT`
-- `APP_PORT`
-- `BASE_MODEL`
-- `CHATBOT_KB_DIR`
-- `CHATBOT_BASE_MODEL`
-- `CHATBOT_LORA_ADAPTER`
-- `CHATBOT_TOKENIZER_PATH`
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`.
+- `APP_PORT`.
+- `BASE_MODEL` cho service `app`.
+- `CHATBOT_KB_DIR`, `CHATBOT_BASE_MODEL`, `CHATBOT_LORA_ADAPTER`, `CHATBOT_TOKENIZER_PATH` cho optional `chatbot-api`.
+
+Chatbot instance trong database có thể cấu hình thêm: `base_model`, `adapter_path`, `tokenizer_path`, `system_prompt`, generation params, `response_style`, `mode`, `provider`, `api_model`, `api_key`, `api_base_url`.
 
 ## Cài đặt
 
-### Yêu cầu
+### Yêu cầu môi trường
 
 - Java 21.
-- Maven 3.9+.
+- Maven 3.9+ hoặc `multitenant/mvnw`.
 - Python 3.11.
-- PostgreSQL 16.
-- Docker Desktop nếu chạy bằng Docker Compose.
+- PostgreSQL 16 nếu chạy local.
+- Docker Desktop nếu chạy Compose.
+- Dung lượng trống cho Hugging Face model cache.
 
 ### Cài Python dependencies
 
@@ -243,30 +252,28 @@ py -3.11 -m venv .venv
 pip install -r requirements.txt
 ```
 
-### Build backend
+### Build Spring Boot
 
 ```powershell
 cd F:\20251\prj3\multitenant
 mvn -q -DskipTests package
 ```
 
-### Chuẩn bị database
+### Chuẩn bị database local
 
-Tạo PostgreSQL database:
+Tạo PostgreSQL database `global_admin`. Spring Boot tự chạy Flyway migrations khi start.
 
-```sql
-CREATE DATABASE global_admin;
-```
-
-Seed dữ liệu demo:
+Seed dữ liệu demo 2 tenant:
 
 ```powershell
 psql -U postgres -d global_admin -f F:\20251\prj3\multitenant\docs\sql\demo_multi_tenant_setup.sql
 ```
 
-## Xây dựng knowledge base
+Lưu ý: seed demo dùng path Windows như `F:/20251/prj3/chatbot/kb/article`. Nếu chạy Docker, `kb_dir` trong DB nên trỏ tới path container như `/opt/app/chatbot/kb/article`.
 
-Ví dụ build KB cho Article:
+### Build knowledge base
+
+Ví dụ Article:
 
 ```powershell
 cd F:\20251\prj3\chatbot
@@ -274,7 +281,7 @@ python tools\scrape_site.py article kb\article\raw_urls.txt kb\article\docs.json
 python tools\build_kb.py kb\article\docs.jsonl kb\article\chunks.jsonl kb\article\index.json
 ```
 
-Ví dụ build KB cho Castlery:
+Ví dụ Castlery:
 
 ```powershell
 cd F:\20251\prj3\chatbot
@@ -282,41 +289,46 @@ python tools\scrape_site.py castlery kb\castlery\raw_urls.txt kb\castlery\docs.j
 python tools\build_kb.py kb\castlery\docs.jsonl kb\castlery\chunks.jsonl kb\castlery\index.json
 ```
 
-Mỗi thư mục KB gồm:
+KB mẫu hiện có:
 
-- `raw_urls.txt`: danh sách URL nguồn.
-- `docs.jsonl`: tài liệu đã crawl.
-- `chunks.jsonl`: các chunk dùng cho retrieval.
-- `index.json`: chỉ mục phục vụ tìm kiếm.
+- `chatbot/kb/noithatcaco`
+- `chatbot/kb/article`
+- `chatbot/kb/castlery`
 
-## Chạy hệ thống
+## Cách chạy từng service
 
-### Chạy bằng Docker Compose
+### Chạy toàn bộ stack bằng Docker Compose
 
 ```powershell
 cd F:\20251\prj3
 docker compose up --build
 ```
 
-Chạy nền:
+Detached:
 
 ```powershell
 docker compose up --build -d
 ```
 
-Các service:
+Service mặc định:
 
 - PostgreSQL: `localhost:5432`.
-- Backend/API/UI: `http://localhost:8080`.
-- Python model server theo tenant: backend tự quản lý trên dải port `8101-8199`.
+- Spring Boot/API/UI: `http://localhost:8080`.
+- Python model server theo tenant: Spring tự spawn trên dải port `8101-8199`.
 
-Dừng hệ thống:
+Dừng stack:
 
 ```powershell
 docker compose down
 ```
 
-### Chạy backend local
+Dừng và xóa volume DB:
+
+```powershell
+docker compose down -v
+```
+
+### Chạy Spring Boot local
 
 ```powershell
 $env:PYTHON_BIN="F:\20251\prj3\chatbot\.venv\Scripts\python.exe"
@@ -329,14 +341,16 @@ cd F:\20251\prj3\multitenant
 mvn spring-boot:run
 ```
 
-Giao diện:
+UI:
 
-- Login: `http://localhost:8080/login`
-- Admin UI: `http://localhost:8080/admin`
-- Tenant UI: `http://localhost:8080/tenant`
-- Web chat: `http://localhost:8080/chat`
+- `http://localhost:8080/login`
+- `http://localhost:8080/admin`
+- `http://localhost:8080/tenant`
+- `http://localhost:8080/chat`
 
-### Chạy AI service độc lập
+### Chạy Python FastAPI độc lập
+
+Luồng end-to-end không cần chạy Python thủ công vì Spring tự spawn. Lệnh dưới đây chỉ dùng để smoke test AI service.
 
 ```powershell
 cd F:\20251\prj3\chatbot
@@ -345,23 +359,27 @@ $env:KB_DIR="F:\20251\prj3\chatbot\kb\article"
 uvicorn app.server:app --host 0.0.0.0 --port 8000
 ```
 
-Swagger UI:
+Swagger UI: `http://localhost:8000/docs`.
 
-```text
-http://localhost:8000/docs
+Optional Docker service:
+
+```powershell
+cd F:\20251\prj3
+docker compose --profile chatbot-api up --build
 ```
 
-## Demo flow
+## Demo flow giữa kỳ
 
-### 1. Tư vấn bán hàng và tạo purchase request
+### Flow 1: Tư vấn bán hàng và tạo purchase request
 
 Tenant demo CaCo:
 
 - API key: `029269d7f5f445f7ac36c196dffa134e`
 - Chatbot id: `e08a7b4f-ebfb-4874-a119-b90e95e85fc7`
 - KB: `chatbot/kb/noithatcaco`
+- Mode: `tenant_sales`
 
-Tạo phiên chat:
+Start chat:
 
 ```powershell
 curl -X POST http://localhost:8080/api/chat/start `
@@ -370,7 +388,7 @@ curl -X POST http://localhost:8080/api/chat/start `
   -d "{\"chatbotId\":\"e08a7b4f-ebfb-4874-a119-b90e95e85fc7\"}"
 ```
 
-Kịch bản hội thoại:
+Gửi các lượt hội thoại:
 
 ```text
 Xin chao, toi muon mua sofa cho phong khach nho.
@@ -379,7 +397,7 @@ Dia chi nhan hang cua toi la 123 Nguyen Trai, Ha Noi.
 CONFIRM
 ```
 
-Gửi tin nhắn:
+Mỗi lượt gửi qua:
 
 ```powershell
 curl -X POST http://localhost:8080/api/chat/send `
@@ -388,14 +406,14 @@ curl -X POST http://localhost:8080/api/chat/send `
   -d "{\"conversationId\":\"<conversationId>\",\"message\":\"<message>\"}"
 ```
 
-Kết quả:
+Kết quả cần thấy:
 
-- Chatbot tư vấn theo nhu cầu mua sofa.
-- Hệ thống lưu lịch sử hội thoại.
-- Lệnh `CONFIRM` tạo purchase request.
-- Nhân viên xử lý yêu cầu trong admin/tenant UI.
+- Bot tư vấn sofa theo ngữ cảnh.
+- Bot ghi nhận tên, số điện thoại, địa chỉ qua transcript/state.
+- `CONFIRM` tạo purchase request.
+- Vào `http://localhost:8080/admin` hoặc tenant UI để xem request mới và đổi trạng thái `NEW -> CONTACTED -> COMPLETED`.
 
-### 2. Multi-tenant RAG
+### Flow 2: Multi-tenant RAG
 
 Tenant A - Demo CaCo:
 
@@ -409,33 +427,39 @@ Tenant B - Demo Article:
 - Chatbot id: `5fd0f6f4-c0b8-4e4e-9d7b-4b65f4c3998b`
 - KB: `chatbot/kb/article`
 
-Câu hỏi dùng để so sánh:
+Cùng gửi câu hỏi:
 
 ```text
 I need a sofa for a small living room. What would you recommend?
 ```
 
-Cùng một API chat trả lời theo dữ liệu và cấu hình riêng của từng tenant.
+Điểm demo:
 
-### 3. Tư vấn nội thất tổng quát
+- Tenant A trả lời theo dữ liệu CaCo/noithatcaco.
+- Tenant B trả lời theo dữ liệu Article.
+- Sự khác biệt đến từ `tenant.kb_dir`, không phải do tách backend.
 
-Tạo phiên chat:
+### Flow 3: Tư vấn chung và tham chiếu giá
 
-```powershell
-curl -X POST http://localhost:8080/api/general/chat/start
+Mode `general_consumer` dùng để demo tư vấn nội thất tổng quát:
+
+```text
+How do I choose the right sofa size for my small living room?
 ```
 
-Gửi câu hỏi:
+Các scenario tham chiếu giá có trong `chatbot/docs/demo-scenarios.md`:
 
-```powershell
-curl -X POST http://localhost:8080/api/general/chat/send `
-  -H "Content-Type: application/json" `
-  -d "{\"conversationId\":\"<conversationId>\",\"message\":\"How do I choose the right sofa size for my small living room?\"}"
+```text
+What is the typical price range for dining tables?
+Is $800 a good price for a sofa?
+Is 4 triệu VND reasonable for a bed?
 ```
+
+Ghi chú trạng thái: tài liệu demo có scenario giá, dữ liệu giá có trong repo, nhưng code hiện tại cần nối thêm logic guardrail/endpoint nếu muốn demo tham chiếu giá chạy chắc chắn qua API.
 
 ## API chính
 
-### Chat theo tenant
+### Chat tenant
 
 `POST /api/chat/start`
 
@@ -467,7 +491,7 @@ Response:
 }
 ```
 
-Các endpoint hội thoại:
+Endpoint phụ:
 
 - `GET /api/chat/conversations?chatbotId=<uuid>&limit=50`
 - `GET /api/chat/conversation/{conversationId}/messages`
@@ -489,7 +513,7 @@ Các endpoint hội thoại:
 - `POST /api/chatbots`
 - `PUT /api/chatbots/{id}`
 
-Payload tạo/cập nhật chatbot:
+Payload:
 
 ```json
 {
@@ -505,7 +529,7 @@ Payload tạo/cập nhật chatbot:
 }
 ```
 
-### Quản trị tenant và thành viên
+### Quản trị tenant và người dùng
 
 - `POST /api/admin/tenants`
 - `GET /api/admin/tenants`
@@ -544,7 +568,7 @@ Payload tạo/cập nhật chatbot:
 - `POST /api/telegram/bindings`
 - `POST /webhook/telegram/{secretPath}`
 
-### Runtime, ops và thống kê
+### Runtime/Ops/Stats
 
 - `GET /api/runtime/llm`
 - `GET /api/ops/platform`
@@ -557,12 +581,14 @@ Payload tạo/cập nhật chatbot:
 
 ### Python AI service
 
+Spring gọi các endpoint này trên Python process theo tenant:
+
 - `GET /healthz`
 - `POST /chat`
 - `GET /state?conversation_id=<id>`
 - `POST /feedback`
 
-Request `POST /chat`:
+Contract thật của `POST /chat` theo code:
 
 ```json
 {
@@ -604,16 +630,25 @@ Response:
 }
 ```
 
-## Đánh giá retrieval
+Không dùng contract cũ `query`, `retrieval_mode`, `answer`, `citations` cho luồng Spring hiện tại.
 
-Chạy benchmark:
+## Dữ liệu và đánh giá
+
+Dữ liệu trong repo:
+
+- KB theo tenant: `article`, `castlery`, `noithatcaco`.
+- Price reference: `chatbot/kb/price_reference.json`.
+- Dataset train/eval: `datasetv2`, `chatbot/training/data`, `chatbot/eval/dataset.jsonl`.
+- Logs: `chatbot/logs/chat.jsonl`, `chatbot/logs/feedback.jsonl`.
+
+Benchmark retrieval hiện có:
 
 ```powershell
 cd F:\20251\prj3
 python chatbot\eval\runner.py --dataset chatbot\eval\dataset.jsonl --kb-dir chatbot\kb\noithatcaco --top-k 5 --compare
 ```
 
-Kết quả mẫu:
+Kết quả đang được ghi trong `chatbot/eval/results-summary.md`:
 
 | Mode | Recall@5 | MRR |
 | --- | ---: | ---: |
@@ -621,6 +656,8 @@ Kết quả mẫu:
 | vector | 0.6667 | 0.4639 |
 | hybrid | 0.7917 | 0.6708 |
 | hybrid_rerank | 0.7708 | 0.6285 |
+
+Kết quả này bám mục tiêu trong phiếu: so sánh TF-IDF/keyword baseline, vector retrieval và hybrid retrieval bằng Recall@5/MRR.
 
 ## Kiểm thử
 
@@ -631,7 +668,7 @@ cd F:\20251\prj3\multitenant
 mvn test
 ```
 
-Một số nhóm test:
+Một số nhóm test hẹp:
 
 ```powershell
 mvn -q "-Dtest=ChatbotControllerTest,AdminUiControllerTest,PythonChatClientTest" test
@@ -646,3 +683,12 @@ cd F:\20251\prj3\chatbot
 python -m unittest discover -s tests
 python eval\runner.py --dataset eval\dataset.jsonl --kb-dir kb\noithatcaco --top-k 5 --compare
 ```
+
+## Ghi chú bám code hiện tại
+
+- Spring Boot vẫn là service nghiệp vụ chính; optional `chatbot-api` trong Docker chỉ dùng smoke test, không phải đường tích hợp mặc định.
+- Spring spawn Python model server theo tenant để mỗi process nhận một `KB_DIR` riêng.
+- `chatbot/app/server.py` hiện đang dùng `SimpleKb` từ `chatbot/app/retriever.py`; package `chatbot/app/retrievers` và `retrieval_service.py` phục vụ hướng refactor/benchmark retrieval.
+- API tham chiếu giá độc lập là yêu cầu trong phiếu nhưng chưa có controller riêng trong Spring Boot.
+- So sánh sản phẩm dạng bảng là yêu cầu sản phẩm kỳ vọng; hiện repo hỗ trợ qua hội thoại/RAG và demo scenario, chưa có response schema riêng cho bảng so sánh.
+- File `chatbot/docs/api-contract.md` còn mô tả contract cũ; contract tích hợp đúng hiện tại là `multitenant/docs/api-contract.md` và DTO trong `multitenant/src/main/java/com/app/modelserver/dto`.

@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from app.market_data import (
+    DatabaseMarketPriceProvider,
     ExternalPriceProvider,
     InternalCatalogProvider,
     MockMarketPriceProvider,
@@ -49,6 +50,45 @@ class MarketDataProviderTests(unittest.TestCase):
         self.assertTrue(all(ref.is_mock for ref in refs))
         self.assertTrue(any(ref.product_id == "SFG041" for ref in refs))
         self.assertTrue(all((ref.source or "").startswith("mock://") for ref in refs))
+
+    def test_mock_market_price_provider_keeps_product_type_filter(self):
+        provider = MockMarketPriceProvider()
+        refs = provider.get_price_references("So sánh giá sofa gỗ sồi với mặt bằng chung", limit=5)
+
+        self.assertGreaterEqual(len(refs), 1)
+        self.assertTrue(all((ref.category or "").lower() == "sofa" for ref in refs))
+        self.assertTrue(all(ref.product_id == "SFG041" for ref in refs))
+        self.assertFalse(any((ref.product_id or "").startswith("BAN-AN") for ref in refs))
+
+    def test_database_market_price_provider_uses_structured_records(self):
+        provider = DatabaseMarketPriceProvider(database_url="postgresql://unused")
+        provider._load_records = lambda: [
+            {
+                "product_id": "SFG041",
+                "name": "Sofa gỗ sồi SFG041",
+                "category": "sofa",
+                "material": "gỗ sồi",
+                "price": 12000000,
+                "currency": "VND",
+                "source": "internal://price/SFG041",
+            },
+            {
+                "product_id": "BAN-AN-GO-01",
+                "name": "Bàn ăn gỗ sồi",
+                "category": "bàn ăn",
+                "material": "gỗ sồi",
+                "price": 8500000,
+                "currency": "VND",
+                "source": "internal://price/BAN-AN-GO-01",
+            },
+        ]
+
+        refs = provider.get_price_references("So sánh giá sofa gỗ sồi với mặt bằng chung", limit=5)
+
+        self.assertEqual(len(refs), 1)
+        self.assertEqual(refs[0].product_id, "SFG041")
+        self.assertEqual(refs[0].provider, "database_market_price")
+        self.assertFalse(refs[0].is_mock)
 
     def test_external_price_provider_interface_defaults_to_empty(self):
         provider = ExternalPriceProvider()

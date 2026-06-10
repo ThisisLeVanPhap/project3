@@ -1,0 +1,201 @@
+{
+  "summary": {
+    "total_answers": 8,
+    "pass_rate": 0.375,
+    "citation_validity_rate": 0.875,
+    "price_consistency_rate": 0.875,
+    "hallucination_failure_count": 3
+  },
+  "answers": [
+    {
+      "id": "sample_good_price_001",
+      "query": "Có rèm nào dưới 1 triệu không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1"
+        ],
+        "valid_context_citations": [
+          "P1"
+        ],
+        "context_product_count": 1,
+        "context_source_count": 1
+      }
+    },
+    {
+      "id": "sample_good_compare_001",
+      "query": "So sánh sofa và ghế thư giãn",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1",
+          "P2"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2"
+        ],
+        "context_product_count": 2,
+        "context_source_count": 2
+      }
+    },
+    {
+      "id": "sample_bad_price_001",
+      "query": "Có rèm nào dưới 1 triệu không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P1"
+        ],
+        "valid_context_citations": [
+          "P1"
+        ],
+        "context_product_count": 1,
+        "context_source_count": 1
+      }
+    },
+    {
+      "id": "sample_bad_citation_001",
+      "query": "Có sofa không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": false,
+        "citation_validity": false,
+        "source_link_presence": false,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P99"
+        ],
+        "valid_context_citations": [
+          "P1"
+        ],
+        "context_product_count": 1,
+        "context_source_count": 1
+      }
+    },
+    {
+      "id": "sample_bad_product_name_001",
+      "query": "Có sofa không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": false,
+        "citation_validity": true,
+        "source_link_presence": false,
+        "price_consistency": true,
+        "product_name_grounded": false,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1"
+        ],
+        "context_product_count": 1,
+        "context_source_count": 1
+      }
+    },
+    {
+      "id": "sample_bad_warranty_001",
+      "query": "Sản phẩm này bảo hành bao lâu?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": false,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": false,
+        "no_forbidden_hallucination": false,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1"
+        ],
+        "context_product_count": 1,
+        "context_source_count": 1
+      }
+    },
+    {
+      "id": "sample_good_missing_field_001",
+      "query": "Sản phẩm này bảo hành bao lâu?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1"
+        ],
+        "valid_context_citations": [
+          "P1"
+        ],
+        "context_product_count": 1,
+        "context_source_count": 1
+      }
+    },
+    {
+      "id": "sample_bad_link_001",
+      "query": "Có sofa không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": false,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P1"
+        ],
+        "valid_context_citations": [
+          "P1"
+        ],
+        "context_product_count": 1,
+        "context_source_count": 1
+      }
+    }
+  ]
+}

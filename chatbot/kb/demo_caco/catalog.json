@@ -1,0 +1,302 @@
+[
+  {
+    "product_id": "CACO-SF-001",
+    "name": "Sofa góc chữ L bọc vải nỉ cao cấp",
+    "category": "sofa",
+    "price": 12500000,
+    "currency": "VND",
+    "material": "vải nỉ nhập khẩu Hàn Quốc, khung gỗ sồi tự nhiên",
+    "dimensions": "2m6 x 1m7 x 0m85",
+    "description": "Sofa góc chữ L phù hợp phòng khách nhỏ từ 15-20m². Đệm mút Việt Nhật chống lún, chân gỗ sồi tiện tròn. Bảo hành 3 năm khung, 2 năm đệm."
+  },
+  {
+    "product_id": "CACO-SF-002",
+    "name": "Sofa da thật Italia 3 chỗ",
+    "category": "sofa",
+    "price": 28900000,
+    "currency": "VND",
+    "material": "da bò Italia lớp 1, khung gỗ ash nhập khẩu",
+    "dimensions": "2m2 x 0m95 x 0m9",
+    "description": "Sofa da thật 100% lớp 1, đệm mút mật độ cao 40kg/m³. Phù hợp phòng khách sang trọng. Bảo hành 5 năm da, 3 năm khung."
+  },
+  {
+    "product_id": "CACO-SF-003",
+    "name": "Sofa văng 2 chỗ bọc nhung",
+    "category": "sofa",
+    "price": 9800000,
+    "currency": "VND",
+    "material": "nhung cao cấp chống bám bụi, khung gỗ thông New Zealand",
+    "dimensions": "1m8 x 0m9 x 0m85",
+    "description": "Sofa văng nhỏ gọn cho căn hộ studio hoặc phòng khách hẹp. Chân inox mạ vàng. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-SF-004",
+    "name": "Sofa đơn thư giãn đọc sách",
+    "category": "sofa",
+    "price": 6500000,
+    "currency": "VND",
+    "material": "vải bố thô, đệm mút cao su non, khung gỗ cao su",
+    "dimensions": "0m85 x 0m85 x 0m9",
+    "description": "Ghế đơn phong cách Bắc Âu, tựa lưng ngả 15°, thích hợp góc đọc sách hoặc ban công. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-BAN-001",
+    "name": "Bàn ăn gỗ sồi Nga 4 ghế",
+    "category": "bàn ăn",
+    "price": 8500000,
+    "currency": "VND",
+    "material": "gỗ sồi Nga tự nhiên, mặt bàn phủ veneer sồi",
+    "dimensions": "1m4 x 0m8 x 0m75",
+    "description": "Bộ bàn ăn 4 ghế phong cách hiện đại tối giản. Ghế bọc nệm simili màu xám. Bảo hành 3 năm gỗ."
+  },
+  {
+    "product_id": "CACO-BAN-002",
+    "name": "Bàn ăn gỗ xoan đào 6 ghế",
+    "category": "bàn ăn",
+    "price": 14200000,
+    "currency": "VND",
+    "material": "gỗ xoan đào tự nhiên, mặt bàn dày 4cm",
+    "dimensions": "1m6 x 0m9 x 0m76",
+    "description": "Bộ bàn ăn 6 ghế gỗ xoan đào, phù hợp gia đình 4-6 người. Ghế có tay vịn, đệm bọc da PU. Bảo hành 3 năm."
+  },
+  {
+    "product_id": "CACO-BAN-003",
+    "name": "Bàn trà mặt đá ceramic chân inox mạ vàng",
+    "category": "bàn trà",
+    "price": 4200000,
+    "currency": "VND",
+    "material": "mặt đá ceramic chống trầy, chân inox 304 mạ vàng PVD",
+    "dimensions": "1m0 x 0m6 x 0m45",
+    "description": "Bàn trà phong cách luxury, kết hợp sofa phòng khách. Mặt đá chịu nhiệt, chống thấm. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-GIUONG-001",
+    "name": "Giường ngủ gỗ MDF phủ Melamine 1m6",
+    "category": "giường",
+    "price": 6800000,
+    "currency": "VND",
+    "material": "gỗ MDF phủ Melamine chống ẩm An Cường, đầu giường bọc nệm",
+    "dimensions": "1m6 x 2m0 x 0m35 (cao mặt giường)",
+    "description": "Giường ngủ 1m6 phong cách hiện đại, hộc kéo 2 bên. Màu vân gỗ óc chó. Bảo hành 3 năm."
+  },
+  {
+    "product_id": "CACO-GIUONG-002",
+    "name": "Giường tầng trẻ em an toàn",
+    "category": "giường",
+    "price": 8900000,
+    "currency": "VND",
+    "material": "gỗ thông New Zealand, sơn PU an toàn trẻ em",
+    "dimensions": "1m2 x 2m0 x 1m6 (cao tổng)",
+    "description": "Giường tầng 2 tầng có cầu thang hộp chứa đồ, thanh chắn an toàn. Tải trọng mỗi tầng 80kg. Bảo hành 3 năm."
+  },
+  {
+    "product_id": "CACO-TU-001",
+    "name": "Tủ quần áo 2 cánh gỗ công nghiệp",
+    "category": "tủ quần áo",
+    "price": 5500000,
+    "currency": "VND",
+    "material": "gỗ MDF phủ Melamine chống ẩm, ray trượt giảm chấn",
+    "dimensions": "1m2 x 2m0 x 0m6",
+    "description": "Tủ 2 cánh mở, 4 ngăn kệ + 1 thanh treo. Màu trắng hoặc vân gỗ tùy chọn. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-TU-002",
+    "name": "Tủ giày thông minh xoay 3 tầng",
+    "category": "tủ giày",
+    "price": 3200000,
+    "currency": "VND",
+    "material": "gỗ MDF phủ Melamine, cơ chế xoay 180°",
+    "dimensions": "0m6 x 1m2 x 0m3",
+    "description": "Tủ giày xoay 3 tầng chứa được 12-15 đôi. Thiết kế mỏng phù hợp hành lang hẹp. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-KE-001",
+    "name": "Kệ tivi treo tường hiện đại",
+    "category": "kệ tivi",
+    "price": 3800000,
+    "currency": "VND",
+    "material": "gỗ MDF phủ Melamine, giá treo TV tích hợp",
+    "dimensions": "1m8 x 0m4 x 0m35",
+    "description": "Kệ tivi treo tường kèm giá đỡ TV đến 65 inch. 2 hộc kéo + 2 ngăn mở. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-DEN-001",
+    "name": "Đèn chùm pha lê phòng khách",
+    "category": "đèn trang trí",
+    "price": 4500000,
+    "currency": "VND",
+    "material": "pha lê K9, khung hợp kim mạ đồng cổ",
+    "dimensions": "đường kính 0m6, cao 0m8",
+    "description": "Đèn chùm 8 bóng E14, phù hợp phòng khách 20-30m². Tặng kèm bóng LED warm white. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-THAM-001",
+    "name": "Thảm trải sàn lông ngắn phòng khách",
+    "category": "thảm",
+    "price": 1800000,
+    "currency": "VND",
+    "material": "sợi polyester lông ngắn 1cm, đế cao su chống trượt",
+    "dimensions": "1m6 x 2m3",
+    "description": "Thảm lông ngắn dễ vệ sinh, phù hợp đặt dưới sofa hoặc bàn trà. Màu xám/be tùy chọn. Giặt máy được."
+  },
+  {
+    "product_id": "CACO-BAN-LV-001",
+    "name": "Bàn làm việc tại nhà ergonomic",
+    "category": "bàn làm việc",
+    "price": 4800000,
+    "currency": "VND",
+    "material": "gỗ MDF phủ Melamine, chân sắt sơn tĩnh điện",
+    "dimensions": "1m4 x 0m7 x 0m75",
+    "description": "Bàn làm việc ergonomic có hộc kéo 3 ngăn, lỗ luồn dây điện. Kết hợp ghế ergonomic để tối ưu tư thế ngồi. Bảo hành 3 năm."
+  },
+  {
+    "product_id": "CACO-SF-001",
+    "name": "Sofa góc chữ L bọc vải nỉ cao cấp",
+    "category": "sofa",
+    "price": 12500000,
+    "currency": "VND",
+    "material": "vải nỉ nhập khẩu Hàn Quốc, khung gỗ sồi tự nhiên",
+    "dimensions": "2m6 x 1m7 x 0m85",
+    "description": "Sofa góc chữ L phù hợp phòng khách nhỏ từ 15-20m². Đệm mút Việt Nhật chống lún, chân gỗ sồi tiện tròn. Bảo hành 3 năm khung, 2 năm đệm."
+  },
+  {
+    "product_id": "CACO-SF-002",
+    "name": "Sofa da thật Italia 3 chỗ",
+    "category": "sofa",
+    "price": 28900000,
+    "currency": "VND",
+    "material": "da bò Italia lớp 1, khung gỗ ash nhập khẩu",
+    "dimensions": "2m2 x 0m95 x 0m9",
+    "description": "Sofa da thật 100% lớp 1, đệm mút mật độ cao 40kg/m³. Phù hợp phòng khách sang trọng. Bảo hành 5 năm da, 3 năm khung."
+  },
+  {
+    "product_id": "CACO-SF-003",
+    "name": "Sofa văng 2 chỗ bọc nhung",
+    "category": "sofa",
+    "price": 9800000,
+    "currency": "VND",
+    "material": "nhung cao cấp chống bám bụi, khung gỗ thông New Zealand",
+    "dimensions": "1m8 x 0m9 x 0m85",
+    "description": "Sofa văng nhỏ gọn cho căn hộ studio hoặc phòng khách hẹp. Chân inox mạ vàng. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-SF-004",
+    "name": "Sofa đơn thư giãn đọc sách",
+    "category": "sofa",
+    "price": 6500000,
+    "currency": "VND",
+    "material": "vải bố thô, đệm mút cao su non, khung gỗ cao su",
+    "dimensions": "0m85 x 0m85 x 0m9",
+    "description": "Ghế đơn phong cách Bắc Âu, tựa lưng ngả 15°, thích hợp góc đọc sách hoặc ban công. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-BAN-001",
+    "name": "Bàn ăn gỗ sồi Nga 4 ghế",
+    "category": "bàn ăn",
+    "price": 8500000,
+    "currency": "VND",
+    "material": "gỗ sồi Nga tự nhiên, mặt bàn phủ veneer sồi",
+    "dimensions": "1m4 x 0m8 x 0m75",
+    "description": "Bộ bàn ăn 4 ghế phong cách hiện đại tối giản. Ghế bọc nệm simili màu xám. Bảo hành 3 năm gỗ."
+  },
+  {
+    "product_id": "CACO-BAN-002",
+    "name": "Bàn ăn gỗ xoan đào 6 ghế",
+    "category": "bàn ăn",
+    "price": 14200000,
+    "currency": "VND",
+    "material": "gỗ xoan đào tự nhiên, mặt bàn dày 4cm",
+    "dimensions": "1m6 x 0m9 x 0m76",
+    "description": "Bộ bàn ăn 6 ghế gỗ xoan đào, phù hợp gia đình 4-6 người. Ghế có tay vịn, đệm bọc da PU. Bảo hành 3 năm."
+  },
+  {
+    "product_id": "CACO-BAN-003",
+    "name": "Bàn trà mặt đá ceramic chân inox mạ vàng",
+    "category": "bàn trà",
+    "price": 4200000,
+    "currency": "VND",
+    "material": "mặt đá ceramic chống trầy, chân inox 304 mạ vàng PVD",
+    "dimensions": "1m0 x 0m6 x 0m45",
+    "description": "Bàn trà phong cách luxury, kết hợp sofa phòng khách. Mặt đá chịu nhiệt, chống thấm. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-GIUONG-001",
+    "name": "Giường ngủ gỗ MDF phủ Melamine 1m6",
+    "category": "giường",
+    "price": 6800000,
+    "currency": "VND",
+    "material": "gỗ MDF phủ Melamine chống ẩm An Cường, đầu giường bọc nệm",
+    "dimensions": "1m6 x 2m0 x 0m35 (cao mặt giường)",
+    "description": "Giường ngủ 1m6 phong cách hiện đại, hộc kéo 2 bên. Màu vân gỗ óc chó. Bảo hành 3 năm."
+  },
+  {
+    "product_id": "CACO-GIUONG-002",
+    "name": "Giường tầng trẻ em an toàn",
+    "category": "giường",
+    "price": 8900000,
+    "currency": "VND",
+    "material": "gỗ thông New Zealand, sơn PU an toàn trẻ em",
+    "dimensions": "1m2 x 2m0 x 1m6 (cao tổng)",
+    "description": "Giường tầng 2 tầng có cầu thang hộp chứa đồ, thanh chắn an toàn. Tải trọng mỗi tầng 80kg. Bảo hành 3 năm."
+  },
+  {
+    "product_id": "CACO-TU-001",
+    "name": "Tủ quần áo 2 cánh gỗ công nghiệp",
+    "category": "tủ quần áo",
+    "price": 5500000,
+    "currency": "VND",
+    "material": "gỗ MDF phủ Melamine chống ẩm, ray trượt giảm chấn",
+    "dimensions": "1m2 x 2m0 x 0m6",
+    "description": "Tủ 2 cánh mở, 4 ngăn kệ + 1 thanh treo. Màu trắng hoặc vân gỗ tùy chọn. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-TU-002",
+    "name": "Tủ giày thông minh xoay 3 tầng",
+    "category": "tủ giày",
+    "price": 3200000,
+    "currency": "VND",
+    "material": "gỗ MDF phủ Melamine, cơ chế xoay 180°",
+    "dimensions": "0m6 x 1m2 x 0m3",
+    "description": "Tủ giày xoay 3 tầng chứa được 12-15 đôi. Thiết kế mỏng phù hợp hành lang hẹp. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-KE-001",
+    "name": "Kệ tivi treo tường hiện đại",
+    "category": "kệ tivi",
+    "price": 3800000,
+    "currency": "VND",
+    "material": "gỗ MDF phủ Melamine, giá treo TV tích hợp",
+    "dimensions": "1m8 x 0m4 x 0m35",
+    "description": "Kệ tivi treo tường kèm giá đỡ TV đến 65 inch. 2 hộc kéo + 2 ngăn mở. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-DEN-001",
+    "name": "Đèn chùm pha lê phòng khách",
+    "category": "đèn trang trí",
+    "price": 4500000,
+    "currency": "VND",
+    "material": "pha lê K9, khung hợp kim mạ đồng cổ",
+    "dimensions": "đường kính 0m6, cao 0m8",
+    "description": "Đèn chùm 8 bóng E14, phù hợp phòng khách 20-30m². Tặng kèm bóng LED warm white. Bảo hành 2 năm."
+  },
+  {
+    "product_id": "CACO-THAM-001",
+    "name": "Thảm trải sàn lông ngắn phòng khách",
+    "category": "thảm",
+    "price": 1800000,
+    "currency": "VND",
+    "material": "sợi polyester lông ngắn 1cm, đế cao su chống trượt",
+    "dimensions": "1m6 x 2m3",
+    "description": "Thảm lông ngắn dễ vệ sinh, phù hợp đặt dưới sofa hoặc bàn trà. Màu xám/be tùy chọn. Giặt máy được."
+  },
+  {
+    "product_id": "CACO-BAN-LV-001",
+    "name": "Bàn làm việc tại nhà ergonomic",
+    "category": "bàn làm việc",
+    "price": 4800000,
+    "currency": "VND",
+    "material": "gỗ MDF phủ Melamine, chân sắt sơn tĩnh điện",
+    "dimensions": "1m4 x 0m7 x 0m75",
+    "description": "Bàn làm việc ergonomic có hộc kéo 3 ngăn, lỗ luồn dây điện. Kết hợp ghế ergonomic để tối ưu tư thế ngồi. Bảo hành 3 năm."
+  }
+]

@@ -34,6 +34,7 @@ public class TenantResolver implements HandlerInterceptor {
         if (path.startsWith("/css/") || path.startsWith("/js/") || path.startsWith("/images/")) return true;
 
         if (path.startsWith("/api/general/")) return true;
+        if (path.startsWith("/api/chatbot/")) return true;
 
         return false;
     }

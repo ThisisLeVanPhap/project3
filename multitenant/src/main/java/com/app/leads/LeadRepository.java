@@ -12,6 +12,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
 
     List<Lead> findTop200ByTenantIdOrderByCreatedAtDesc(String tenantId);
 
+    List<Lead> findTop10ByTenantIdOrderByCreatedAtDesc(String tenantId);
+
     // --- stats ---
     @Query("select count(l) from Lead l where l.createdAt >= :since")
     long countAllSince(@Param("since") Instant since);

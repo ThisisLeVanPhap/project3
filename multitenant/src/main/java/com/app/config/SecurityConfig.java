@@ -33,12 +33,13 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/login",
-                                "/login/**",
-                                "/api/login",
+                                 "/login",
+                                 "/login/**",
+                                 "/api/login",
                                 "/api/login/**",
                                 "/api/onboarding-requests",
                                 "/api/onboarding-requests/**",
+                                "/api/chatbot/**",
                                 "/favicon.ico",
                                 "/error"
                         ).permitAll()

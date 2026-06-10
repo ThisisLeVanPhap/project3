@@ -9,9 +9,29 @@ body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;backgrou
 .card{background:#111a2e;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;margin:12px 0}
 .card2{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px}
 
-.tabs{display:flex;gap:8px;margin:10px 0}
-.tab{background:#0f1a33;border:1px solid rgba(255,255,255,.08);color:#e6edf3;border-radius:10px;padding:8px 12px;cursor:pointer}
-.tab.active{background:#1a2a52}
+.tabs,
+.primary-tabs,
+.sub-tabs{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+.primary-tabs{margin-top:12px}
+.sub-tabs{margin-bottom:14px}
+.tab,
+.primary-tab,
+.sub-tab{background:#0f1a33;border:1px solid rgba(255,255,255,.08);color:#e6edf3;border-radius:10px;padding:8px 12px;cursor:pointer}
+.primary-tab{font-weight:700}
+.sub-tab{font-size:13px}
+.tab.active,
+.primary-tab.active,
+.sub-tab.active{background:#1a2a52;border-color:rgba(112,145,255,.42)}
+.group-hint{font-size:12px;opacity:.75;margin-top:6px}
+.quick-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.grid2:has(#tenantSelectMembers),
+.grid2:has(#tenantSelectBots),
+.grid2:has(#tenantSelectBindings){display:none}
+.tenant-context-notice{border-color:rgba(112,145,255,.24)}
+.tenant-context-notice.warning{
+    border-color:rgba(255,193,94,.24);
+    background:rgba(255,193,94,.08);
+}
 
 label{display:block;font-size:12px;opacity:.85;margin:8px 0 6px}
 input, select{
@@ -32,6 +52,7 @@ button{
 button.secondary{background:#0f1a33}
 button.danger{background:#b42318}
 button:disabled{opacity:.45;cursor:not-allowed}
+button.is-loading{opacity:.7}
 
 .muted{opacity:.75;font-size:12px}
 .out{background:#0b1326;border:1px solid rgba(255,255,255,.08);padding:10px;border-radius:10px;overflow:auto;min-height:110px}
@@ -47,6 +68,10 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .debug-details{margin-top:10px}
 .debug-details summary{cursor:pointer;opacity:.85}
 .debug-details .out{margin-top:8px}
+.debug-output{
+    margin-top:10px;
+    max-height:320px;
+}
 
 /* =====================================================
    ✅ NEW: helpers for Leads UI (5.2)
@@ -140,6 +165,24 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .status-inline select{
     min-width:130px;
 }
+.table-actions{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+}
+.table-actions button{
+    padding:7px 9px;
+    white-space:nowrap;
+}
+.table-preview{
+    max-width:220px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.row > input{
+    max-width:320px;
+}
 .inline-feedback{
     font-size:12px;
     opacity:.8;
@@ -147,6 +190,22 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .inline-feedback.error{
     color:#ff9b9b;
     opacity:1;
+}
+.panel-state{
+    padding:12px;
+    border-radius:10px;
+    background:#0b1326;
+    border:1px solid rgba(255,255,255,.08);
+    color:#d5deea;
+}
+.panel-state.empty,
+.panel-state.loading{
+    opacity:.82;
+}
+.panel-state.error{
+    color:#ffb4b4;
+    border-color:rgba(255,107,107,.24);
+    background:rgba(255,107,107,.08);
 }
 .big{
     font-size: 28px;
@@ -278,4 +337,24 @@ button:disabled{opacity:.45;cursor:not-allowed}
 
 .benchmark-summary-copy{
     margin-top:10px;
+}
+
+@media (max-width: 720px){
+    .topbar,
+    .head,
+    .toolbar{
+        align-items:stretch;
+        flex-direction:column;
+    }
+    .grid2,
+    .grid3{
+        grid-template-columns:1fr;
+    }
+    .row{
+        flex-wrap:wrap;
+    }
+    .primary-tab,
+    .sub-tab{
+        flex:1 1 auto;
+    }
 }

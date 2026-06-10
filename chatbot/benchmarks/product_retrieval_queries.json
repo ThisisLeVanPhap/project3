@@ -1,0 +1,326 @@
+[
+  {
+    "id": "single_category_001",
+    "query": "Có sofa không?",
+    "type": "single_category",
+    "expected_categories": ["Sofa"],
+    "required_terms_any": ["sofa"],
+    "price": {},
+    "notes": "Basic product category lookup."
+  },
+  {
+    "id": "single_category_002",
+    "query": "Có kệ tivi không?",
+    "type": "single_category",
+    "expected_categories": ["Kệ"],
+    "required_terms_any": ["kệ tivi", "ke tivi"],
+    "price": {},
+    "notes": "TV shelf lookup."
+  },
+  {
+    "id": "single_category_003",
+    "query": "Có rèm cửa không?",
+    "type": "single_category",
+    "expected_categories": ["Rèm"],
+    "required_terms_any": ["rèm", "rem"],
+    "price": {},
+    "notes": "Curtain lookup."
+  },
+  {
+    "id": "single_category_004",
+    "query": "Có đèn trang trí không?",
+    "type": "single_category",
+    "expected_categories": ["Đèn"],
+    "required_terms_any": ["đèn", "den"],
+    "price": {},
+    "notes": "Decorative lamp lookup."
+  },
+  {
+    "id": "single_category_005",
+    "query": "Có thảm trải sàn không?",
+    "type": "single_category",
+    "expected_categories": ["Thảm"],
+    "required_terms_any": ["thảm", "tham"],
+    "price": {},
+    "notes": "Rug lookup."
+  },
+  {
+    "id": "single_category_006",
+    "query": "Có bàn trà phòng khách không?",
+    "type": "single_category",
+    "expected_categories": ["Bàn trà"],
+    "required_terms_any": ["bàn trà", "ban tra"],
+    "price": {},
+    "notes": "Coffee table lookup."
+  },
+  {
+    "id": "single_category_007",
+    "query": "Có ghế thư giãn không?",
+    "type": "single_category",
+    "expected_categories": ["Ghế"],
+    "required_terms_any": ["ghế", "ghe", "thư giãn", "thu gian"],
+    "price": {},
+    "notes": "Relaxing chair lookup."
+  },
+  {
+    "id": "price_constraint_001",
+    "query": "Có rèm nào dưới 1 triệu không?",
+    "type": "price_constraint",
+    "expected_categories": ["Rèm"],
+    "required_terms_any": ["rèm", "rem"],
+    "price": {"max": 1000000},
+    "notes": "Curtains below one million VND."
+  },
+  {
+    "id": "price_constraint_002",
+    "query": "Có đèn trang trí dưới 500k không?",
+    "type": "price_constraint",
+    "expected_categories": ["Đèn"],
+    "required_terms_any": ["đèn", "den"],
+    "price": {"max": 500000},
+    "notes": "Decorative lamps below 500k VND."
+  },
+  {
+    "id": "price_constraint_003",
+    "query": "Có thảm dưới 2 triệu không?",
+    "type": "price_constraint",
+    "expected_categories": ["Thảm"],
+    "required_terms_any": ["thảm", "tham"],
+    "price": {"max": 2000000},
+    "notes": "Rugs below two million VND."
+  },
+  {
+    "id": "price_constraint_004",
+    "query": "Có sofa dưới 10 triệu không?",
+    "type": "price_constraint",
+    "expected_categories": ["Sofa"],
+    "required_terms_any": ["sofa"],
+    "price": {"max": 10000000},
+    "notes": "Sofas below ten million VND."
+  },
+  {
+    "id": "price_constraint_005",
+    "query": "Có bàn trà từ 1 đến 3 triệu không?",
+    "type": "price_constraint",
+    "expected_categories": ["Bàn trà"],
+    "required_terms_any": ["bàn trà", "ban tra"],
+    "price": {"min": 1000000, "max": 3000000},
+    "notes": "Coffee tables in a price range."
+  },
+  {
+    "id": "material_constraint_001",
+    "query": "Có kệ tivi gỗ không?",
+    "type": "material_constraint",
+    "expected_categories": ["Kệ"],
+    "required_terms_any": ["gỗ", "go", "kệ tivi", "ke tivi"],
+    "price": {},
+    "notes": "TV shelf with wood material intent."
+  },
+  {
+    "id": "material_constraint_002",
+    "query": "Có bàn trà gỗ sồi không?",
+    "type": "material_constraint",
+    "expected_categories": ["Bàn trà"],
+    "required_terms_any": ["gỗ sồi", "go soi", "bàn trà", "ban tra"],
+    "price": {},
+    "notes": "Coffee table with oak material intent."
+  },
+  {
+    "id": "material_constraint_003",
+    "query": "Có sofa da không?",
+    "type": "material_constraint",
+    "expected_categories": ["Sofa"],
+    "required_terms_any": ["sofa", "da"],
+    "price": {},
+    "notes": "Leather sofa lookup."
+  },
+  {
+    "id": "material_constraint_004",
+    "query": "Có tủ gỗ công nghiệp không?",
+    "type": "material_constraint",
+    "expected_categories": ["Tủ"],
+    "required_terms_any": ["tủ", "tu", "gỗ công nghiệp", "go cong nghiep"],
+    "price": {},
+    "notes": "Cabinet with engineered wood material intent."
+  },
+  {
+    "id": "material_constraint_005",
+    "query": "Có giường gỗ tự nhiên không?",
+    "type": "material_constraint",
+    "expected_categories": ["Giường"],
+    "required_terms_any": ["giường", "giuong", "gỗ tự nhiên", "go tu nhien"],
+    "price": {},
+    "notes": "Bed with natural wood material intent."
+  },
+  {
+    "id": "multi_category_001",
+    "query": "Tôi muốn rèm hoặc đèn trang trí dưới 1 triệu",
+    "type": "multi_category",
+    "expected_categories": ["Rèm", "Đèn"],
+    "required_terms_any": ["rèm", "rem", "đèn", "den"],
+    "price": {"max": 1000000},
+    "notes": "Multi-category query with price ceiling."
+  },
+  {
+    "id": "multi_category_002",
+    "query": "Có bàn trà nào hợp với kệ tivi không?",
+    "type": "multi_category",
+    "expected_categories": ["Bàn trà", "Kệ"],
+    "required_terms_any": ["bàn trà", "ban tra", "kệ tivi", "ke tivi"],
+    "price": {},
+    "notes": "Known weak query: top 5 tends to miss TV shelf results."
+  },
+  {
+    "id": "multi_category_003",
+    "query": "So sánh sofa và ghế thư giãn",
+    "type": "multi_category",
+    "expected_categories": ["Sofa", "Ghế"],
+    "required_terms_any": ["sofa", "ghế", "ghe"],
+    "price": {},
+    "notes": "Comparison intent requiring two product groups."
+  },
+  {
+    "id": "multi_category_004",
+    "query": "Có bàn ăn và ghế ăn không?",
+    "type": "multi_category",
+    "expected_categories": ["Bàn ăn", "Ghế"],
+    "required_terms_any": ["bàn ăn", "ban an", "ghế ăn", "ghe an"],
+    "price": {},
+    "notes": "Dining table and dining chair lookup."
+  },
+  {
+    "id": "multi_category_005",
+    "query": "Tôi cần thảm và đèn cho phòng khách",
+    "type": "multi_category",
+    "expected_categories": ["Thảm", "Đèn"],
+    "required_terms_any": ["thảm", "tham", "đèn", "den"],
+    "price": {},
+    "notes": "Living room accessories across two groups."
+  },
+  {
+    "id": "comparison_001",
+    "query": "So sánh rèm sáo gỗ và rèm cuốn",
+    "type": "comparison",
+    "expected_categories": ["Rèm"],
+    "required_terms_any": ["rèm sáo gỗ", "rem sao go", "rèm cuốn", "rem cuon"],
+    "price": {},
+    "notes": "Subtype comparison within curtains."
+  },
+  {
+    "id": "comparison_002",
+    "query": "So sánh sofa da và sofa nỉ",
+    "type": "comparison",
+    "expected_categories": ["Sofa"],
+    "required_terms_any": ["sofa da", "sofa nỉ", "sofa ni"],
+    "price": {},
+    "notes": "Material comparison within sofas."
+  },
+  {
+    "id": "comparison_003",
+    "query": "So sánh kệ tivi gỗ tự nhiên và gỗ công nghiệp",
+    "type": "comparison",
+    "expected_categories": ["Kệ"],
+    "required_terms_any": ["kệ tivi", "ke tivi", "gỗ tự nhiên", "go tu nhien", "gỗ công nghiệp", "go cong nghiep"],
+    "price": {},
+    "notes": "Material comparison within TV shelf products."
+  },
+  {
+    "id": "comparison_004",
+    "query": "So sánh bàn trà mặt kính và bàn trà gỗ",
+    "type": "comparison",
+    "expected_categories": ["Bàn trà"],
+    "required_terms_any": ["bàn trà", "ban tra", "kính", "kinh", "gỗ", "go"],
+    "price": {},
+    "notes": "Material comparison within coffee tables."
+  },
+  {
+    "id": "room_style_001",
+    "query": "Tôi cần đồ trang trí phòng khách",
+    "type": "room_style",
+    "expected_categories": ["Đồ trang trí", "Đèn", "Thảm", "Tranh"],
+    "required_terms_any": ["trang trí", "trang tri", "phòng khách", "phong khach"],
+    "price": {},
+    "notes": "Semantic room accessory intent."
+  },
+  {
+    "id": "room_style_002",
+    "query": "Có sản phẩm nào phù hợp phòng ngủ không?",
+    "type": "room_style",
+    "expected_categories": ["Giường", "Tủ", "Đèn", "Rèm"],
+    "required_terms_any": ["phòng ngủ", "phong ngu"],
+    "price": {},
+    "notes": "Bedroom semantic intent."
+  },
+  {
+    "id": "room_style_003",
+    "query": "Tôi cần đồ che nắng cho cửa sổ",
+    "type": "room_style",
+    "expected_categories": ["Rèm"],
+    "required_terms_any": ["che nắng", "che nang", "cửa sổ", "cua so", "rèm", "rem"],
+    "price": {},
+    "notes": "Functional semantic query expected to map to curtains."
+  },
+  {
+    "id": "room_style_004",
+    "query": "Tôi muốn nội thất phong cách tối giản",
+    "type": "room_style",
+    "expected_categories": ["Sofa", "Bàn trà", "Kệ", "Bàn ăn"],
+    "required_terms_any": ["tối giản", "toi gian", "nội thất", "noi that"],
+    "price": {},
+    "notes": "Style intent across furniture groups."
+  },
+  {
+    "id": "room_style_005",
+    "query": "Có đồ decor nhỏ gọn cho căn hộ không?",
+    "type": "room_style",
+    "expected_categories": ["Đồ trang trí", "Đèn", "Gương", "Tranh"],
+    "required_terms_any": ["decor", "nhỏ gọn", "nho gon", "căn hộ", "can ho"],
+    "price": {},
+    "notes": "Compact apartment decor intent."
+  },
+  {
+    "id": "room_style_006",
+    "query": "Tôi cần nội thất cho phòng ăn hiện đại",
+    "type": "room_style",
+    "expected_categories": ["Bàn ăn", "Ghế", "Đèn"],
+    "required_terms_any": ["phòng ăn", "phong an", "hiện đại", "hien dai"],
+    "price": {},
+    "notes": "Dining room semantic intent."
+  },
+  {
+    "id": "out_of_scope_001",
+    "query": "Chính sách đổi trả thế nào?",
+    "type": "out_of_scope",
+    "expected_categories": [],
+    "required_terms_any": ["chính sách", "chinh sach", "đổi trả", "doi tra"],
+    "price": {},
+    "notes": "Policy query; reported separately from product retrieval pass rate."
+  },
+  {
+    "id": "out_of_scope_002",
+    "query": "Cửa hàng có tuyển dụng không?",
+    "type": "out_of_scope",
+    "expected_categories": [],
+    "required_terms_any": ["tuyển dụng", "tuyen dung"],
+    "price": {},
+    "notes": "Hiring query; not a product retrieval success case."
+  },
+  {
+    "id": "out_of_scope_003",
+    "query": "Tôi muốn mua điện thoại",
+    "type": "out_of_scope",
+    "expected_categories": [],
+    "required_terms_any": ["điện thoại", "dien thoai"],
+    "price": {},
+    "notes": "Non-furniture product query; reported separately."
+  },
+  {
+    "id": "out_of_scope_004",
+    "query": "Showroom mở cửa lúc mấy giờ?",
+    "type": "out_of_scope",
+    "expected_categories": [],
+    "required_terms_any": ["showroom", "mở cửa", "mo cua"],
+    "price": {},
+    "notes": "Store information query; reported separately."
+  }
+]

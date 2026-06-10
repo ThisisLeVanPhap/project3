@@ -1,0 +1,115 @@
+[
+  {
+    "id": "s01_product_inquiry_only",
+    "turns": ["Mình muốn xem vài mẫu sofa nhỏ"],
+    "mocked_recommended_products": [{"after_turn": 0, "products": [{"sku": "SF-700", "product_name": "Sofa Nami", "source_url": "https://shop.test/sofa-nami", "price": 700000}]}],
+    "expected": {"final_intent": "product_inquiry", "contact_extracted": false, "lead_status": "cold", "purchase_request_status": "needs_product", "handoff_required": false, "should_ask_missing_info": false}
+  },
+  {
+    "id": "s02_ask_price_then_exit",
+    "turns": ["Mẫu này giá bao nhiêu?", "Thôi để sau"],
+    "expected": {"final_intent": "cancel", "contact_extracted": false, "lead_status": "cold", "purchase_request_status": "cancelled", "handoff_required": false, "should_ask_missing_info": false}
+  },
+  {
+    "id": "s03_wants_buy_missing_phone",
+    "turns": ["Mình muốn mua mẫu này"],
+    "mocked_recommended_products": [{"after_turn": 0, "products": [{"sku": "SF-700", "product_name": "Sofa Nami", "source_url": "https://shop.test/sofa-nami", "price": 700000}]}],
+    "expected": {"final_intent": "purchase_intent", "contact_extracted": false, "lead_status": "cold", "purchase_request_status": "needs_product", "handoff_required": false, "should_ask_missing_info": true}
+  },
+  {
+    "id": "s04_buy_choose_p1",
+    "turns": ["Mình muốn mua P1, số 0901 234 567"],
+    "mocked_recommended_products": [{"after_turn": 0, "products": [{"sku": "SF-700", "product_name": "Sofa Nami", "source_url": "https://shop.test/sofa-nami", "price": 700000}]}],
+    "expected": {"final_intent": "contact_provided", "selected_product_sku": "SF-700", "contact_extracted": true, "quantity": 1, "lead_status": "hot", "purchase_request_status": "draft", "handoff_required": false, "should_ask_missing_info": false}
+  },
+  {
+    "id": "s05_choose_second_model",
+    "turns": ["Lấy mẫu thứ 2, gọi mình 0987654321"],
+    "mocked_recommended_products": [{"after_turn": 0, "products": [{"sku": "A1", "product_name": "Bàn A", "source_url": "https://shop.test/a", "price": 500000}, {"sku": "B2", "product_name": "Bàn B", "source_url": "https://shop.test/b", "price": 700000}]}],
+    "expected": {"final_intent": "contact_provided", "selected_product_sku": "B2", "contact_extracted": true, "quantity": 1, "lead_status": "hot", "purchase_request_status": "draft", "handoff_required": false, "should_ask_missing_info": false}
+  },
+  {
+    "id": "s06_choose_by_sku",
+    "turns": ["Mua SKU B2 nhé, email a@test.com"],
+    "mocked_recommended_products": [{"after_turn": 0, "products": [{"sku": "A1", "product_name": "Bàn A", "source_url": "https://shop.test/a", "price": 500000}, {"sku": "B2", "product_name": "Bàn B", "source_url": "https://shop.test/b", "price": 700000}]}],
+    "expected": {"final_intent": "contact_provided", "selected_product_sku": "B2", "contact_extracted": true, "quantity": 1, "lead_status": "hot", "purchase_request_status": "draft", "handoff_required": false, "should_ask_missing_info": false}
+  },
+  {
+    "id": "s07_choose_by_price_700k",
+    "turns": ["Chốt cái 700k, số 0977000000"],
+    "mocked_recommended_products": [{"after_turn": 0, "products": [{"sku": "A1", "product_name": "Ghế A", "source_url": "https://shop.test/a", "price": 500000}, {"sku": "B2", "product_name": "Ghế B", "source_url": "https://shop.test/b", "price": 700000}]}],
+    "expected": {"final_intent": "contact_provided", "selected_product_sku": "B2", "contact_extracted": true, "quantity": 1, "lead_status": "hot", "purchase_request_status": "draft", "handoff_required": false, "should_ask_missing_info": false}
+  },
+  {
+    "id": "s08_phone_only",
+    "turns": ["Số mình 0933.444.555"],
+    "expected": {"final_intent": "contact_provided", "contact_extracted": true, "lead_status": "warm", "purchase_request_status": "needs_product", "handoff_required": false, "should_ask_missing_info": true}
+  },
+  {
+    "id": "s09_email_only",
+    "turns": ["Liên hệ qua email buyer@example.com"],
+    "expected": {"final_intent": "contact_provided", "contact_extracted": true, "lead_status": "warm", "purchase_request_status": "needs_product", "handoff_required": false, "should_ask_missing_info": true}
+  },
+  {
+    "id": "s10_multiple_products",
+    "turns": ["Mình lấy P1 và P2, số 0909999888"],
+    "mocked_recommended_products": [{"after_turn": 0, "products": [{"sku": "P1SKU", "product_name": "Ghế P1", "source_url": "https://shop.test/p1", "price": 600000}, {"sku": "P2SKU", "product_name": "Ghế P2", "source_url": "https://shop.test/p2", "price": 800000}]}],
+    "expected": {"final_intent": "contact_provided", "selected_product_sku": "P1SKU", "contact_extracted": true, "quantity": 1, "lead_status": "hot", "purchase_request_status": "draft", "handoff_required": false, "should_ask_missing_info": false}
+  },
+  {
+    "id": "s11_ask_ship_no_contact",
+    "turns": ["P1 ship Hà Nội được không?"],
+    "mocked_recommended_products": [{"after_turn": 0, "products": [{"sku": "SF-700", "product_name": "Sofa Nami", "source_url": "https://shop.test/sofa-nami", "price": 700000}]}],
+    "expected": {"final_intent": "product_inquiry", "selected_product_sku": "SF-700", "contact_extracted": false, "quantity": 1, "lead_status": "warm", "purchase_request_status": "needs_contact", "handoff_required": false, "should_ask_missing_info": true}
+  },
+  {
+    "id": "s12_cancel_purchase",
+    "turns": ["Mình mua P1", "Không mua nữa"],
+    "mocked_recommended_products": [{"after_turn": 0, "products": [{"sku": "SF-700", "product_name": "Sofa Nami", "source_url": "https://shop.test/sofa-nami", "price": 700000}]}],
+    "expected": {"final_intent": "cancel", "selected_product_sku": "SF-700", "contact_extracted": false, "lead_status": "cold", "purchase_request_status": "cancelled", "handoff_required": false, "should_ask_missing_info": true}
+  },
+  {
+    "id": "s13_out_of_scope",
+    "turns": ["Thời tiết hôm nay thế nào?"],
+    "expected": {"final_intent": "out_of_scope", "contact_extracted": false, "lead_status": "cold", "purchase_request_status": "needs_product", "handoff_required": false, "should_ask_missing_info": false}
+  },
+  {
+    "id": "s14_handoff_staff",
+    "turns": ["Cho mình gặp nhân viên tư vấn"],
+    "expected": {"final_intent": "handoff_request", "contact_extracted": false, "lead_status": "cold", "purchase_request_status": "needs_product", "handoff_required": true, "should_ask_missing_info": false}
+  },
+  {
+    "id": "s15_compare_previous_model",
+    "turns": ["So sánh với mẫu trước giúp mình"],
+    "mocked_recommended_products": [{"after_turn": 0, "products": [{"sku": "A1", "product_name": "Bàn A", "source_url": "https://shop.test/a", "price": 500000}, {"sku": "B2", "product_name": "Bàn B", "source_url": "https://shop.test/b", "price": 700000}]}],
+    "expected": {"final_intent": "product_inquiry", "contact_extracted": false, "lead_status": "cold", "purchase_request_status": "needs_product", "handoff_required": false, "should_ask_missing_info": false}
+  },
+  {
+    "id": "s16_missing_product_selection",
+    "turns": ["Mình muốn mua, số 0901234567"],
+    "expected": {"final_intent": "contact_provided", "contact_extracted": true, "lead_status": "warm", "purchase_request_status": "needs_product", "handoff_required": false, "should_ask_missing_info": true}
+  },
+  {
+    "id": "s17_missing_contact",
+    "turns": ["Mình lấy P1"],
+    "mocked_recommended_products": [{"after_turn": 0, "products": [{"sku": "SF-700", "product_name": "Sofa Nami", "source_url": "https://shop.test/sofa-nami", "price": 700000}]}],
+    "expected": {"final_intent": "purchase_intent", "selected_product_sku": "SF-700", "contact_extracted": false, "quantity": 1, "lead_status": "warm", "purchase_request_status": "needs_contact", "handoff_required": false, "should_ask_missing_info": true}
+  },
+  {
+    "id": "s18_with_location",
+    "turns": ["Mua P1 giao ở Đà Nẵng, số 0908888777"],
+    "mocked_recommended_products": [{"after_turn": 0, "products": [{"sku": "SF-700", "product_name": "Sofa Nami", "source_url": "https://shop.test/sofa-nami", "price": 700000}]}],
+    "expected": {"final_intent": "contact_provided", "selected_product_sku": "SF-700", "contact_extracted": true, "quantity": 1, "lead_status": "hot", "purchase_request_status": "draft", "handoff_required": false, "should_ask_missing_info": false}
+  },
+  {
+    "id": "s19_with_quantity",
+    "turns": ["Lấy 3 cái P1, số 0908888777"],
+    "mocked_recommended_products": [{"after_turn": 0, "products": [{"sku": "SF-700", "product_name": "Sofa Nami", "source_url": "https://shop.test/sofa-nami", "price": 700000}]}],
+    "expected": {"final_intent": "contact_provided", "selected_product_sku": "SF-700", "contact_extracted": true, "quantity": 3, "lead_status": "hot", "purchase_request_status": "draft", "handoff_required": false, "should_ask_missing_info": false}
+  },
+  {
+    "id": "s20_ambiguous_need_followup",
+    "turns": ["Cái đó được không?"],
+    "expected": {"final_intent": "unknown", "contact_extracted": false, "lead_status": "cold", "purchase_request_status": "needs_product", "handoff_required": false, "should_ask_missing_info": false}
+  }
+]

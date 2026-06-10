@@ -11,7 +11,13 @@ public interface PurchaseRequestRepository extends JpaRepository<PurchaseRequest
 
     Optional<PurchaseRequest> findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(String tenantId, String conversationId);
 
+    Optional<PurchaseRequest> findByTenantIdAndIdempotencyKey(String tenantId, String idempotencyKey);
+
+    Optional<PurchaseRequest> findByTenantIdAndHandoffId(String tenantId, String handoffId);
+
     List<PurchaseRequest> findTop200ByTenantIdOrderByCreatedAtDesc(String tenantId);
 
     List<PurchaseRequest> findTop200ByTenantIdAndStatusOrderByCreatedAtDesc(String tenantId, String status);
+
+    long countByStatus(String status);
 }

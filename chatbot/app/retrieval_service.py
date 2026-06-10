@@ -8,6 +8,14 @@ from .retrievers.hybrid import HybridRetriever
 from .retrievers.hybrid_rerank import HybridRerankRetriever
 from .retrievers.schemas import RetrievalResult
 from .retrievers.text import fold_accents
+from .context_packing import format_grounded_context
+from .product_filters import (
+    apply_price_constraint,
+    diversify_by_category,
+    parse_price_constraint,
+    parse_product_categories,
+)
+from .product_reranker import is_complex_product_query, rerank_product_results
 
 
 PRODUCT_HINTS = [
@@ -122,19 +130,92 @@ def normalize_hits(
     return normalized
 
 
+def _hit_metadata(hit: Union[Dict[str, Any], RetrievalResult]) -> Dict[str, Any]:
+    metadata = hit.get("metadata") if isinstance(hit, dict) else hit.metadata
+    return metadata if isinstance(metadata, dict) else {}
+
+
+def _is_product_hit(hit: Union[Dict[str, Any], RetrievalResult]) -> bool:
+    return _hit_metadata(hit).get("doc_type") == "product"
+
+
+def _has_price_in_range(hit: Union[Dict[str, Any], RetrievalResult], constraint: Any) -> bool:
+    price = _hit_metadata(hit).get("price")
+    if price in (None, ""):
+        return False
+    try:
+        numeric_price = float(price)
+    except (TypeError, ValueError):
+        return False
+    if constraint.min_price is not None and numeric_price < constraint.min_price:
+        return False
+    if constraint.max_price is not None and numeric_price > constraint.max_price:
+        return False
+    return True
+
+
+def _apply_product_price_constraint(
+    raw_hits: List[Union[Dict[str, Any], RetrievalResult]],
+    constraint: Any,
+) -> List[Union[Dict[str, Any], RetrievalResult]]:
+    product_hits = [hit for hit in raw_hits if _is_product_hit(hit)]
+    if not product_hits:
+        return raw_hits
+
+    has_range_filter = constraint.min_price is not None or constraint.max_price is not None
+    if has_range_filter and not any(_has_price_in_range(hit, constraint) for hit in product_hits):
+        return raw_hits
+
+    non_product_hits = [hit for hit in raw_hits if not _is_product_hit(hit)]
+    filtered_products = apply_price_constraint(product_hits, constraint)
+    return filtered_products + non_product_hits
+
+
+def _diversify_product_categories(
+    raw_hits: List[Union[Dict[str, Any], RetrievalResult]],
+    categories: List[str],
+    k: int,
+) -> List[Union[Dict[str, Any], RetrievalResult]]:
+    product_hits = [hit for hit in raw_hits if _is_product_hit(hit)]
+    if not product_hits:
+        return raw_hits
+
+    non_product_hits = [hit for hit in raw_hits if not _is_product_hit(hit)]
+    diversified_products = diversify_by_category(product_hits, categories, k)
+    return diversified_products + non_product_hits
+
+
 def search_hits(kb: Optional[BaseRetriever], query: str, k: int = 4, tenant_id: Optional[str] = None) -> List[RetrievalResult]:
     if kb is None:
         return []
-    return normalize_hits(kb.search(query, k=k), tenant_id=tenant_id)
+
+    constraint = parse_price_constraint(query)
+    categories = parse_product_categories(query)
+    should_expand = constraint.has_constraint() or len(categories) >= 2
+    should_rerank = is_complex_product_query(query)
+    if not should_expand:
+        if not should_rerank:
+            return normalize_hits(kb.search(query, k=k), tenant_id=tenant_id)
+        raw_hits = list(kb.search(query, k=max(k * 10, 200)))
+        reranked_hits = rerank_product_results(raw_hits, query, k)
+        return normalize_hits(reranked_hits, tenant_id=tenant_id)
+
+    internal_k = max(k * 10, 200) if should_rerank else max(k * 5, 20)
+    raw_hits = list(kb.search(query, k=internal_k))
+    if should_rerank:
+        reranked_hits = rerank_product_results(raw_hits, query, k)
+        return normalize_hits(reranked_hits, tenant_id=tenant_id)
+
+    filtered_hits = raw_hits
+    if constraint.has_constraint():
+        filtered_hits = _apply_product_price_constraint(filtered_hits, constraint)
+    if len(categories) >= 2:
+        filtered_hits = _diversify_product_categories(filtered_hits, categories, k)
+    return normalize_hits(filtered_hits[:k], tenant_id=tenant_id)
 
 
 def format_context(hits: List[RetrievalResult], max_chars: int = 900) -> str:
-    ctx_blocks = []
-    for hit in hits:
-        context_block = hit.to_context_block(max_chars=max_chars)
-        if context_block:
-            ctx_blocks.append(context_block)
-    return "\n".join(ctx_blocks)
+    return format_grounded_context(hits, max_products=5, max_chars_per_product=max_chars)
 
 
 def summarize_retrieval_debug(
@@ -146,7 +227,7 @@ def summarize_retrieval_debug(
 ) -> Dict[str, Any]:
     snippets: List[str] = []
     for hit in hits[:max_snippets]:
-        block = hit.to_context_block(max_chars=snippet_chars).strip()
+        block = format_grounded_context([hit], max_products=1, max_chars_per_product=snippet_chars).strip()
         if block:
             snippets.append(block)
 

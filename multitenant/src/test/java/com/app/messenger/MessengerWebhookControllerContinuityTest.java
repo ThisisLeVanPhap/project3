@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -94,7 +95,7 @@ class MessengerWebhookControllerContinuityTest {
         bot.setBaseModel("model-a");
         bot.setAdapterPath("adapter-a");
 
-        when(bindingRepo.findByPageId(pageId)).thenReturn(Optional.of(binding));
+        when(bindingRepo.findByPageIdAndStatus(pageId, "ACTIVE")).thenReturn(Optional.of(binding));
         when(botRepo.findById(chatbotId)).thenReturn(Optional.of(bot));
         when(leadRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(any(), any()))
                 .thenReturn(Optional.empty());
@@ -209,12 +210,42 @@ class MessengerWebhookControllerContinuityTest {
                         "ACTIVE"
                 );
         verify(conversationRepository, times(1)).save(any(Conversation.class));
-        verify(sendService).sendText(senderId, "What style and budget are you aiming for?", "token-1");
+        verify(sendService).sendText(pageId, senderId, "What style and budget are you aiming for?", "token-1");
         verify(sendService).sendText(
+                pageId,
                 senderId,
                 "For a small apartment, a modern sofa that's easy to clean and under $800 is a strong fit.",
                 "token-1"
         );
+    }
+
+    @Test
+    void inactiveOrMissingBindingIsIgnoredWithoutCallingChatbotOrSend() throws Exception {
+        String pageId = "page-inactive";
+        String senderId = "sender-999";
+
+        when(bindingRepo.findByPageIdAndStatus(pageId, "ACTIVE")).thenReturn(Optional.empty());
+
+        MessengerWebhookController controller = new MessengerWebhookController(
+                bindingRepo,
+                messengerProperties(),
+                botRepo,
+                new ChannelConversationService(conversationRepository),
+                msgRepo,
+                leadRepo,
+                python,
+                llmInstanceManager,
+                sendService,
+                leadService,
+                purchaseRequestService,
+                feedbackRepo
+        );
+
+        invokeHandlePayload(controller, messengerPayload(pageId, senderId, "mid-inactive", "Hello"));
+
+        verify(botRepo, never()).findById(any(UUID.class));
+        verify(llmInstanceManager, never()).getOrStartSession(any(UUID.class), any(ChatbotInstance.class));
+        verify(sendService, never()).sendText(any(String.class), any(String.class), any(String.class), any(String.class));
     }
 
     private static void invokeHandlePayload(MessengerWebhookController controller, Map<String, Object> payload) throws Exception {

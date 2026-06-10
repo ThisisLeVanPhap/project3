@@ -11,3 +11,4 @@ torch==2.3.1+cpu
 requests==2.32.3
 beautifulsoup4==4.12.3
 lxml==5.3.0
+psycopg[binary]==3.2.3

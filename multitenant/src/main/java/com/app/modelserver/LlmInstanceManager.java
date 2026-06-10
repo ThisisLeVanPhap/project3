@@ -1,7 +1,10 @@
 package com.app.modelserver;
 
 import com.app.bots.ChatbotInstance;
-import com.app.tenants.TenantRepository;
+import com.app.kb.ResolvedTenantKbDirectory;
+import com.app.kb.TenantKbDirectoryResolver;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,9 +28,11 @@ public class LlmInstanceManager {
 
     public static final String RUNTIME_EXTERNAL_HTTP = "external_http";
     public static final String RUNTIME_SPAWNED_PROCESS = "spawned_process";
+    public static final String OBSERVABILITY_EXTERNAL_BASE_URL = "EXTERNAL_BASE_URL";
+    public static final String OBSERVABILITY_JAVA_SPAWNED = "JAVA_SPAWNED";
 
     private final LlmProperties props;
-    private final TenantRepository tenantRepo;
+    private final TenantKbDirectoryResolver tenantKbDirectoryResolver;
 
     private final Duration idleTtl = Duration.ofMinutes(15);
 
@@ -47,8 +52,57 @@ public class LlmInstanceManager {
             boolean healthy
     ) {}
 
+    public record RuntimeKbDesiredSnapshot(
+            @JsonProperty("kb_dir")
+            String kbDir,
+            String source,
+            @JsonProperty("version_id")
+            UUID versionId,
+            @JsonProperty("version_tag")
+            String versionTag,
+            @JsonProperty("fallback_reason")
+            String fallbackReason
+    ) {}
+
+    public record RuntimeKbRunningSnapshot(
+            String mode,
+            @JsonProperty("kb_dir")
+            String kbDir,
+            String source,
+            @JsonProperty("version_id")
+            UUID versionId,
+            @JsonProperty("version_tag")
+            String versionTag,
+            @JsonProperty("started_at")
+            @JsonFormat(shape = JsonFormat.Shape.STRING)
+            Instant startedAt,
+            @JsonProperty("process_alive")
+            Boolean processAlive,
+            Long pid,
+            String note
+    ) {}
+
+    public record RuntimeKbStatusSnapshot(
+            @JsonProperty("tenant_id")
+            UUID tenantId,
+            RuntimeKbDesiredSnapshot desired,
+            RuntimeKbRunningSnapshot running,
+            @JsonProperty("in_sync")
+            Boolean inSync
+    ) {}
+
+    private record RuntimeKbMetadata(
+            String kbDir,
+            String source,
+            UUID versionId,
+            String versionTag,
+            Instant startedAt,
+            long pid
+    ) {}
+
     private final Map<UUID, Running> runningByTenant = new ConcurrentHashMap<>();
     private final Map<UUID, Process> processByTenant = new ConcurrentHashMap<>();
+    private final Map<UUID, RuntimeKbMetadata> runtimeKbByTenant = new ConcurrentHashMap<>();
     private final Map<UUID, ReentrantLock> tenantSpawnLocks = new ConcurrentHashMap<>();
     private final WebClient http = WebClient.builder().build();
 
@@ -98,6 +152,7 @@ public class LlmInstanceManager {
             return new Session(current.baseUrl(), false, false, RUNTIME_SPAWNED_PROCESS);
         }
         runningByTenant.remove(tenantId);
+        runtimeKbByTenant.remove(tenantId);
 
         ReentrantLock tenantLock = tenantSpawnLocks.computeIfAbsent(tenantId, ignored -> new ReentrantLock());
         boolean warmupWaited = !tenantLock.tryLock();
@@ -121,6 +176,7 @@ public class LlmInstanceManager {
                 return new Session(existing.baseUrl(), false, warmupWaited, RUNTIME_SPAWNED_PROCESS);
             }
             runningByTenant.remove(tenantId);
+            runtimeKbByTenant.remove(tenantId);
 
             log.info(
                     "LLM runtime selected mode={} tenant={} pythonBin={} modelServerDir={}",
@@ -144,6 +200,7 @@ public class LlmInstanceManager {
             Running r = e.getValue();
             if (Duration.between(r.lastUsedAt(), now).compareTo(idleTtl) > 0) {
                 runningByTenant.remove(e.getKey());
+                runtimeKbByTenant.remove(e.getKey());
             }
         }
     }
@@ -220,13 +277,15 @@ public class LlmInstanceManager {
             pb.directory(dir);
             pb.redirectErrorStream(true);
 
-            String kbDir = tenantRepo.findKbDirById(tenantId).orElse(null);
-            if (kbDir == null || kbDir.isBlank()) {
-                log.warn("Tenant {} has no kb_dir set. RAG will be disabled for this tenant.", tenantId);
-            } else {
-                pb.environment().put("KB_DIR", kbDir);
-                log.info("Tenant {} KB_DIR={}", tenantId, kbDir);
-            }
+            ResolvedTenantKbDirectory resolvedKbDirectory = resolveKbDirectoryForTenant(tenantId);
+            pb.environment().put("KB_DIR", resolvedKbDirectory.kbDir());
+            log.info(
+                    "Tenant {} KB_DIR={} source={} versionTag={}",
+                    tenantId,
+                    resolvedKbDirectory.kbDir(),
+                    resolvedKbDirectory.source(),
+                    resolvedKbDirectory.versionTag()
+            );
 
             log.info(
                     "Spawning LLM instance tenant={} baseUrl={} warmupWaited={} python={} dir={}",
@@ -239,7 +298,7 @@ public class LlmInstanceManager {
 
             process = pb.start();
             pid = process.pid();
-            processByTenant.put(tenantId, process);
+            recordSpawnedRuntimeKb(tenantId, resolvedKbDirectory, pid, Instant.now(), process);
 
             Process finalProcess = process;
             long finalPid = pid;
@@ -297,6 +356,8 @@ public class LlmInstanceManager {
                     null
             );
         } catch (ChatbotUpstreamException e) {
+            processByTenant.remove(tenantId);
+            runtimeKbByTenant.remove(tenantId);
             log.warn(
                     "LLM startup failure tenant={} baseUrl={} category={} coldStart={} warmupWaited={} message={}",
                     e.getTenantId(),
@@ -308,8 +369,11 @@ public class LlmInstanceManager {
                     e
             );
             throw e;
+        } catch (IllegalStateException e) {
+            throw spawnConfigException(tenantId, e.getMessage());
         } catch (Exception e) {
             processByTenant.remove(tenantId);
+            runtimeKbByTenant.remove(tenantId);
             throw new ChatbotUpstreamException(
                     UpstreamFailureCategory.UNAVAILABLE,
                     tenantId.toString(),
@@ -324,6 +388,89 @@ public class LlmInstanceManager {
         } finally {
             reservedPorts.remove(port);
         }
+    }
+
+    ResolvedTenantKbDirectory resolveKbDirectoryForTenant(UUID tenantId) {
+        return tenantKbDirectoryResolver.resolve(tenantId);
+    }
+
+    void recordSpawnedRuntimeKb(UUID tenantId, ResolvedTenantKbDirectory resolvedKbDirectory, long pid, Instant startedAt, Process process) {
+        if (process != null) {
+            processByTenant.put(tenantId, process);
+        }
+        runtimeKbByTenant.put(
+                tenantId,
+                new RuntimeKbMetadata(
+                        resolvedKbDirectory.kbDir(),
+                        resolvedKbDirectory.source().name(),
+                        resolvedKbDirectory.versionId(),
+                        resolvedKbDirectory.versionTag(),
+                        startedAt,
+                        pid
+                )
+        );
+    }
+
+    public RuntimeKbStatusSnapshot getRuntimeKbStatus(UUID tenantId) {
+        ResolvedTenantKbDirectory resolved = tenantKbDirectoryResolver.resolve(tenantId);
+        RuntimeKbDesiredSnapshot desired = new RuntimeKbDesiredSnapshot(
+                resolved.kbDir(),
+                resolved.source().name(),
+                resolved.versionId(),
+                resolved.versionTag(),
+                resolved.fallbackReason()
+        );
+
+        if (!normalizedExternalBaseUrl().isBlank()) {
+            return new RuntimeKbStatusSnapshot(
+                    tenantId,
+                    desired,
+                    new RuntimeKbRunningSnapshot(
+                            OBSERVABILITY_EXTERNAL_BASE_URL,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            "Java does not own external Python process"
+                    ),
+                    null
+            );
+        }
+
+        RuntimeKbMetadata running = runtimeKbByTenant.get(tenantId);
+        if (running == null) {
+            return new RuntimeKbStatusSnapshot(tenantId, desired, null, false);
+        }
+
+        Process process = processByTenant.get(tenantId);
+        boolean processAlive = process != null && process.isAlive();
+        RuntimeKbRunningSnapshot runningSnapshot = new RuntimeKbRunningSnapshot(
+                OBSERVABILITY_JAVA_SPAWNED,
+                running.kbDir(),
+                running.source(),
+                running.versionId(),
+                running.versionTag(),
+                running.startedAt(),
+                processAlive,
+                running.pid(),
+                null
+        );
+        return new RuntimeKbStatusSnapshot(
+                tenantId,
+                desired,
+                runningSnapshot,
+                isRuntimeKbInSync(desired, runningSnapshot)
+        );
+    }
+
+    private boolean isRuntimeKbInSync(RuntimeKbDesiredSnapshot desired, RuntimeKbRunningSnapshot running) {
+        return java.util.Objects.equals(desired.kbDir(), running.kbDir())
+                && java.util.Objects.equals(desired.source(), running.source())
+                && java.util.Objects.equals(desired.versionId(), running.versionId())
+                && java.util.Objects.equals(desired.versionTag(), running.versionTag());
     }
 
     private ChatbotUpstreamException spawnConfigException(UUID tenantId, String message) {
@@ -379,6 +526,7 @@ public class LlmInstanceManager {
             evictTenant(tenantId);
         }
         runningByTenant.clear();
+        runtimeKbByTenant.clear();
     }
 
     public Map<UUID, Running> dumpRunning() {
@@ -405,6 +553,7 @@ public class LlmInstanceManager {
 
     public void evictTenant(UUID tenantId) {
         runningByTenant.remove(tenantId);
+        runtimeKbByTenant.remove(tenantId);
         Process process = processByTenant.remove(tenantId);
         if (process == null) {
             return;

@@ -1,0 +1,32 @@
+package com.app.kb;
+
+import com.app.auth.AppPrincipal;
+import com.app.auth.AppRole;
+import com.app.auth.SessionPrincipalAccessor;
+import com.app.modelserver.LlmInstanceManager;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/kb/runtime-status")
+@RequiredArgsConstructor
+public class TenantKbRuntimeStatusController {
+
+    private final LlmInstanceManager llmInstanceManager;
+    private final SessionPrincipalAccessor principalAccessor;
+
+    @GetMapping
+    public LlmInstanceManager.RuntimeKbStatusSnapshot runtimeStatus() {
+        AppPrincipal principal = principalAccessor.requireAnyRole(AppRole.TENANT_ADMIN, AppRole.PLATFORM_ADMIN);
+        if (principal.tenantId() == null || principal.tenantId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Tenant-bound principal required");
+        }
+        return llmInstanceManager.getRuntimeKbStatus(UUID.fromString(principal.tenantId()));
+    }
+}

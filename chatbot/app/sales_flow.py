@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from typing import Dict, Any
 
 RX_BUDGET = re.compile(r"\b(\$|usd)\s*([0-9]{2,5})\b|under\s*\$?\s*([0-9]{2,5})\b", re.I)
@@ -28,6 +29,53 @@ STYLE_MAP_VI = {
     "công nghiệp": "industrial",
     "cao cấp": "luxury",
 }
+
+def _repair_mojibake(text: str) -> str:
+    repaired = text or ""
+    for _ in range(3):
+        changed = False
+        for encoding in ("latin1", "cp1252"):
+            try:
+                candidate = repaired.encode(encoding).decode("utf-8")
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                continue
+            if candidate != repaired:
+                repaired = candidate
+                changed = True
+                break
+        if not changed:
+            break
+    return repaired
+
+
+def _ascii_fold(text: str) -> str:
+    text = (text or "").replace("đ", "d").replace("Đ", "D")
+    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+
+
+def _match_text(text: str) -> str:
+    raw = text or ""
+    repaired = _repair_mojibake(raw)
+    return " ".join([raw, repaired, _ascii_fold(repaired)]).lower()
+
+
+def _has_handoff(text: str) -> bool:
+    folded = _match_text(text)
+    return RX_HANDOFF.search(text or "") is not None or re.search(
+        r"\b(human|agent|staff|nhan vien|tu van vien|nguoi that)\b",
+        folded,
+        re.I,
+    ) is not None
+
+
+def _has_compare(text: str) -> bool:
+    folded = _match_text(text)
+    return RX_COMPARE.search(text or "") is not None or re.search(
+        r"\b(compare|comparison|difference|vs|so sanh|khac nhau)\b",
+        folded,
+        re.I,
+    ) is not None
+
 
 # Color patterns (English and Vietnamese)
 RX_COLOR = re.compile(
@@ -84,6 +132,7 @@ def _format_budget_text(amount: str, unit: str) -> str:
 
 def extract_slots(text: str) -> Dict[str, Any]:
     t = text or ""
+    mt = _match_text(t)
     slots: Dict[str, Any] = {}
 
     m = RX_BUDGET.search(t)
@@ -95,12 +144,16 @@ def extract_slots(text: str) -> Dict[str, Any]:
         m_vi = RX_BUDGET_VI.search(t)
         if m_vi:
             slots["budget_text"] = _format_budget_text(m_vi.group(1), m_vi.group(2) or "")
+        elif re.search(r"\b(ngan sach|tam gia|khoang|duoi|toi da)\b", mt):
+            amount = re.search(r"([0-9]+(?:[.,][0-9]+)?)\s*([^\s,.;]*)", t)
+            if amount:
+                slots["budget_text"] = _format_budget_text(amount.group(1), amount.group(2) or "")
 
-    if RX_SMALL.search(t) or RX_SMALL_VI.search(t):
+    if RX_SMALL.search(t) or RX_SMALL_VI.search(t) or re.search(r"\b(small|tiny|compact|studio|apartment|nho|chat|gon|can ho|chung cu|phong nho)\b", mt):
         slots["space"] = "small"
-    if RX_PETS.search(t) or RX_PETS_VI.search(t):
+    if RX_PETS.search(t) or RX_PETS_VI.search(t) or re.search(r"\b(pet|dog|cat|thu cung|cho|meo)\b", mt):
         slots["pets"] = True
-    if RX_KIDS.search(t) or RX_KIDS_VI.search(t):
+    if RX_KIDS.search(t) or RX_KIDS_VI.search(t) or re.search(r"\b(kid|child|toddler|baby|tre em|em be|be|con nho)\b", mt):
         slots["kids"] = True
 
     # Style extraction
@@ -111,6 +164,12 @@ def extract_slots(text: str) -> Dict[str, Any]:
         m2_vi = RX_STYLE_VI.search(t)
         if m2_vi:
             slots["style"] = STYLE_MAP_VI[m2_vi.group(1).lower()]
+        elif re.search(r"\bhien dai\b", mt):
+            slots["style"] = "modern"
+        elif re.search(r"\btoi gian\b", mt):
+            slots["style"] = "minimal"
+        elif re.search(r"\bco dien\b", mt):
+            slots["style"] = "classic"
 
     # Color extraction (first match only)
     color_match = RX_COLOR.search(t)
@@ -141,7 +200,7 @@ def detect_intent(user_text: str, stage: str = "discover") -> str:
         return "irrelevant"
 
     text = user_text.strip()
-    text_lower = text.lower()
+    text_lower = _match_text(text)
     word_count = len(text.split())
 
     # 1. QUESTION DETECTION (strong override for all stages)
@@ -260,7 +319,7 @@ def next_stage(current: str, slots: Dict[str, Any], user_text: str) -> str:
     intent = detect_intent(user_text, current)  # pass stage for context-aware detection
 
     # Always prioritize handoff request
-    if RX_HANDOFF.search(user_text):
+    if _has_handoff(user_text):
         return "handoff"
 
     # Handle disengagement - DO NOT route to handoff, stay in current stage
@@ -280,10 +339,14 @@ def next_stage(current: str, slots: Dict[str, Any], user_text: str) -> str:
 
     if current == "propose":
         # User wants to compare options
-        if intent == "ask_info" and RX_COMPARE.search(user_text):
+        if _has_compare(user_text):
             return "compare"
         # User ready to buy (explicit confirm OR providing info with enough constraints)
-        if intent == "confirm" or (intent == "provide_info" and has_sufficient_constraints(slots, "close")):
+        if (
+            intent == "confirm"
+            or re.search(r"\b(dat hang|chot don|mua ngay|thanh toan|len don)\b", _match_text(user_text))
+            or (intent == "provide_info" and has_sufficient_constraints(slots, "close"))
+        ):
             return "close"
 
     if current == "compare":
@@ -360,6 +423,16 @@ def build_sales_prefix(stage: str, slots: Dict[str, Any]) -> str:
         "- If store data is missing, apologize and offer staff handoff.\n"
         "- REFERENCE KNOWN PREFERENCES: When making suggestions, naturally reference previously captured preferences (style, color, material, budget, space). Example: 'With your preference for modern style and brown color, here are some options...'\n"
         "- ACKNOWLEDGE CHANGES: If you see a 'Recent changes' note, acknowledge the user's updated preference naturally in your response. Example: 'I see you've switched from white to black—that's a great choice for...'\n"
+        "\n"
+        "GROUNDED PRODUCT ANSWER CONTRACT:\n"
+        "- Chỉ dùng sản phẩm và thuộc tính xuất hiện trong CONTEXT / Verified KB context. Không dùng trí nhớ hoặc suy luận bán hàng chung cho fact sản phẩm.\n"
+        "- Khi nhắc sản phẩm cụ thể, bắt buộc dùng đúng format: Tên sản phẩm [P#]; Giá: ...; Thuộc tính chính: ...; Link nguồn: ...\n"
+        "- Gợi ý listing tối đa 3 sản phẩm. Với comparison, dùng bảng ngắn; mỗi hàng/cột sản phẩm phải có [P#] và link nguồn ở cuối dòng hoặc dưới bảng.\n"
+        "- Không bịa giá, chất liệu, màu, kích thước, SKU, brand, link. Nếu field thiếu, trả lời đúng câu: 'Mình chưa thấy thông tin này trong dữ liệu hiện có.'\n"
+        "- Không nói 'còn hàng', 'đang còn hàng', 'miễn phí vận chuyển', 'bảo hành', 'lắp đặt', 'showroom', 'địa chỉ', 'tuyển dụng', 'cam kết', 'chắc chắn' nếu context không có field đó.\n"
+        "- Với availability schema.org/InStock, chỉ được nói: 'Trạng thái trên trang sản phẩm: InStock'. Không suy ra còn ở showroom.\n"
+        "- Không tự tạo tổng giá hoặc khoảng giá, trừ khi nói rõ: 'Ước tính từ các sản phẩm đang liệt kê.'\n"
+        "- Với policy/out-of-scope nếu context không có policy, nói thiếu dữ liệu và đề nghị liên hệ cửa hàng; không bịa chính sách.\n"
         "\n"
         "NATURALNESS GUIDELINES:\n"
         "- Vary your phrasing: sometimes start with 'Bạn có thể cân nhắc...', sometimes 'Một lựa chọn phù hợp là...', sometimes 'Theo mình...'\n"

@@ -1,0 +1,4604 @@
+{
+  "summary": {
+    "total_scenarios": 36,
+    "passed": 36,
+    "pass_rate": 1.0,
+    "turns_total": 83,
+    "turns_passed": 83,
+    "metrics": {
+      "purchase_status_accuracy": 1.0,
+      "product_reference_safety_rate": 1.0,
+      "contact_masking_rate": 1.0,
+      "tenant_isolation_rate": 1.0,
+      "shadow_no_override_rate": 1.0,
+      "no_external_flow_rate": 1.0,
+      "confirmation_required_rate": 1.0,
+      "handoff_only_after_confirmation_rate": 1.0,
+      "confirmation_cancel_rate": 1.0,
+      "no_raw_contact_debug_rate": 1.0,
+      "handoff_failure_handling_rate": 1.0
+    },
+    "failed": []
+  },
+  "failed": [],
+  "cases": [
+    {
+      "id": "runtime_001_product_browsing_active",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_002_product_reference_question",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 2,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "P1 có kích thước bao nhiêu?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\n3. Rèm roman phòng khách R3 [P3]\n   - Giá: 1.200.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải bố; Màu sắc: Kem; Kích thước: 160 x 220 cm; SKU: REM-R3\n   - Link nguồn: https://example.test/rem-r3\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 3,
+              "context_chars": 931,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 3,
+              "sales_mode": "active",
+              "sales_intents": [
+                "product_inquiry"
+              ],
+              "lead_score": 2.0,
+              "lead_status": "cold",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 3,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "contact"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true,
+              "is_product_reference_question": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_003_product_comparison_reference",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "so sánh P1 với P2",
+          "passed": true,
+          "actual": {
+            "reply": "Dưới đây là so sánh dựa trên dữ liệu hiện có:\n\n| Sản phẩm | Giá | Danh mục | Chất liệu / kích thước | Nguồn |\n|---|---:|---|---|---|\n| Rèm cuốn tranh cao cấp GHO-607 [P1] | 700.000 VND | Rèm | Vải polyester; 120 x 180 cm | [Link nguồn](https://example.test/rem-gho-607) |\n| Rèm vải chống nắng R2 [P2] | 900.000 VND | Rèm | Vải chống nắng; 140 x 200 cm | [Link nguồn](https://example.test/rem-r2) |\n| Rèm roman phòng khách R3 [P3] | 1.200.000 VND | Rèm | Vải bố; 160 x 220 cm | [Link nguồn](https://example.test/rem-r3) |\n\nGợi ý chọn: nên ưu tiên sản phẩm có giá, danh mục và thuộc tính phù hợp nhất với nhu cầu bạn đã nêu.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 3,
+              "context_chars": 931,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 3,
+              "sales_mode": "active",
+              "sales_intents": [
+                "product_inquiry"
+              ],
+              "lead_score": 2.0,
+              "lead_status": "cold",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 3,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "contact"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true,
+              "is_product_reference_question": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_004_purchase_by_p1",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã ghi nhận bạn quan tâm sản phẩm:\n- Rèm cuốn tranh cao cấp GHO-607 [P1]\n- Giá tham khảo: 700000\n- Link nguồn: https://example.test/rem-gho-607\n\nĐể cửa hàng liên hệ xác nhận giá, tồn kho và vận chuyển, bạn cho mình xin số điện thoại hoặc email nhé.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent"
+              ],
+              "lead_score": 4.0,
+              "lead_status": "warm",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "needs_contact",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "contact"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "ask_contact",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_005_purchase_by_ordinal",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "mua mẫu thứ 2",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã ghi nhận bạn quan tâm sản phẩm:\n- Rèm vải chống nắng R2 [P2]\n- Giá tham khảo: 900000\n- Link nguồn: https://example.test/rem-r2\n\nĐể cửa hàng liên hệ xác nhận giá, tồn kho và vận chuyển, bạn cho mình xin số điện thoại hoặc email nhé.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "product_inquiry"
+              ],
+              "lead_score": 4.0,
+              "lead_status": "warm",
+              "selected_products": [
+                {
+                  "pid": "P2",
+                  "sku": "REM-R2",
+                  "product_name": "Rèm vải chống nắng R2",
+                  "source_url": "https://example.test/rem-r2",
+                  "price": 900000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "needs_contact",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "contact"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "ask_contact",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_006_purchase_with_phone",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_515a100acd51",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_007_contact_only_after_needs_contact",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã ghi nhận bạn quan tâm sản phẩm:\n- Rèm cuốn tranh cao cấp GHO-607 [P1]\n- Giá tham khảo: 700000\n- Link nguồn: https://example.test/rem-gho-607\n\nĐể cửa hàng liên hệ xác nhận giá, tồn kho và vận chuyển, bạn cho mình xin số điện thoại hoặc email nhé.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent"
+              ],
+              "lead_score": 4.0,
+              "lead_status": "warm",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "needs_contact",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "contact"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "ask_contact",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 2,
+          "message": "098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "contact_provided"
+              ],
+              "lead_score": 5.0,
+              "lead_status": "warm",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_da56e558046d",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_008_contact_without_purchase_context",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\n3. Rèm roman phòng khách R3 [P3]\n   - Giá: 1.200.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải bố; Màu sắc: Kem; Kích thước: 160 x 220 cm; SKU: REM-R3\n   - Link nguồn: https://example.test/rem-r3\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 3,
+              "context_chars": 931,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 3,
+              "sales_mode": "active",
+              "sales_intents": [
+                "contact_provided"
+              ],
+              "lead_score": 3.0,
+              "lead_status": "warm",
+              "selected_products": [],
+              "last_recommended_count": 3,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "product"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_009_handoff_request",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "cho tôi gặp tư vấn viên",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã ghi nhận yêu cầu gặp tư vấn viên. Bạn cho mình xin số điện thoại hoặc email để cửa hàng liên hệ lại nhé.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "handoff_request",
+                "product_inquiry"
+              ],
+              "lead_score": 0.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 0,
+              "purchase_request_status": "needs_product",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": true,
+              "sales_action_taken": "handoff",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_010_handoff_with_phone",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "cho tôi gặp tư vấn viên, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã ghi nhận yêu cầu gặp tư vấn viên. Bạn cho mình xin số điện thoại hoặc email để cửa hàng liên hệ lại nhé.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "handoff_request",
+                "contact_provided",
+                "product_inquiry"
+              ],
+              "lead_score": 3.0,
+              "lead_status": "warm",
+              "selected_products": [],
+              "last_recommended_count": 0,
+              "purchase_request_status": "needs_product",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "product"
+              ],
+              "handoff_required": true,
+              "sales_action_taken": "handoff",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_011_cancel_after_needs_contact",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 14,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã ghi nhận bạn quan tâm sản phẩm:\n- Rèm cuốn tranh cao cấp GHO-607 [P1]\n- Giá tham khảo: 700000\n- Link nguồn: https://example.test/rem-gho-607\n\nĐể cửa hàng liên hệ xác nhận giá, tồn kho và vận chuyển, bạn cho mình xin số điện thoại hoặc email nhé.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent"
+              ],
+              "lead_score": 4.0,
+              "lead_status": "warm",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "needs_contact",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "contact"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "ask_contact",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 2,
+          "message": "thôi hủy",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã hủy yêu cầu mua hàng nháp trong cuộc trò chuyện này. Bạn có thể tiếp tục xem sản phẩm khác nếu muốn.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "cancel"
+              ],
+              "lead_score": 0.0,
+              "lead_status": "cold",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "cancelled",
+              "confirmation_status": "cancelled",
+              "handoff_status": "cancelled",
+              "handoff_id": null,
+              "missing_fields": [
+                "contact"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "cancelled",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_012_cancel_after_draft",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_8e2c93e9a0a6",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 2,
+          "message": "hủy đơn này",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã hủy yêu cầu mua hàng nháp. Yêu cầu này chưa được gửi cho cửa hàng.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "cancel"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "cancelled",
+              "confirmation_status": "cancelled",
+              "handoff_status": "cancelled",
+              "handoff_id": "handoff_8e2c93e9a0a6",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "confirmation_cancelled",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_013_missing_conversation_id",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": false,
+              "sales_state_warning": "missing_conversation_id_ephemeral_state"
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1",
+          "passed": true,
+          "actual": {
+            "reply": "Bạn muốn đặt sản phẩm nào trong các mẫu mình vừa gợi ý? Bạn có thể nói \"P1\", \"mẫu thứ 2\" hoặc gửi tên sản phẩm.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent"
+              ],
+              "lead_score": 2.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 0,
+              "purchase_request_status": "needs_product",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "product"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "ask_product",
+              "sales_state_persistent": false,
+              "sales_state_warning": "missing_conversation_id_ephemeral_state"
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_014_tenant_isolation",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1",
+          "passed": true,
+          "actual": {
+            "reply": "Bạn muốn đặt sản phẩm nào trong các mẫu mình vừa gợi ý? Bạn có thể nói \"P1\", \"mẫu thứ 2\" hoặc gửi tên sản phẩm.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent"
+              ],
+              "lead_score": 2.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 0,
+              "purchase_request_status": "needs_product",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "product"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "ask_product",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_015_env_active_request_off",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "tôi lấy P1, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "[stub][general_compare]\nNguồn dữ liệu: retrieval. No purchase request. Tiêu chí so sánh: giá, chất liệu, kích thước/phong cách/mục đích dùng. Các lựa chọn so sánh:\n1. SFG041 — giá: chưa có dữ liệu; chất liệu: gỗ sồi; dùng cho căn hộ nhỏ. 2.",
+            "latency_ms": 2,
+            "model": "stub",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 3,
+              "context_chars": 931,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "llm",
+              "template_renderer": false,
+              "retrieval_count": 3
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_016_shadow_mode_no_override",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "shadow",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\n3. Rèm roman phòng khách R3 [P3]\n   - Giá: 1.200.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải bố; Màu sắc: Kem; Kích thước: 160 x 220 cm; SKU: REM-R3\n   - Link nguồn: https://example.test/rem-r3\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 3,
+              "context_chars": 931,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 3,
+              "sales_mode": "shadow",
+              "sales_intents": [
+                "purchase_intent"
+              ],
+              "lead_score": 4.0,
+              "lead_status": "warm",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 3,
+              "purchase_request_status": "needs_contact",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "contact"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "ask_contact",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_017_active_template_then_purchase",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã ghi nhận bạn quan tâm sản phẩm:\n- Rèm cuốn tranh cao cấp GHO-607 [P1]\n- Giá tham khảo: 700000\n- Link nguồn: https://example.test/rem-gho-607\n\nĐể cửa hàng liên hệ xác nhận giá, tồn kho và vận chuyển, bạn cho mình xin số điện thoại hoặc email nhé.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent"
+              ],
+              "lead_score": 4.0,
+              "lead_status": "warm",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "needs_contact",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "contact"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "ask_contact",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_018_active_llm_stub_then_purchase",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "[stub][general_compare]\nNguồn dữ liệu: retrieval. No purchase request. Tiêu chí so sánh: giá, chất liệu, kích thước/phong cách/mục đích dùng. Các lựa chọn so sánh:\n1. SFG041 — giá: chưa có dữ liệu; chất liệu: gỗ sồi; dùng cho căn hộ nhỏ. 2.",
+            "latency_ms": 0,
+            "model": "stub",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "llm",
+              "template_renderer": false,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã ghi nhận bạn quan tâm sản phẩm:\n- Rèm cuốn tranh cao cấp GHO-607 [P1]\n- Giá tham khảo: 700000\n- Link nguồn: https://example.test/rem-gho-607\n\nĐể cửa hàng liên hệ xác nhận giá, tồn kho và vận chuyển, bạn cho mình xin số điện thoại hoặc email nhé.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent"
+              ],
+              "lead_score": 4.0,
+              "lead_status": "warm",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "needs_contact",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "contact"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "ask_contact",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_019_price_reference",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy cái 700k",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã ghi nhận bạn quan tâm sản phẩm:\n- Rèm cuốn tranh cao cấp GHO-607 [P1]\n- Giá tham khảo: 700000\n- Link nguồn: https://example.test/rem-gho-607\n\nĐể cửa hàng liên hệ xác nhận giá, tồn kho và vận chuyển, bạn cho mình xin số điện thoại hoặc email nhé.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent"
+              ],
+              "lead_score": 4.0,
+              "lead_status": "warm",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "needs_contact",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "contact"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "ask_contact",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_020_sku_reference",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi muốn mua GHO-607",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã ghi nhận bạn quan tâm sản phẩm:\n- Rèm cuốn tranh cao cấp GHO-607 [P1]\n- Giá tham khảo: 700000\n- Link nguồn: https://example.test/rem-gho-607\n\nĐể cửa hàng liên hệ xác nhận giá, tồn kho và vận chuyển, bạn cho mình xin số điện thoại hoặc email nhé.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent"
+              ],
+              "lead_score": 4.0,
+              "lead_status": "warm",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "needs_contact",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "contact"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "ask_contact",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_021_quantity_extraction",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy 2 cái P1, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 2\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 8.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_f5526f6001f4",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_022_location_extraction",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 1,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1, giao Hà Nội, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: tôi lấy P1, giao Hà Nội, số tôi 098****321\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 8.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_8fa308d1c288",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_023_no_contact_from_sku_or_price",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "P1 SKU GHO-607 giá 700000 có đúng không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\n3. Rèm roman phòng khách R3 [P3]\n   - Giá: 1.200.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải bố; Màu sắc: Kem; Kích thước: 160 x 220 cm; SKU: REM-R3\n   - Link nguồn: https://example.test/rem-r3\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 2,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 3,
+              "context_chars": 931,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 3,
+              "sales_mode": "active",
+              "sales_intents": [
+                "product_inquiry"
+              ],
+              "lead_score": 2.0,
+              "lead_status": "cold",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 3,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "contact"
+              ],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true,
+              "is_product_reference_question": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_024_out_of_scope_phone",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "tôi muốn mua điện thoại",
+          "passed": true,
+          "actual": {
+            "reply": "Mình chưa thấy thông tin này trong dữ liệu hiện có. Bạn nên liên hệ trực tiếp cửa hàng để xác nhận chính sách/chi tiết này.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 3,
+              "context_chars": 931,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 3,
+              "sales_mode": "active",
+              "sales_intents": [
+                "out_of_scope"
+              ],
+              "lead_score": 0.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 3,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_025_reset_command",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_a929e67885e2",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 2,
+          "message": "reset",
+          "passed": true,
+          "actual": {
+            "reply": "Got it — I’ve started a new consultation. What are you shopping for today?",
+            "latency_ms": 0,
+            "model": "system",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "reset",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [],
+              "lead_score": 0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 0,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_026_confirm_after_pending_sends",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_8e16336f09df",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 2,
+          "message": "ok gửi",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã gửi yêu cầu mua hàng cho cửa hàng.\nCửa hàng sẽ liên hệ lại để xác nhận giá, tồn kho và vận chuyển trước khi chốt đơn.\nMã yêu cầu: handoff_8e16336f09df",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "confirmed",
+              "handoff_status": "sent",
+              "handoff_id": "handoff_8e16336f09df",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "handoff_sent",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 1
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_027_cancel_pending_no_send",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_48204935b8a1",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 2,
+          "message": "không gửi",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã hủy yêu cầu mua hàng nháp. Yêu cầu này chưa được gửi cho cửa hàng.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "cancelled",
+              "confirmation_status": "cancelled",
+              "handoff_status": "cancelled",
+              "handoff_id": "handoff_48204935b8a1",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "confirmation_cancelled",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_028_confirm_without_pending_no_send",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "ok gửi",
+          "passed": true,
+          "actual": {
+            "reply": "Mình chưa thấy yêu cầu mua hàng đang chờ xác nhận. Bạn vui lòng chọn lại sản phẩm hoặc gửi lại yêu cầu.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 0.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 0,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "confirmation_without_pending",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_029_handoff_phone_no_auto_send",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "cho tôi gặp tư vấn viên, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã ghi nhận yêu cầu gặp tư vấn viên. Bạn cho mình xin số điện thoại hoặc email để cửa hàng liên hệ lại nhé.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "handoff_request",
+                "contact_provided",
+                "product_inquiry"
+              ],
+              "lead_score": 3.0,
+              "lead_status": "warm",
+              "selected_products": [],
+              "last_recommended_count": 0,
+              "purchase_request_status": "needs_product",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "product"
+              ],
+              "handoff_required": true,
+              "sales_action_taken": "handoff",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "ok gửi",
+          "passed": true,
+          "actual": {
+            "reply": "Mình chưa thấy yêu cầu mua hàng đang chờ xác nhận. Bạn vui lòng chọn lại sản phẩm hoặc gửi lại yêu cầu.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 3.0,
+              "lead_status": "warm",
+              "selected_products": [],
+              "last_recommended_count": 0,
+              "purchase_request_status": "needs_product",
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [
+                "product"
+              ],
+              "handoff_required": true,
+              "sales_action_taken": "confirmation_without_pending",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_030_pending_then_change_quantity",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_c4bf69803b37",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 2,
+          "message": "sửa lại lấy 2 cái",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 2\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_2f271150c6ee",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_031_handoff_failure",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_4fa5cbbaa619",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 2,
+          "message": "ok gửi",
+          "passed": true,
+          "actual": {
+            "reply": "Mình chưa gửi được yêu cầu cho cửa hàng do lỗi hệ thống. Bạn có thể thử lại hoặc để lại lời nhắn để cửa hàng liên hệ sau.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "confirmed",
+              "handoff_status": "failed",
+              "handoff_id": "handoff_4fa5cbbaa619",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "handoff_failed",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_032_debug_masks_after_sent",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1, số tôi 098****321, email b***@example.com",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_bcb1ac3213b5",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 2,
+          "message": "xác nhận",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã gửi yêu cầu mua hàng cho cửa hàng.\nCửa hàng sẽ liên hệ lại để xác nhận giá, tồn kho và vận chuyển trước khi chốt đơn.\nMã yêu cầu: handoff_bcb1ac3213b5",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "confirmed",
+              "handoff_status": "sent",
+              "handoff_id": "handoff_bcb1ac3213b5",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "handoff_sent",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 1
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_033_repeated_confirm_idempotent",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 1,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_51ecde027e93",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 2,
+          "message": "ok gửi",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã gửi yêu cầu mua hàng cho cửa hàng.\nCửa hàng sẽ liên hệ lại để xác nhận giá, tồn kho và vận chuyển trước khi chốt đơn.\nMã yêu cầu: handoff_51ecde027e93",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "confirmed",
+              "handoff_status": "sent",
+              "handoff_id": "handoff_51ecde027e93",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "handoff_sent",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 1
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 3,
+          "message": "xác nhận",
+          "passed": true,
+          "actual": {
+            "reply": "Yêu cầu mua hàng này đã được gửi cho cửa hàng trước đó.\nMã yêu cầu: handoff_51ecde027e93",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "confirmed",
+              "handoff_status": "sent",
+              "handoff_id": "handoff_51ecde027e93",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "handoff_already_sent",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 1
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_034_confirm_after_cancel_no_send",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_08064b6bbd3e",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 2,
+          "message": "không gửi",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã hủy yêu cầu mua hàng nháp. Yêu cầu này chưa được gửi cho cửa hàng.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "cancelled",
+              "confirmation_status": "cancelled",
+              "handoff_status": "cancelled",
+              "handoff_id": "handoff_08064b6bbd3e",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "confirmation_cancelled",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 3,
+          "message": "ok gửi",
+          "passed": true,
+          "actual": {
+            "reply": "Mình chưa thấy yêu cầu mua hàng đang chờ xác nhận. Bạn vui lòng chọn lại sản phẩm hoặc gửi lại yêu cầu.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "cancelled",
+              "confirmation_status": "cancelled",
+              "handoff_status": "cancelled",
+              "handoff_id": "handoff_08064b6bbd3e",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "confirmation_without_pending",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_035_cancel_after_sent_keeps_sent",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 0,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_2fbeea5f3f74",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 2,
+          "message": "ok gửi",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã gửi yêu cầu mua hàng cho cửa hàng.\nCửa hàng sẽ liên hệ lại để xác nhận giá, tồn kho và vận chuyển trước khi chốt đơn.\nMã yêu cầu: handoff_2fbeea5f3f74",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "confirmed",
+              "handoff_status": "sent",
+              "handoff_id": "handoff_2fbeea5f3f74",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "handoff_sent",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 1
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 3,
+          "message": "hủy",
+          "passed": true,
+          "actual": {
+            "reply": "Yêu cầu mua hàng này đã được gửi cho cửa hàng trước đó.\nMã yêu cầu: handoff_2fbeea5f3f74",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "cancel"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "confirmed",
+              "handoff_status": "sent",
+              "handoff_id": "handoff_2fbeea5f3f74",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "handoff_already_sent",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 1
+          },
+          "failures": []
+        }
+      ]
+    },
+    {
+      "id": "runtime_036_tenant_b_cannot_confirm_tenant_a",
+      "passed": true,
+      "turns": [
+        {
+          "turn_index": 0,
+          "message": "Có rèm nào dưới 1 triệu không?",
+          "passed": true,
+          "actual": {
+            "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Rèm cuốn tranh cao cấp GHO-607 [P1]\n   - Giá: 700.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải polyester; Màu sắc: Trắng; Kích thước: 120 x 180 cm; SKU: GHO-607\n   - Link nguồn: https://example.test/rem-gho-607\n\n2. Rèm vải chống nắng R2 [P2]\n   - Giá: 900.000 VND\n   - Danh mục: Rèm\n   - Thuộc tính chính: Chất liệu: Vải chống nắng; Màu sắc: Ghi; Kích thước: 140 x 200 cm; SKU: REM-R2\n   - Link nguồn: https://example.test/rem-r2\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+            "latency_ms": 6,
+            "model": "product-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {
+                "budget_text": "1 triệu"
+              },
+              "retrieved_docs": 2,
+              "context_chars": 633,
+              "retrieval_mode": "keyword",
+              "data_provider": "retrieval",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "external_price",
+              "used_mock_price_data": false,
+              "answer_mode": "template",
+              "template_renderer": true,
+              "retrieval_count": 2,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 1.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 2,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "none",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 1,
+          "message": "tôi lấy P1, số tôi 098****321",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã tạo yêu cầu mua hàng nháp:\n\n- Sản phẩm: Rèm cuốn tranh cao cấp GHO-607\n- Số lượng: 1\n- Giá tham khảo theo dữ liệu hiện có: 700000\n- Liên hệ: 098****321\n- Khu vực/địa chỉ: Chưa có\n\nLưu ý: Đây chưa phải đơn hàng đã chốt. Cửa hàng sẽ xác nhận lại giá, tồn kho và vận chuyển.\n\nBạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "purchase_intent",
+                "contact_provided"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "pending",
+              "handoff_status": "pending_confirmation",
+              "handoff_id": "handoff_ad6073b03a6e",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "ask_confirmation",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 2,
+          "message": "ok gửi",
+          "passed": true,
+          "actual": {
+            "reply": "Mình chưa thấy yêu cầu mua hàng đang chờ xác nhận. Bạn vui lòng chọn lại sản phẩm hoặc gửi lại yêu cầu.",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 0.0,
+              "lead_status": "cold",
+              "selected_products": [],
+              "last_recommended_count": 0,
+              "purchase_request_status": null,
+              "confirmation_status": "none",
+              "handoff_status": "not_ready",
+              "handoff_id": null,
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "confirmation_without_pending",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 0
+          },
+          "failures": []
+        },
+        {
+          "turn_index": 3,
+          "message": "ok gửi",
+          "passed": true,
+          "actual": {
+            "reply": "Mình đã gửi yêu cầu mua hàng cho cửa hàng.\nCửa hàng sẽ liên hệ lại để xác nhận giá, tồn kho và vận chuyển trước khi chốt đơn.\nMã yêu cầu: handoff_ad6073b03a6e",
+            "latency_ms": 0,
+            "model": "sales-template",
+            "adapter": null,
+            "trigger_purchase_request": false,
+            "captured_phone": null,
+            "captured_name": null,
+            "debug": {
+              "mode": "general_compare",
+              "stage": "compare",
+              "slots": {},
+              "retrieved_docs": 0,
+              "context_chars": 0,
+              "retrieval_mode": "keyword",
+              "data_provider": "none",
+              "internal_candidates": 0,
+              "external_price_refs": 0,
+              "price_provider": "none",
+              "used_mock_price_data": false,
+              "sales_mode": "active",
+              "sales_intents": [
+                "unknown"
+              ],
+              "lead_score": 7.0,
+              "lead_status": "hot",
+              "selected_products": [
+                {
+                  "pid": "P1",
+                  "sku": "GHO-607",
+                  "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+                  "source_url": "https://example.test/rem-gho-607",
+                  "price": 700000
+                }
+              ],
+              "last_recommended_count": 2,
+              "purchase_request_status": "draft",
+              "confirmation_status": "confirmed",
+              "handoff_status": "sent",
+              "handoff_id": "handoff_ad6073b03a6e",
+              "missing_fields": [],
+              "handoff_required": false,
+              "sales_action_taken": "handoff_sent",
+              "sales_state_persistent": true
+            },
+            "_http_status": 200,
+            "_handoff_sent_count": 1
+          },
+          "failures": []
+        }
+      ]
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import com.app.common.TenantEntityListener;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -34,6 +35,7 @@ public class MessengerPageBinding {
     private UUID chatbotId;
 
     @Column(name = "page_access_token", nullable = false, columnDefinition = "text")
+    @JsonIgnore
     private String pageAccessToken;
 
     @Column(name = "status", nullable = false, length = 32)

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class MessengerProperties {
 
     private String verifyToken;
-    private boolean demoMode = true;
+    private boolean demoMode = false;
 
     public void setVerifyToken(String verifyToken) {
         this.verifyToken = verifyToken;

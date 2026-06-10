@@ -1,0 +1,457 @@
+[
+  {
+    "id": "runtime_001_product_browsing_active",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-001",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {
+        "message": "Có rèm nào dưới 1 triệu không?",
+        "expect": {
+          "model": "product-template",
+          "reply_contains_any": ["[P1]", "Link nguồn"],
+          "debug": {"answer_mode": "template", "sales_mode": "active", "sales_action_taken": "none", "purchase_request_status": null}
+        }
+      }
+    ]
+  },
+  {
+    "id": "runtime_002_product_reference_question",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-002",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template", "debug": {"sales_action_taken": "none"}}},
+      {
+        "message": "P1 có kích thước bao nhiêu?",
+        "expect": {
+          "model": "product-template",
+          "no_sales_override": true,
+          "product_reference_safety": true,
+          "reply_not_contains": ["số điện thoại", "email"],
+          "debug": {"sales_action_taken": "none", "purchase_request_status": null}
+        }
+      }
+    ]
+  },
+  {
+    "id": "runtime_003_product_comparison_reference",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-003",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {
+        "message": "so sánh P1 với P2",
+        "expect": {
+          "model": "product-template",
+          "no_sales_override": true,
+          "product_reference_safety": true,
+          "debug": {"sales_action_taken": "none", "purchase_request_status": null}
+        }
+      }
+    ]
+  },
+  {
+    "id": "runtime_004_purchase_by_p1",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-004",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {
+        "message": "tôi lấy P1",
+        "expect": {
+          "model": "sales-template",
+          "reply_contains_any": ["số điện thoại", "email"],
+          "selected_product_sku": "GHO-607",
+          "debug": {"purchase_request_status": "needs_contact", "sales_action_taken": "ask_contact"}
+        }
+      }
+    ]
+  },
+  {
+    "id": "runtime_005_purchase_by_ordinal",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-005",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {
+        "message": "mua mẫu thứ 2",
+        "expect": {
+          "model": "sales-template",
+          "selected_product_sku": "REM-R2",
+          "debug": {"purchase_request_status": "needs_contact", "sales_action_taken": "ask_contact"}
+        }
+      }
+    ]
+  },
+  {
+    "id": "runtime_006_purchase_with_phone",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-006",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {
+        "message": "tôi lấy P1, số tôi 0987654321",
+        "expect": {
+          "model": "sales-template",
+          "reply_contains_all": ["yêu cầu mua hàng nháp"],
+          "reply_not_contains": ["order confirmed", "đơn đã xác nhận"],
+          "debug_not_contains": ["0987654321"],
+          "contact_masking": true,
+          "selected_product_sku": "GHO-607",
+          "confirmation_required": true,
+          "debug": {"purchase_request_status": "draft", "sales_action_taken": "ask_confirmation", "confirmation_status": "pending", "handoff_status": "pending_confirmation"}
+        }
+      }
+    ]
+  },
+  {
+    "id": "runtime_007_contact_only_after_needs_contact",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-007",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1", "expect": {"model": "sales-template", "debug": {"purchase_request_status": "needs_contact"}}},
+      {
+        "message": "0987654321",
+        "expect": {
+          "model": "sales-template",
+          "debug_not_contains": ["0987654321"],
+          "contact_masking": true,
+          "confirmation_required": true,
+          "debug": {"purchase_request_status": "draft", "sales_action_taken": "ask_confirmation", "confirmation_status": "pending", "handoff_status": "pending_confirmation"}
+        }
+      }
+    ]
+  },
+  {
+    "id": "runtime_008_contact_without_purchase_context",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-008",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {
+        "message": "số tôi 0987654321",
+        "expect": {
+          "model": "product-template",
+          "no_sales_override": true,
+          "debug_not_contains": ["0987654321"],
+          "contact_masking": true,
+          "debug": {"sales_action_taken": "none", "purchase_request_status": null}
+        }
+      }
+    ]
+  },
+  {
+    "id": "runtime_009_handoff_request",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-009",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {
+        "message": "cho tôi gặp tư vấn viên",
+        "expect": {
+          "model": "sales-template",
+          "reply_contains_any": ["số điện thoại", "email"],
+          "debug": {"handoff_required": true, "sales_action_taken": "handoff"}
+        }
+      }
+    ]
+  },
+  {
+    "id": "runtime_010_handoff_with_phone",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-010",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {
+        "message": "cho tôi gặp tư vấn viên, số tôi 0987654321",
+        "expect": {
+          "model": "sales-template",
+          "debug_not_contains": ["0987654321"],
+          "contact_masking": true,
+          "debug": {"handoff_required": true, "sales_action_taken": "handoff"}
+        }
+      }
+    ]
+  },
+  {
+    "id": "runtime_011_cancel_after_needs_contact",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-011",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1", "expect": {"model": "sales-template", "debug": {"purchase_request_status": "needs_contact"}}},
+      {"message": "thôi hủy", "expect": {"model": "sales-template", "reply_contains_any": ["hủy"], "debug": {"purchase_request_status": "cancelled", "confirmation_status": "cancelled", "handoff_status": "cancelled", "sales_action_taken": "cancelled"}}}
+    ]
+  },
+  {
+    "id": "runtime_012_cancel_after_draft",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-012",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1, số tôi 0987654321", "expect": {"model": "sales-template", "debug": {"purchase_request_status": "draft"}}},
+      {"message": "hủy đơn này", "expect": {"model": "sales-template", "confirmation_cancel": true, "debug": {"purchase_request_status": "cancelled", "handoff_required": false, "confirmation_status": "cancelled", "handoff_status": "cancelled", "sales_action_taken": "confirmation_cancelled"}}}
+    ]
+  },
+  {
+    "id": "runtime_013_missing_conversation_id",
+    "tenant_id": "runtime-tenant",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template", "debug": {"sales_state_persistent": false, "sales_state_warning": "missing_conversation_id_ephemeral_state"}}},
+      {"message": "tôi lấy P1", "expect": {"model": "sales-template", "tenant_isolation": true, "debug": {"sales_state_persistent": false, "purchase_request_status": "needs_product", "sales_action_taken": "ask_product"}}}
+    ]
+  },
+  {
+    "id": "runtime_014_tenant_isolation",
+    "tenant_id": "tenant-a",
+    "conversation_id": "shared-runtime-014",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"tenant_id": "tenant-b", "message": "tôi lấy P1", "expect": {"model": "sales-template", "tenant_isolation": true, "debug": {"purchase_request_status": "needs_product", "sales_action_taken": "ask_product"}}}
+    ]
+  },
+  {
+    "id": "runtime_015_env_active_request_off",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-015",
+    "env": {"SALES_CONVERSATION_MODE": "active"},
+    "gen": {"answer_mode": "llm", "sales_mode": "off"},
+    "turns": [
+      {"message": "tôi lấy P1, số tôi 0987654321", "expect": {"model": "stub", "debug_absent": ["sales_mode"], "no_sales_override": true}}
+    ]
+  },
+  {
+    "id": "runtime_016_shadow_mode_no_override",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-016",
+    "gen": {"answer_mode": "template", "sales_mode": "shadow"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template", "shadow_no_override": true, "debug": {"sales_mode": "shadow"}}},
+      {"message": "tôi lấy P1", "expect": {"model": "product-template", "shadow_no_override": true, "debug": {"sales_mode": "shadow", "sales_action_taken": "ask_contact", "purchase_request_status": "needs_contact"}}}
+    ]
+  },
+  {
+    "id": "runtime_017_active_template_then_purchase",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-017",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template", "debug": {"sales_action_taken": "none"}}},
+      {"message": "tôi lấy P1", "expect": {"model": "sales-template", "debug": {"sales_action_taken": "ask_contact", "purchase_request_status": "needs_contact"}}}
+    ]
+  },
+  {
+    "id": "runtime_018_active_llm_stub_then_purchase",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-018",
+    "gen": {"answer_mode": "llm", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "stub", "debug": {"sales_action_taken": "none"}}},
+      {"message": "tôi lấy P1", "expect": {"model": "sales-template", "debug": {"sales_action_taken": "ask_contact", "purchase_request_status": "needs_contact"}}}
+    ]
+  },
+  {
+    "id": "runtime_019_price_reference",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-019",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy cái 700k", "expect": {"model": "sales-template", "selected_product_sku": "GHO-607", "debug": {"purchase_request_status": "needs_contact", "sales_action_taken": "ask_contact"}}}
+    ]
+  },
+  {
+    "id": "runtime_020_sku_reference",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-020",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi muốn mua GHO-607", "expect": {"model": "sales-template", "selected_product_sku": "GHO-607", "debug": {"purchase_request_status": "needs_contact", "sales_action_taken": "ask_contact"}}}
+    ]
+  },
+  {
+    "id": "runtime_021_quantity_extraction",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-021",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy 2 cái P1, số tôi 0987654321", "expect": {"model": "sales-template", "debug": {"purchase_request_status": "draft"}, "fields": {"debug.selected_products.0.sku": "GHO-607"}}}
+    ]
+  },
+  {
+    "id": "runtime_022_location_extraction",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-022",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1, giao Hà Nội, số tôi 0987654321", "expect": {"model": "sales-template", "reply_not_contains": ["miễn phí ship", "chắc chắn giao"], "confirmation_required": true, "debug": {"purchase_request_status": "draft", "sales_action_taken": "ask_confirmation"}}}
+    ]
+  },
+  {
+    "id": "runtime_023_no_contact_from_sku_or_price",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-023",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "P1 SKU GHO-607 giá 700000 có đúng không?", "expect": {"model": "product-template", "product_reference_safety": true, "debug": {"sales_action_taken": "none", "purchase_request_status": null}}}
+    ]
+  },
+  {
+    "id": "runtime_024_out_of_scope_phone",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-024",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "tôi muốn mua điện thoại", "expect": {"model": "product-template", "no_sales_override": true, "debug": {"sales_action_taken": "none", "purchase_request_status": null}}}
+    ]
+  },
+  {
+    "id": "runtime_025_reset_command",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-025",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1, số tôi 0987654321", "expect": {"model": "sales-template", "debug": {"purchase_request_status": "draft"}}},
+      {"message": "reset", "expect": {"model": "system", "debug": {"sales_action_taken": "none", "purchase_request_status": null, "last_recommended_count": 0}}}
+    ]
+  },
+  {
+    "id": "runtime_026_confirm_after_pending_sends",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-026",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1, số tôi 0987654321", "expect": {"model": "sales-template", "confirmation_required": true, "handoff_sent_count": 0, "debug": {"sales_action_taken": "ask_confirmation", "confirmation_status": "pending", "handoff_status": "pending_confirmation"}}},
+      {"message": "ok gửi", "expect": {"model": "sales-template", "handoff_after_confirmation": true, "handoff_sent_count": 1, "reply_contains_any": ["Mã yêu cầu"], "reply_not_contains": ["đã chốt đơn", "đơn hàng đã xác nhận"], "debug": {"sales_action_taken": "handoff_sent", "confirmation_status": "confirmed", "handoff_status": "sent"}}}
+    ]
+  },
+  {
+    "id": "runtime_027_cancel_pending_no_send",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-027",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1, số tôi 0987654321", "expect": {"model": "sales-template", "confirmation_required": true}},
+      {"message": "không gửi", "expect": {"model": "sales-template", "confirmation_cancel": true, "handoff_sent_count": 0, "debug": {"sales_action_taken": "confirmation_cancelled", "confirmation_status": "cancelled", "handoff_status": "cancelled"}}}
+    ]
+  },
+  {
+    "id": "runtime_028_confirm_without_pending_no_send",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-028",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "ok gửi", "expect": {"model": "sales-template", "handoff_sent_count": 0, "debug": {"sales_action_taken": "confirmation_without_pending", "confirmation_status": "none", "handoff_status": "not_ready"}}}
+    ]
+  },
+  {
+    "id": "runtime_029_handoff_phone_no_auto_send",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-029",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "cho tôi gặp tư vấn viên, số tôi 0987654321", "expect": {"model": "sales-template", "handoff_sent_count": 0, "debug_not_contains": ["0987654321"], "no_raw_contact_debug": true, "debug": {"handoff_required": true, "sales_action_taken": "handoff"}}},
+      {"message": "ok gửi", "expect": {"model": "sales-template", "handoff_sent_count": 0, "debug": {"sales_action_taken": "confirmation_without_pending"}}}
+    ]
+  },
+  {
+    "id": "runtime_030_pending_then_change_quantity",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-030",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1, số tôi 0987654321", "expect": {"model": "sales-template", "confirmation_required": true}},
+      {"message": "sửa lại lấy 2 cái", "expect": {"model": "sales-template", "confirmation_required": true, "handoff_sent_count": 0, "debug": {"sales_action_taken": "ask_confirmation", "handoff_status": "pending_confirmation"}}}
+    ]
+  },
+  {
+    "id": "runtime_031_handoff_failure",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-031",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1, số tôi 0987654321", "expect": {"model": "sales-template", "confirmation_required": true}},
+      {"message": "ok gửi", "handoff_fail_next": true, "expect": {"model": "sales-template", "handoff_failure_handling": true, "handoff_sent_count": 0, "reply_contains_any": ["chưa gửi được"], "debug": {"sales_action_taken": "handoff_failed", "handoff_status": "failed"}}}
+    ]
+  },
+  {
+    "id": "runtime_032_debug_masks_after_sent",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-032",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1, số tôi 0987654321, email buyer@example.com", "expect": {"model": "sales-template", "confirmation_required": true, "debug_not_contains": ["0987654321", "buyer@example.com"], "no_raw_contact_debug": true}},
+      {"message": "xác nhận", "expect": {"model": "sales-template", "handoff_after_confirmation": true, "debug_not_contains": ["0987654321", "buyer@example.com"], "no_raw_contact_debug": true, "handoff_sent_count": 1, "debug": {"handoff_status": "sent"}}}
+    ]
+  },
+  {
+    "id": "runtime_033_repeated_confirm_idempotent",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-033",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1, số tôi 0987654321", "expect": {"model": "sales-template", "confirmation_required": true}},
+      {"message": "ok gửi", "expect": {"model": "sales-template", "handoff_after_confirmation": true, "handoff_sent_count": 1}},
+      {"message": "xác nhận", "expect": {"model": "sales-template", "handoff_sent_count": 1, "debug": {"sales_action_taken": "handoff_already_sent", "handoff_status": "sent"}}}
+    ]
+  },
+  {
+    "id": "runtime_034_confirm_after_cancel_no_send",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-034",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1, số tôi 0987654321", "expect": {"model": "sales-template", "confirmation_required": true}},
+      {"message": "không gửi", "expect": {"model": "sales-template", "confirmation_cancel": true, "handoff_sent_count": 0}},
+      {"message": "ok gửi", "expect": {"model": "sales-template", "handoff_sent_count": 0, "debug": {"sales_action_taken": "confirmation_without_pending", "confirmation_status": "cancelled", "handoff_status": "cancelled"}}}
+    ]
+  },
+  {
+    "id": "runtime_035_cancel_after_sent_keeps_sent",
+    "tenant_id": "runtime-tenant",
+    "conversation_id": "runtime-035",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1, số tôi 0987654321", "expect": {"model": "sales-template", "confirmation_required": true}},
+      {"message": "ok gửi", "expect": {"model": "sales-template", "handoff_after_confirmation": true, "handoff_sent_count": 1}},
+      {"message": "hủy", "expect": {"model": "sales-template", "handoff_sent_count": 1, "debug": {"sales_action_taken": "handoff_already_sent", "confirmation_status": "confirmed", "handoff_status": "sent"}}}
+    ]
+  },
+  {
+    "id": "runtime_036_tenant_b_cannot_confirm_tenant_a",
+    "tenant_id": "tenant-a",
+    "conversation_id": "runtime-036-shared",
+    "gen": {"answer_mode": "template", "sales_mode": "active"},
+    "turns": [
+      {"message": "Có rèm nào dưới 1 triệu không?", "expect": {"model": "product-template"}},
+      {"message": "tôi lấy P1, số tôi 0987654321", "expect": {"model": "sales-template", "confirmation_required": true}},
+      {"tenant_id": "tenant-b", "message": "ok gửi", "expect": {"model": "sales-template", "handoff_sent_count": 0, "debug": {"sales_action_taken": "confirmation_without_pending", "handoff_status": "not_ready"}}},
+      {"tenant_id": "tenant-a", "message": "ok gửi", "expect": {"model": "sales-template", "handoff_after_confirmation": true, "handoff_sent_count": 1, "debug": {"handoff_status": "sent"}}}
+    ]
+  }
+]

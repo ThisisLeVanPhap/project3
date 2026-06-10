@@ -1,0 +1,4901 @@
+{
+  "kb_dir": "chatbot/kb/demo-tenant-products-full",
+  "k": 5,
+  "total_queries": 64,
+  "evaluated_product_queries": 56,
+  "overall_pass_rate": 1.0,
+  "avg_latency_ms": 322.011,
+  "metrics_by_type": {
+    "comparison": {
+      "query_count": 8,
+      "pass_rate": 1.0,
+      "category_hit_rate": 1.0,
+      "avg_category_coverage": 1.0,
+      "avg_price_satisfaction": null,
+      "avg_duplicate_rate": 0.0,
+      "avg_latency_ms": 345.883,
+      "avg_result_count": 5
+    },
+    "multi_category_matching": {
+      "query_count": 10,
+      "pass_rate": 1.0,
+      "category_hit_rate": 1.0,
+      "avg_category_coverage": 1.0,
+      "avg_price_satisfaction": null,
+      "avg_duplicate_rate": 0.0,
+      "avg_latency_ms": 359.088,
+      "avg_result_count": 5
+    },
+    "multi_constraint": {
+      "query_count": 10,
+      "pass_rate": 1.0,
+      "category_hit_rate": 1.0,
+      "avg_category_coverage": 1.0,
+      "avg_price_satisfaction": 1.0,
+      "avg_duplicate_rate": 0.0,
+      "avg_latency_ms": 318.476,
+      "avg_result_count": 5
+    },
+    "natural_language_need": {
+      "query_count": 10,
+      "pass_rate": 1.0,
+      "category_hit_rate": 1.0,
+      "avg_category_coverage": 0.791667,
+      "avg_price_satisfaction": null,
+      "avg_duplicate_rate": 0.0,
+      "avg_latency_ms": 376.5,
+      "avg_result_count": 5
+    },
+    "negation_or_exclusion": {
+      "query_count": 8,
+      "pass_rate": 1.0,
+      "category_hit_rate": 1.0,
+      "avg_category_coverage": 1.0,
+      "avg_price_satisfaction": 1.0,
+      "avg_duplicate_rate": 0.0,
+      "avg_latency_ms": 397.142,
+      "avg_result_count": 4.625
+    },
+    "out_of_scope_or_policy": {
+      "query_count": 8,
+      "pass_rate": null,
+      "category_hit_rate": null,
+      "avg_category_coverage": 0.0,
+      "avg_price_satisfaction": null,
+      "avg_duplicate_rate": 0.0,
+      "avg_latency_ms": 175.584,
+      "avg_result_count": 5
+    },
+    "typo_and_variation": {
+      "query_count": 10,
+      "pass_rate": 1.0,
+      "category_hit_rate": 1.0,
+      "avg_category_coverage": 1.0,
+      "avg_price_satisfaction": 1.0,
+      "avg_duplicate_rate": 0.0,
+      "avg_latency_ms": 271.921,
+      "avg_result_count": 5
+    }
+  },
+  "failed_queries": [],
+  "queries": [
+    {
+      "id": "natural_language_need_001",
+      "query": "Tôi cần đồ che nắng cho cửa sổ giá mềm",
+      "type": "natural_language_need",
+      "expected_categories": [
+        "Rèm"
+      ],
+      "represented_categories": [
+        "Rèm"
+      ],
+      "required_terms_any": [
+        "rèm",
+        "rem",
+        "cửa sổ",
+        "cua so",
+        "che nắng",
+        "che nang"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 217.362,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Functional need should map to curtains; price is vague so no numeric label.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Rèm cửa sổ khách sạn cao cấp GHO-615 - Rèm",
+          "score": 138.55186,
+          "category": "Rèm",
+          "price": 900000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cua-so-khach-san-cao-cap-gho-615",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Rèm che nắng chất lượng cao GHO-605 - Rèm",
+          "score": 134.810108,
+          "category": "Rèm",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/rem-che-nang-chat-luong-cao-gho-605",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn trang trí phòng khách mềm mại nhẹ nhàng GHS-41939 - Đồ trang trí",
+          "score": 105.664795,
+          "category": "Đồ trang trí",
+          "price": 7900000.0,
+          "url": "https://gotrangtri.vn/shop/ban-trang-tri-phong-khach-mem-mai-nhe-nhang-ghs-41939",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Quầy pha chế cafe hiện đại GHS-41926 – Tối ưu không gian, nâng tầm trải nghiệm",
+          "score": 103.247589,
+          "category": "",
+          "price": 9700000.0,
+          "url": "https://gotrangtri.vn/shop/quay-pha-che-cafe-hien-dai-ghs-41926-toi-uu-khong-gian-nang-tam-trai-nghiem",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Vách gỗ trang trí phong cách tối giản cho nhà đẹp GHO-5102 - Đồ trang trí",
+          "score": 94.86718,
+          "category": "Đồ trang trí",
+          "price": 2100000.0,
+          "url": "https://gotrangtri.vn/shop/vach-go-trang-tri-phong-cach-toi-gian-cho-nha-dep-gho-5102",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "natural_language_need_002",
+      "query": "Phòng khách nhỏ nên mua gì để trang trí?",
+      "type": "natural_language_need",
+      "expected_categories": [
+        "Đồ trang trí",
+        "Đèn",
+        "Thảm",
+        "Tranh"
+      ],
+      "represented_categories": [
+        "Đồ trang trí",
+        "Thảm"
+      ],
+      "required_terms_any": [
+        "phòng khách",
+        "phong khach",
+        "trang trí",
+        "trang tri"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 2,
+      "category_coverage": 0.5,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 333.681,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Broad room decor intent; multiple categories are acceptable.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Ghế sofa phòng khách thiết kế nhỏ gọn hiện đại GHS-8331 - Sofa",
+          "score": 136.359266,
+          "category": "Sofa",
+          "price": 9100000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-sofa-phong-khach-thiet-ke-nho-gon-hien-dai-ghs-8331",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn trà gỗ phòng khách nhỏ gọn đa năng GHS-4917 - Bàn trà",
+          "score": 130.507998,
+          "category": "Bàn trà",
+          "price": 4600000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-go-phong-khach-nho-gon-da-nang-ghs-4917",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Tủ thờ để phòng khách thiết kế nhỏ gọn, hiện đại GHS-52572 - Kệ",
+          "score": 138.26407,
+          "category": "Kệ",
+          "price": 10900000.0,
+          "url": "https://gotrangtri.vn/shop/tu-tho-de-phong-khach-ghs-52572",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn nhỏ trang trí phòng ngủ, phòng khách đẹp GHS-41932 - Đồ trang trí",
+          "score": 154.442551,
+          "category": "Đồ trang trí",
+          "price": 7600000.0,
+          "url": "https://gotrangtri.vn/shop/ban-nho-trang-tri-phong-ngu-phong-khach-dep-ghs-41932",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Thảm lông ngắn trang trí phòng khách GHO-35050A - Thảm",
+          "score": 109.751096,
+          "category": "Thảm",
+          "price": 9800000.0,
+          "url": "https://gotrangtri.vn/shop/tham-long-ngan-trang-tri-phong-khach-gho-35050a",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "natural_language_need_003",
+      "query": "Có món nào nhìn tối giản mà hợp căn hộ nhỏ không?",
+      "type": "natural_language_need",
+      "expected_categories": [
+        "Sofa",
+        "Bàn trà",
+        "Kệ",
+        "Đồ trang trí"
+      ],
+      "represented_categories": [
+        "Sofa",
+        "Bàn trà",
+        "Kệ"
+      ],
+      "required_terms_any": [
+        "tối giản",
+        "toi gian",
+        "căn hộ",
+        "can ho",
+        "nhỏ",
+        "nho"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 3,
+      "category_coverage": 0.75,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 311.445,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Style and apartment semantic query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bộ sofa văng 3 món Nỉ cao cấp GHS-8104 - Sofa",
+          "score": 91.501718,
+          "category": "Sofa",
+          "price": 13000000.0,
+          "url": "https://gotrangtri.vn/shop/bo-sofa-vang-3-mon-ni-cao-cap-ghs-8104",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn trà tròn phong cách tối giản GHS-41815 - Bàn trà",
+          "score": 119.517381,
+          "category": "Bàn trà",
+          "price": 3700000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-tron-phong-cach-toi-gian-ghs-41815",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn làm việc tại nhà thiết kế tối giản GHS-4753 - Kệ",
+          "score": 123.232053,
+          "category": "Kệ",
+          "price": 2900000.0,
+          "url": "https://gotrangtri.vn/shop/ban-lam-viec-tai-nha-thiet-ke-toi-gian-ghs-4753",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn ăn cho căn hộ chung cư hiện đại, tiện nghi GHS-41874a - Bàn ăn",
+          "score": 140.602276,
+          "category": "Bàn ăn",
+          "price": 9300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-an-cho-can-ho-chung-cu-hien-dai-tien-nghi-ghs-41874",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Tủ Chén Gỗ Hiện Đại Tối Giản GHS-55175 - Tủ",
+          "score": 188.343304,
+          "category": "Tủ",
+          "price": 2800000.0,
+          "url": "https://gotrangtri.vn/shop/tu-chen-go-hien-dai-toi-gian-ghs-55175",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "natural_language_need_004",
+      "query": "Tôi muốn sản phẩm màu gỗ sáng cho phòng khách",
+      "type": "natural_language_need",
+      "expected_categories": [
+        "Sofa",
+        "Bàn trà",
+        "Kệ",
+        "Đồ trang trí"
+      ],
+      "represented_categories": [
+        "Sofa",
+        "Bàn trà",
+        "Kệ",
+        "Đồ trang trí"
+      ],
+      "required_terms_any": [
+        "gỗ",
+        "go",
+        "phòng khách",
+        "phong khach"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 4,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 379.572,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Color/material style intent.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Ghế sofa bằng gỗ tự nhiên cho phòng khách GHS-8288 - Sofa",
+          "score": 113.161193,
+          "category": "Sofa",
+          "price": 15800000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-sofa-bang-go-tu-nhien-cho-phong-khach-ghs-8288",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn trà phòng khách sáng tạo GHS-4147 - Bàn trà",
+          "score": 119.851314,
+          "category": "Bàn trà",
+          "price": 6200000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-phong-khach-sang-tao-ghs-4147",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Kệ tivi gỗ phòng khách thiết kế sang trọng hiện đại GHS-3361 - Kệ",
+          "score": 119.715981,
+          "category": "Kệ",
+          "price": 9200000.0,
+          "url": "https://gotrangtri.vn/shop/ke-tivi-go-phong-khach-thiet-ke-sang-trong-hien-dai-ghs-3361",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Vách gỗ trang trí phòng khách hoa văn đẹp hiện đại GHO-5179 - Đồ trang trí",
+          "score": 103.359499,
+          "category": "Đồ trang trí",
+          "price": 2100000.0,
+          "url": "https://gotrangtri.vn/shop/vach-go-trang-tri-phong-khach-hoa-van-dep-hien-dai-gho-5179",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Đèn chùm hiện đại cho phòng khách thêm đẹp GHO-262 - Đèn",
+          "score": 120.165587,
+          "category": "Đèn",
+          "price": 2800000.0,
+          "url": "https://gotrangtri.vn/shop/den-chum-hien-dai-cho-phong-khach-them-dep-gho-262",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "natural_language_need_005",
+      "query": "Cần đồ cho phòng ngủ trẻ em",
+      "type": "natural_language_need",
+      "expected_categories": [
+        "Giường",
+        "Tủ"
+      ],
+      "represented_categories": [
+        "Giường",
+        "Tủ"
+      ],
+      "required_terms_any": [
+        "phòng ngủ",
+        "phong ngu",
+        "trẻ em",
+        "tre em"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 2,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 399.802,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Bedroom child furniture need.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Giường ngủ dành cho trẻ em thiết kế hiện đại GHS-9332 - Giường",
+          "score": 189.155808,
+          "category": "Giường",
+          "price": 12100000.0,
+          "url": "https://gotrangtri.vn/shop/giuong-ngu-danh-cho-tre-em-thiet-ke-hien-dai-ghs-9332",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Tủ đựng đồ phòng ngủ cho trẻ em GHS-52259 - Tủ",
+          "score": 229.156618,
+          "category": "Tủ",
+          "price": 4000000.0,
+          "url": "https://gotrangtri.vn/shop/tu-dung-do-phong-ngu-cho-tre-em-ghs-52259",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Đèn ngủ gấu trúc phòng ngủ cho bé GHS-6214 - Đèn",
+          "score": 116.082284,
+          "category": "Đèn",
+          "price": 300000.0,
+          "url": "https://gotrangtri.vn/shop/den-ngu-gau-truc-phong-ngu-cho-be-ghs-6214",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Mẫu giường ngủ trẻ em đẹp GHS-9337 - Giường",
+          "score": 165.272686,
+          "category": "Giường",
+          "price": 15100000.0,
+          "url": "https://gotrangtri.vn/shop/mau-giuong-ngu-tre-em-dep-ghs-9337",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Giường ngủ 2 tầng trẻ em gỗ MDF GHS-9338 - Giường",
+          "score": 163.15605,
+          "category": "Giường",
+          "price": 14400000.0,
+          "url": "https://gotrangtri.vn/shop/giuong-ngu-2-tang-tre-em-go-mdf-ghs-9338",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "natural_language_need_006",
+      "query": "Tôi cần thứ gì đó làm phòng khách ấm hơn",
+      "type": "natural_language_need",
+      "expected_categories": [
+        "Thảm",
+        "Đèn",
+        "Tranh",
+        "Đồ trang trí"
+      ],
+      "represented_categories": [
+        "Đèn",
+        "Đồ trang trí"
+      ],
+      "required_terms_any": [
+        "phòng khách",
+        "phong khach"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 2,
+      "category_coverage": 0.5,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 520.993,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Vague semantic decor query; labels are broad.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Ghế sofa phòng khách hiện đại giá rẻ GHS-8233 - Sofa",
+          "score": 100.076648,
+          "category": "Sofa",
+          "price": 22500000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-sofa-phong-khach-8233",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn trà phòng khách bằng gỗ công nghiệp GHS-41078 - Bàn trà",
+          "score": 94.319844,
+          "category": "Bàn trà",
+          "price": 2200000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-phong-khach-bang-go-cong-nghiep-ghs-41078",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Kệ tivi phòng khách phong cách thanh lịch GHS-3447 - Kệ",
+          "score": 104.857876,
+          "category": "Kệ",
+          "price": 5100000.0,
+          "url": "https://gotrangtri.vn/shop/ke-tivi-phong-khach-phong-cach-thanh-lich-ghs-3447",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Vách ngăn gỗ CNC trang trí phòng khách hiện đại GHO-556 - Đồ trang trí",
+          "score": 92.112088,
+          "category": "Đồ trang trí",
+          "price": 5200000.0,
+          "url": "https://gotrangtri.vn/shop/vach-ngan-go-cnc-trang-tri-phong-khach-hien-dai-gho-556",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Đèn để bàn gia đình phong cách tối giản GHO-297 - Đèn",
+          "score": 74.787979,
+          "category": "Đèn",
+          "price": 300000.0,
+          "url": "https://gotrangtri.vn/shop/den-de-ban-gia-dinh-phong-cach-toi-gian-gho-297",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "natural_language_need_007",
+      "query": "Có đồ treo tường trang trí nhà không?",
+      "type": "natural_language_need",
+      "expected_categories": [
+        "Tranh",
+        "Đồ trang trí",
+        "Gương"
+      ],
+      "represented_categories": [
+        "Tranh",
+        "Đồ trang trí"
+      ],
+      "required_terms_any": [
+        "treo tường",
+        "treo tuong",
+        "trang trí",
+        "trang tri"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 2,
+      "category_coverage": 0.666667,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 407.619,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Wall decoration intent.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Đồng hồ treo tường trang trí hiện đại GHO-706 - Đồ trang trí",
+          "score": 154.697958,
+          "category": "Đồ trang trí",
+          "price": 1200000.0,
+          "url": "https://gotrangtri.vn/shop/dong-ho-treo-tuong-trang-tri-hien-dai-gho-706",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Đèn treo tường hình bông hoa độc đáo trang trí phòng khách GHO-237 - Đèn",
+          "score": 104.377881,
+          "category": "Đèn",
+          "price": 400000.0,
+          "url": "https://gotrangtri.vn/shop/den-treo-tuong-hinh-bong-hoa-doc-dao-trang-tri-phong-khach-gho-237",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Thảm trang trí sàn nhà màu nâu ấn tượng GHO-P05 - Thảm",
+          "score": 110.732041,
+          "category": "Thảm",
+          "price": 1500000.0,
+          "url": "https://gotrangtri.vn/shop/tham-trang-tri-san-nha-mau-nau-an-tuong-gho-p05",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Tranh treo tường trang trí không gian sống GHS-6364 - Tranh",
+          "score": 152.878228,
+          "category": "Tranh",
+          "price": 900000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-canvas-treo-tuong-trang-tri-khong-gian-song-ghs-6364",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Tranh treo tường ô tô trang trí nhà cửa GHX-6033 - Tranh",
+          "score": 151.345771,
+          "category": "Tranh",
+          "price": 1700000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-treo-tuong-o-to-trang-tri-nha-cua-ghx-6033",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "natural_language_need_008",
+      "query": "Tôi muốn đồ gọn cho căn hộ studio",
+      "type": "natural_language_need",
+      "expected_categories": [
+        "Kệ",
+        "Tủ",
+        "Bàn trà",
+        "Bàn ăn"
+      ],
+      "represented_categories": [
+        "Kệ",
+        "Tủ",
+        "Bàn trà",
+        "Bàn ăn"
+      ],
+      "required_terms_any": [
+        "gọn",
+        "gon",
+        "căn hộ",
+        "can ho",
+        "studio"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 4,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 308.139,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Compact apartment furniture.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Tủ bếp mini nhỏ gọn, hiện đại cho căn hộ GHS-55118 - Tủ",
+          "score": 186.761217,
+          "category": "Tủ",
+          "price": 5900000.0,
+          "url": "https://gotrangtri.vn/shop/tu-bep-mini-nho-gon-hien-dai-cho-can-ho-ghs-55118",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Tủ Thờ Nhỏ Gọn Cho Căn Hộ GHS-5514 Hiện Đại - Tủ",
+          "score": 186.761217,
+          "category": "Tủ",
+          "price": 3500000.0,
+          "url": "https://gotrangtri.vn/shop/tu-tho-nho-gon-cho-can-ho-ghs-5514-hien-dai",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn ăn cho căn hộ chung cư hiện đại, tiện nghi GHS-41874a - Bàn ăn",
+          "score": 144.576996,
+          "category": "Bàn ăn",
+          "price": 9300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-an-cho-can-ho-chung-cu-hien-dai-tien-nghi-ghs-41874",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn trà gỗ hiện đại kiểu dáng nhỏ gọn tiện nghi GHS-4918 - Bàn trà",
+          "score": 76.104411,
+          "category": "Bàn trà",
+          "price": 6300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-go-hien-dai-kieu-dang-nho-gon-tien-nghi-ghs-4918",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Kệ tivi gỗ phòng khách nhỏ gọn tiện dụng GHS-3358 - Kệ",
+          "score": 67.467528,
+          "category": "Kệ",
+          "price": 6300000.0,
+          "url": "https://gotrangtri.vn/shop/ke-tivi-go-phong-khach-nho-gon-tien-dung-ghs-3358",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "natural_language_need_009",
+      "query": "Có món decor nào hợp bàn trà không?",
+      "type": "natural_language_need",
+      "expected_categories": [
+        "Bàn trà"
+      ],
+      "represented_categories": [
+        "Bàn trà"
+      ],
+      "required_terms_any": [
+        "decor",
+        "bàn trà",
+        "ban tra"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 485.571,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Ambiguous decor/coffee-table wording; accept coffee-table products that explicitly contain decor intent instead of forcing multiple decor categories.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn trà decor phòng khách xinh xắn GHS-41831 - Bàn trà",
+          "score": 157.241145,
+          "category": "Bàn trà",
+          "price": 3700000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-decor-phong-khach-xinh-xan-ghs-41831",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn trà bệt decor phòng khách GHY-452 - Bàn trà",
+          "score": 153.989399,
+          "category": "Bàn trà",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-bet-decor-phong-khach-ghy-452",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn trà phòng khách hiện đại GHS-4152 - Bàn trà",
+          "score": 133.008157,
+          "category": "Bàn trà",
+          "price": 5800000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-phong-khach-hien-dai-ghs-4152",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Mẫu bàn trà sofa gỗ MDF thanh lịch GHS-41829 - Bàn trà",
+          "score": 119.832941,
+          "category": "Bàn trà",
+          "price": 2200000.0,
+          "url": "https://gotrangtri.vn/shop/mau-ban-tra-sofa-go-mdf-thanh-lich-ghs-41829",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn trà đẹp gỗ tự nhiên GHS-4501 - Bàn trà",
+          "score": 152.664053,
+          "category": "Bàn trà",
+          "price": 6200000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-dep-go-tu-nhien-ghs-4501",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "natural_language_need_010",
+      "query": "Tôi cần nội thất nhìn hiện đại cho nhà chung cư",
+      "type": "natural_language_need",
+      "expected_categories": [
+        "Sofa",
+        "Bàn trà",
+        "Kệ",
+        "Bàn ăn"
+      ],
+      "represented_categories": [
+        "Kệ",
+        "Bàn ăn"
+      ],
+      "required_terms_any": [
+        "hiện đại",
+        "hien dai",
+        "chung cư",
+        "chung cu"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 2,
+      "category_coverage": 0.5,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 400.817,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Modern apartment furniture.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn ăn cho căn hộ chung cư hiện đại, tiện nghi GHS-41874a - Bàn ăn",
+          "score": 264.772902,
+          "category": "Bàn ăn",
+          "price": 9300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-an-cho-can-ho-chung-cu-hien-dai-tien-nghi-ghs-41874",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Tủ thờ nhà chung cư thiết kế nhỏ gọn, hiện đại GHS-52568 - Kệ",
+          "score": 247.173381,
+          "category": "Kệ",
+          "price": 6600000.0,
+          "url": "https://gotrangtri.vn/shop/tu-tho-nha-chung-cu-ghs-52568",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Vách gỗ phòng thờ chung cư hoa văn 3D đẹp GHO-582",
+          "score": 164.464197,
+          "category": "",
+          "price": 2100000.0,
+          "url": "https://gotrangtri.vn/shop/vach-go-phong-tho-chung-cu-hoa-van-3d-dep-gho-582",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Nội thất phòng ngủ trẻ em hiện đại GHS-9411 tối ưu không gian",
+          "score": 208.747244,
+          "category": "",
+          "price": 22900000.0,
+          "url": "https://gotrangtri.vn/shop/noi-that-phong-ngu-tre-em-hien-dai-ghs-9411-toi-uu-khong-gian",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Tủ thờ chung cư hiện đại gỗ tự nhiên GHS-52561 - Tủ",
+          "score": 205.346353,
+          "category": "Tủ",
+          "price": 7600000.0,
+          "url": "https://gotrangtri.vn/shop/tu-tho-chung-cu-hien-dai-ghs-52561",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_constraint_001",
+      "query": "Có đèn trang trí dưới 1 triệu cho phòng khách không?",
+      "type": "multi_constraint",
+      "expected_categories": [
+        "Đèn"
+      ],
+      "represented_categories": [
+        "Đèn"
+      ],
+      "required_terms_any": [
+        "đèn",
+        "den",
+        "phòng khách",
+        "phong khach"
+      ],
+      "required_terms_hit": true,
+      "price": {
+        "max": 1000000
+      },
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": 1.0,
+      "duplicate_rate": 0.0,
+      "latency_ms": 359.072,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Category, room, and price.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Đèn trang trí để bàn bằng pha lê thiết kế đẹp GHO-296 - Kệ",
+          "score": 95.020256,
+          "category": "Kệ",
+          "price": 600000.0,
+          "url": "https://gotrangtri.vn/shop/den-trang-tri-de-ban-bang-pha-le-thiet-ke-dep-gho-296",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Vách ốp tường trang trí phòng khách giả gỗ 900,000đ/m2 GHS-6909 - Đồ trang trí",
+          "score": 110.972475,
+          "category": "Đồ trang trí",
+          "price": 1000000.0,
+          "url": "https://gotrangtri.vn/shop/vach-op-tuong-trang-tri-phong-khach-gia-go-900000d-m2-ghs-6909",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Đèn treo tường hình bông hoa độc đáo trang trí phòng khách GHO-237 - Đèn",
+          "score": 137.915751,
+          "category": "Đèn",
+          "price": 400000.0,
+          "url": "https://gotrangtri.vn/shop/den-treo-tuong-hinh-bong-hoa-doc-dao-trang-tri-phong-khach-gho-237",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bộ tranh treo tường đẹp trang trí phòng khách GHS-6331-1 - Tranh",
+          "score": 129.297699,
+          "category": "Tranh",
+          "price": 800000.0,
+          "url": "https://gotrangtri.vn/shop/bo-tranh-canvas-treo-tuong-phong-khach-ghs-6331-1",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Đèn lồng thả trần cho khách sạn thêm đẹp GHO-276 - Đèn",
+          "score": 135.411031,
+          "category": "Đèn",
+          "price": 1000000.0,
+          "url": "https://gotrangtri.vn/shop/den-long-tha-tran-cho-khach-san-them-dep-gho-276",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_constraint_002",
+      "query": "Có kệ tivi gỗ dưới 3 triệu không?",
+      "type": "multi_constraint",
+      "expected_categories": [
+        "Kệ"
+      ],
+      "represented_categories": [
+        "Kệ"
+      ],
+      "required_terms_any": [
+        "kệ tivi",
+        "ke tivi",
+        "gỗ",
+        "go"
+      ],
+      "required_terms_hit": true,
+      "price": {
+        "max": 3000000
+      },
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": 1.0,
+      "duplicate_rate": 0.0,
+      "latency_ms": 309.353,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Category, material, and price.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Kệ tivi bằng gỗ ép phủ melamine GHS-3611 - Kệ",
+          "score": 105.888115,
+          "category": "Kệ",
+          "price": 2500000.0,
+          "url": "https://gotrangtri.vn/shop/ke-tivi-bang-go-ep-phu-melamine-ghs-3611",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Kệ gỗ di động, kệ gỗ 3 tầng nhỏ gọn GHS-622 - Kệ",
+          "score": 104.13565,
+          "category": "Kệ",
+          "price": 900000.0,
+          "url": "https://gotrangtri.vn/shop/ke-go-di-dong-ke-go-3-tang-nho-gon-ghs-112",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Mẫu tủ kệ để tivi GHS-3609 - Kệ",
+          "score": 95.130537,
+          "category": "Kệ",
+          "price": 2200000.0,
+          "url": "https://gotrangtri.vn/shop/mau-tu-ke-de-tivi-ghs-3609",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Kệ trang trí tivi bằng gỗ GHS-3579 - Kệ",
+          "score": 94.506262,
+          "category": "Kệ",
+          "price": 2500000.0,
+          "url": "https://gotrangtri.vn/shop/ke-trang-tri-tivi-bang-go-ghs-3579",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Kệ gỗ treo tường để tivi 1m6 GHS-3582 - Kệ",
+          "score": 93.123963,
+          "category": "Kệ",
+          "price": 2500000.0,
+          "url": "https://gotrangtri.vn/shop/ke-go-treo-tuong-de-tivi-1m6-ghs-3582",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_constraint_003",
+      "query": "Có sofa da dưới 10 triệu không?",
+      "type": "multi_constraint",
+      "expected_categories": [
+        "Sofa"
+      ],
+      "represented_categories": [
+        "Sofa"
+      ],
+      "required_terms_any": [
+        "sofa",
+        "da"
+      ],
+      "required_terms_hit": true,
+      "price": {
+        "max": 10000000
+      },
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": 1.0,
+      "duplicate_rate": 0.0,
+      "latency_ms": 269.342,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Sofa material and price.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Sofa văng da, Sofa phong cách Bắc Âu GHS-854 - Sofa",
+          "score": 107.9335,
+          "category": "Sofa",
+          "price": 9500000.0,
+          "url": "https://gotrangtri.vn/shop/sofa-vang-da-sofa-phong-cach-bac-au-ghs-854",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Ghế sofa da chất lượng cao cấp GHS-8370 - Sofa",
+          "score": 91.577671,
+          "category": "Sofa",
+          "price": 8500000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-sofa-da-chat-luong-cao-cap-ghs-8370",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Sofa giá rẻ hiện đại đa năng GHS-8204 - Sofa",
+          "score": 83.701412,
+          "category": "Sofa",
+          "price": 9100000.0,
+          "url": "https://gotrangtri.vn/shop/sofa-gia-re-8204",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Sofa bọc da cao cấp khung gỗ tự nhiên GHS-8341 - Sofa",
+          "score": 83.246667,
+          "category": "Sofa",
+          "price": 7700000.0,
+          "url": "https://gotrangtri.vn/shop/sofa-boc-da-cao-cap-khung-go-tu-nhien-ghs-8341",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Ghế sofa cao cấp bọc da đẹp GHS-8369 - Sofa",
+          "score": 82.323352,
+          "category": "Sofa",
+          "price": 9800000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-sofa-cao-cap-boc-da-dep-ghs-8369",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_constraint_004",
+      "query": "Có thảm phòng khách dưới 2 triệu không?",
+      "type": "multi_constraint",
+      "expected_categories": [
+        "Thảm"
+      ],
+      "represented_categories": [
+        "Thảm"
+      ],
+      "required_terms_any": [
+        "thảm",
+        "tham",
+        "phòng khách",
+        "phong khach"
+      ],
+      "required_terms_hit": true,
+      "price": {
+        "max": 2000000
+      },
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": 1.0,
+      "duplicate_rate": 0.0,
+      "latency_ms": 363.121,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Rug room and price.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Đầu ngựa dùng trang trí phòng khách gia đình GHO-477 - Đồ trang trí",
+          "score": 78.592512,
+          "category": "Đồ trang trí",
+          "price": 1200000.0,
+          "url": "https://gotrangtri.vn/shop/dau-ngua-dung-trang-tri-phong-khach-gia-dinh-gho-477",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Thảm trang trí sàn nhà phòng khách GHO-D16 - Thảm",
+          "score": 115.979571,
+          "category": "Thảm",
+          "price": 1800000.0,
+          "url": "https://gotrangtri.vn/shop/tham-trang-tri-san-nha-phong-khach-gho-d16",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Tranh tường phong cảnh đẹp trang trí phòng khách GHS-6462 - Tranh",
+          "score": 77.379895,
+          "category": "Tranh",
+          "price": 1100000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-tuong-phong-canh-dep-trang-tri-phong-khach-ghs-6462",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Thảm lông ngắn nhập khẩu Thổ Nhĩ Kỳ GHO-P07 - Thảm",
+          "score": 72.752852,
+          "category": "Thảm",
+          "price": 1400000.0,
+          "url": "https://gotrangtri.vn/shop/tham-long-ngan-nhap-khau-tho-nhi-ky-gho-p07",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Tranh nghệ thuật đẹp treo tường phòng khách GHS-6432 - Tranh",
+          "score": 75.77451,
+          "category": "Tranh",
+          "price": 800000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-nghe-thuat-dep-treo-tuong-phong-khach-ghs-6432",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_constraint_005",
+      "query": "Có bàn trà gỗ màu sáng từ 1 đến 4 triệu không?",
+      "type": "multi_constraint",
+      "expected_categories": [
+        "Bàn trà"
+      ],
+      "represented_categories": [
+        "Bàn trà"
+      ],
+      "required_terms_any": [
+        "bàn trà",
+        "ban tra",
+        "gỗ",
+        "go"
+      ],
+      "required_terms_hit": true,
+      "price": {
+        "min": 1000000,
+        "max": 4000000
+      },
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": 1.0,
+      "duplicate_rate": 0.0,
+      "latency_ms": 300.244,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Coffee table material, style, and price range.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn trà gia đình gỗ công nghiệp đẹp hiện đại GHS-4916 - Bàn trà",
+          "score": 153.189215,
+          "category": "Bàn trà",
+          "price": 3300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-gia-dinh-go-cong-nghiep-dep-hien-dai-ghs-4916",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Đèn để bàn làm việc, bàn học sáng tạo GHO-289 - Đèn",
+          "score": 139.041784,
+          "category": "Đèn",
+          "price": 1300000.0,
+          "url": "https://gotrangtri.vn/shop/den-de-ban-lam-viec-ban-hoc-sang-tao-gho-289",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn trà sofa gỗ sồi GHS-4482 - Bàn trà",
+          "score": 149.246939,
+          "category": "Bàn trà",
+          "price": 3700000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-sofa-go-soi-ghs-4482",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn trà, Bàn gỗ phòng khách GHS-401 - Bàn trà",
+          "score": 148.971325,
+          "category": "Bàn trà",
+          "price": 2300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-ban-go-phong-khach-ban-go-cong-nghiep-ghs-401",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn trà gỗ công nghiệp phong cách hiện đại GHS-41131 - Bàn trà",
+          "score": 146.444738,
+          "category": "Bàn trà",
+          "price": 4000000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-go-cong-nghiep-phong-cach-hien-dai-ghs-41131",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_constraint_006",
+      "query": "Có rèm cửa dưới 700k cho phòng ngủ không?",
+      "type": "multi_constraint",
+      "expected_categories": [
+        "Rèm"
+      ],
+      "represented_categories": [
+        "Rèm"
+      ],
+      "required_terms_any": [
+        "rèm",
+        "rem",
+        "phòng ngủ",
+        "phong ngu"
+      ],
+      "required_terms_hit": true,
+      "price": {
+        "max": 700000
+      },
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": 1.0,
+      "duplicate_rate": 0.0,
+      "latency_ms": 176.211,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Curtain room and tight price.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Đèn ngủ gấu trúc phòng ngủ cho bé GHS-6214 - Đèn",
+          "score": 119.004712,
+          "category": "Đèn",
+          "price": 300000.0,
+          "url": "https://gotrangtri.vn/shop/den-ngu-gau-truc-phong-ngu-cho-be-ghs-6214",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Rèm vải roman chất lượng cao GHO-602 - Rèm",
+          "score": 145.661292,
+          "category": "Rèm",
+          "price": 700000.0,
+          "url": "https://gotrangtri.vn/shop/rem-vai-roman-nhap-chat-luong-gho-602",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Rèm cửa văn phòng cao cấp GHO-606 - Rèm",
+          "score": 192.073077,
+          "category": "Rèm",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cua-van-phong-cao-cap-gho-606",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Rèm cửa giá rẻ chất lượng cao GHO-609 - Rèm",
+          "score": 174.585624,
+          "category": "Rèm",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cua-gia-re-chat-luong-cao-gho-609",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Rèm cuốn tranh cao cấp GHO-607 - Rèm",
+          "score": 142.121413,
+          "category": "Rèm",
+          "price": 700000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cuon-tranh-cao-cap-gho-607",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_constraint_007",
+      "query": "Có tủ gỗ công nghiệp dưới 5 triệu không?",
+      "type": "multi_constraint",
+      "expected_categories": [
+        "Tủ"
+      ],
+      "represented_categories": [
+        "Tủ"
+      ],
+      "required_terms_any": [
+        "tủ",
+        "tu",
+        "gỗ công nghiệp",
+        "go cong nghiep"
+      ],
+      "required_terms_hit": true,
+      "price": {
+        "max": 5000000
+      },
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": 1.0,
+      "duplicate_rate": 0.0,
+      "latency_ms": 219.726,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Cabinet material and price.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Tủ để đồ bằng gỗ công nghiệp cho bé 5 tầng GHC-5703 - Tủ",
+          "score": 146.764754,
+          "category": "Tủ",
+          "price": 3900000.0,
+          "url": "https://gotrangtri.vn/shop/tu-de-do-bang-go-cong-nghiep-cho-be-5-tang-ghc-5703",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Mẫu tủ thờ gỗ công nghiệp đẹp ấn tượng GHS-52322 - Tủ",
+          "score": 145.091864,
+          "category": "Tủ",
+          "price": 3300000.0,
+          "url": "https://gotrangtri.vn/shop/mau-tu-tho-go-cong-nghiep-dep-an-tuong-ghs-52322",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Tủ bàn thờ đứng gỗ công nghiệp GHS-52344 - Tủ",
+          "score": 140.548017,
+          "category": "Tủ",
+          "price": 3300000.0,
+          "url": "https://gotrangtri.vn/shop/tu-ban-tho-dung-go-cong-nghiep-ghs-52344",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Tủ giầy 2 cánh, Tủ Gỗ công nghiệp GHS-511 - Tủ",
+          "score": 134.630734,
+          "category": "Tủ",
+          "price": 3000000.0,
+          "url": "https://gotrangtri.vn/shop/tu-giay-2-canh-go-cong-nghiep-ghs-511",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Tủ trang trí gỗ công nghiệp phủ Melamine GHS-51058 - Tủ",
+          "score": 130.186358,
+          "category": "Tủ",
+          "price": 1700000.0,
+          "url": "https://gotrangtri.vn/shop/tu-trang-tri-go-cong-nghiep-phu-melamine-ghs-51058",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_constraint_008",
+      "query": "Có ghế thư giãn giá dưới 3 triệu không?",
+      "type": "multi_constraint",
+      "expected_categories": [
+        "Ghế"
+      ],
+      "represented_categories": [
+        "Ghế"
+      ],
+      "required_terms_any": [
+        "ghế",
+        "ghe",
+        "thư giãn",
+        "thu gian"
+      ],
+      "required_terms_hit": true,
+      "price": {
+        "max": 3000000
+      },
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": 1.0,
+      "duplicate_rate": 0.0,
+      "latency_ms": 352.851,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Chair subtype and price.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Ghế lưng cong, Ghế thư giãn GHS-718 - Ghế",
+          "score": 215.311003,
+          "category": "Ghế",
+          "price": 1300000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-lung-cong-ghe-thu-gian-ghs-718",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Ghế lưng cong, ghế thư giãn GHS-717 - Ghế",
+          "score": 211.757589,
+          "category": "Ghế",
+          "price": 2000000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-lung-cong-ghe-thu-gian-ghs-717",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Ghế thư giãn phong cách hiện đại GHC-716 - Ghế",
+          "score": 204.903767,
+          "category": "Ghế",
+          "price": 1600000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-thu-gian-phong-cach-hien-dai-ghc-716",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Ghế Gỗ tự nhiên, Ghế gỗ không lưng GHS-41 - Ghế",
+          "score": 125.34894,
+          "category": "Ghế",
+          "price": 1000000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-go-tu-nhien-ghe-go-khong-lung-ghs-41",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Ghế sơn tĩnh điện,Ghế tolix GHS-715 - Ghế",
+          "score": 107.716944,
+          "category": "Ghế",
+          "price": 1100000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-son-tinh-dien-ghe-cafe-ghs-715",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_constraint_009",
+      "query": "Có bàn ăn hiện đại từ 5 đến 10 triệu không?",
+      "type": "multi_constraint",
+      "expected_categories": [
+        "Bàn ăn"
+      ],
+      "represented_categories": [
+        "Bàn ăn"
+      ],
+      "required_terms_any": [
+        "bàn ăn",
+        "ban an",
+        "hiện đại",
+        "hien dai"
+      ],
+      "required_terms_hit": true,
+      "price": {
+        "min": 5000000,
+        "max": 10000000
+      },
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": 1.0,
+      "duplicate_rate": 0.0,
+      "latency_ms": 505.05,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Dining table style and price range.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn ăn 4 ghế màu trắng hiện đại cho không gian sang trọng GHS-41875a - Bàn ăn",
+          "score": 223.992453,
+          "category": "Bàn ăn",
+          "price": 9300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-an-4-ghe-mau-trang-hien-dai-cho-khong-gian-sang-trong-ghs-41875",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Tủ bếp hiện đại cho phòng ăn gia đình GHS-5873 - Tủ",
+          "score": 169.235918,
+          "category": "Tủ",
+          "price": 5300000.0,
+          "url": "https://gotrangtri.vn/shop/tu-bep-hien-dai-cho-phong-an-gia-dinh-ghs-5873",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bộ bàn ăn Bingo Walnut hiện đại GHC-4123 (hàng xuất khẩu) - Bàn ăn",
+          "score": 221.013722,
+          "category": "Bàn ăn",
+          "price": 6800000.0,
+          "url": "https://gotrangtri.vn/shop/bo-ban-an-bingo-walnut-hien-dai-ghc-4123",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bộ bàn ăn Kudo Edit Walnut hiện đại GHC-4117 - Bàn ăn",
+          "score": 215.21408,
+          "category": "Bàn ăn",
+          "price": 8900000.0,
+          "url": "https://gotrangtri.vn/shop/bo-ban-an-kudo-edit-natural-hien-dai-ghc-4117",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Tủ Bếp liền bàn ăn tinh tế, hiện đại GHS-502 - Bàn ăn",
+          "score": 209.452351,
+          "category": "Bàn ăn",
+          "price": 6600000.0,
+          "url": "https://gotrangtri.vn/shop/tu-bep-lien-ban-an-tinh-te-tu-go-hien-dai-ghs-502",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_constraint_010",
+      "query": "Có tranh trang trí dưới 500k không?",
+      "type": "multi_constraint",
+      "expected_categories": [
+        "Tranh"
+      ],
+      "represented_categories": [
+        "Tranh"
+      ],
+      "required_terms_any": [
+        "tranh",
+        "trang trí",
+        "trang tri"
+      ],
+      "required_terms_hit": true,
+      "price": {
+        "max": 500000
+      },
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": 1.0,
+      "duplicate_rate": 0.0,
+      "latency_ms": 329.787,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Wall art with low price.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Tranh trang trí không sống gia đình hình lá cây GHS-6391 - Tranh",
+          "score": 100.601153,
+          "category": "Tranh",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-trang-tri-khong-song-gia-dinh-hinh-la-cay-ghs-6391",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Tranh trang trí không gian sống gia đình GHS-6341 - Tranh",
+          "score": 99.998066,
+          "category": "Tranh",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-canvas-trang-tri-khong-gian-song-gia-dinh-ghs-6341",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Tranh treo tường trang trí phòng ngủ gia đình GHS-6380-1 - Tranh",
+          "score": 81.604602,
+          "category": "Tranh",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-treo-tuong-trang-tri-phong-ngu-gia-dinh-ghs-6380-1",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Tranh treo tường trang trí phòng ngủ đẹp GHS-6393 - Tranh",
+          "score": 81.131118,
+          "category": "Tranh",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-treo-tuong-trang-tri-phong-ngu-dep-ghs-6393",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Tranh tường trang trí phòng khách GHS-6363 - Tranh",
+          "score": 80.852545,
+          "category": "Tranh",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-vai-canvas-trang-tri-phong-khach-ghs-6363",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_category_matching_001",
+      "query": "Tôi muốn bàn trà đi cùng kệ tivi",
+      "type": "multi_category_matching",
+      "expected_categories": [
+        "Bàn trà",
+        "Kệ"
+      ],
+      "represented_categories": [
+        "Bàn trà",
+        "Kệ"
+      ],
+      "required_terms_any": [
+        "bàn trà",
+        "ban tra",
+        "kệ tivi",
+        "ke tivi"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 2,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 340.457,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Pairing coffee table and TV shelf.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn trà tối giản bằng gỗ công nghiệp GHS-41638 - Bàn trà",
+          "score": 141.982577,
+          "category": "Bàn trà",
+          "price": 4100000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-toi-gian-bang-go-cong-nghiep-ghs-41638",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Kệ tivi phòng ngủ liền bàn trang điểm GHS-3377 - Kệ",
+          "score": 120.451561,
+          "category": "Kệ",
+          "price": 8100000.0,
+          "url": "https://gotrangtri.vn/shop/ke-tivi-phong-ngu-lien-ban-trang-diem-ghs-3377",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn trà hiện đại phong cách tối giản GHS-41643 - Bàn trà",
+          "score": 139.184423,
+          "category": "Bàn trà",
+          "price": 5300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-hien-dai-phong-cach-toi-gian-ghs-41643",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn trà tròn phong cách tối giản GHS-41815 - Bàn trà",
+          "score": 139.184423,
+          "category": "Bàn trà",
+          "price": 3700000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-tron-phong-cach-toi-gian-ghs-41815",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn trà gỗ công nghiệp tối giản GHS-41827 - Bàn trà",
+          "score": 139.184423,
+          "category": "Bàn trà",
+          "price": 2300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-go-cong-nghiep-toi-gian-ghs-41827",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_category_matching_002",
+      "query": "Có sofa nào hợp với bàn trà không?",
+      "type": "multi_category_matching",
+      "expected_categories": [
+        "Sofa",
+        "Bàn trà"
+      ],
+      "represented_categories": [
+        "Sofa",
+        "Bàn trà"
+      ],
+      "required_terms_any": [
+        "sofa",
+        "bàn trà",
+        "ban tra"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 2,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 436.178,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Pairing sofa and coffee table.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn ghế sofa phòng khách hiện đại GHS-8171 - Sofa",
+          "score": 106.434322,
+          "category": "Sofa",
+          "price": 10900000.0,
+          "url": "https://gotrangtri.vn/shop/sofa-8171",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn trà gỗ công nghiệp bàn sofa phòng khách đẹp GHS-4713 - Bàn trà",
+          "score": 195.709908,
+          "category": "Bàn trà",
+          "price": 5600000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-go-cong-nghiep-ban-sofa-phong-khach-dep-ghs-4713",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn trà sofa gỗ sồi GHS-4482 - Bàn trà",
+          "score": 194.83676,
+          "category": "Bàn trà",
+          "price": 3700000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-sofa-go-soi-ghs-4482",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn sofa, bàn trà gỗ tự nhiên GHS-4494 - Bàn trà",
+          "score": 191.923101,
+          "category": "Bàn trà",
+          "price": 5900000.0,
+          "url": "https://gotrangtri.vn/shop/ban-sofa-ban-tra-go-tu-nhien-ghs-4494",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn trà sofa phòng khách hiện đại GHS-41018 - Bàn trà",
+          "score": 189.291739,
+          "category": "Bàn trà",
+          "price": 5400000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-sofa-phong-khach-hien-dai-ghs-41018",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_category_matching_003",
+      "query": "Tư vấn bộ phòng khách gồm rèm và đèn",
+      "type": "multi_category_matching",
+      "expected_categories": [
+        "Rèm",
+        "Đèn"
+      ],
+      "represented_categories": [
+        "Rèm",
+        "Đèn"
+      ],
+      "required_terms_any": [
+        "rèm",
+        "rem",
+        "đèn",
+        "den",
+        "phòng khách",
+        "phong khach"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 2,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 444.382,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Living room set with curtains and lamps.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Tủ trang trí, tủ trưng bày phòng khách GHS-5434 - Tủ",
+          "score": 98.819776,
+          "category": "Tủ",
+          "price": 4300000.0,
+          "url": "https://gotrangtri.vn/shop/tu-trang-tri-tu-trung-bay-phong-khach-ghs-5434",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Rèm cửa hoa văn cao cấp GHO-614 - Rèm",
+          "score": 175.991863,
+          "category": "Rèm",
+          "price": 900000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cua-hoa-van-cao-cap-gho-614",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Đèn chùm hiện đại cho phòng khách thêm đẹp GHO-262 - Đèn",
+          "score": 134.171163,
+          "category": "Đèn",
+          "price": 2800000.0,
+          "url": "https://gotrangtri.vn/shop/den-chum-hien-dai-cho-phong-khach-them-dep-gho-262",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bộ 3 đèn trang trí hình kim cương GHO-221 - Đèn",
+          "score": 127.93449,
+          "category": "Đèn",
+          "price": 1500000.0,
+          "url": "https://gotrangtri.vn/shop/bo-3-den-kim-cuong-gho-221",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Đèn lồng gỗ trang trí phòng khách GHO-272 - Đèn",
+          "score": 124.188302,
+          "category": "Đèn",
+          "price": 1700000.0,
+          "url": "https://gotrangtri.vn/shop/den-long-go-trang-tri-phong-khach-gho-272",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_category_matching_004",
+      "query": "Có bàn ăn kèm ghế ăn không?",
+      "type": "multi_category_matching",
+      "expected_categories": [
+        "Bàn ăn",
+        "Ghế"
+      ],
+      "represented_categories": [
+        "Bàn ăn",
+        "Ghế"
+      ],
+      "required_terms_any": [
+        "bàn ăn",
+        "ban an",
+        "ghế ăn",
+        "ghe an"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 2,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 342.577,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Dining table and chair pairing.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn ăn 4 ghế màu trắng hiện đại cho không gian sang trọng GHS-41875a - Bàn ăn",
+          "score": 238.852078,
+          "category": "Bàn ăn",
+          "price": 9300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-an-4-ghe-mau-trang-hien-dai-cho-khong-gian-sang-trong-ghs-41875",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Ghế ăn gia đình bằng gỗ tự nhiên GHC-734 - Ghế",
+          "score": 185.3175,
+          "category": "Ghế",
+          "price": 3000000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-an-gia-dinh-bang-go-tu-nhien-ghc-734",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bộ bàn ăn gia đình 6 ghế giá rẻ GHC-499 - Bàn ăn",
+          "score": 224.498137,
+          "category": "Bàn ăn",
+          "price": 9500000.0,
+          "url": "https://gotrangtri.vn/shop/bo-ban-an-gia-dinh-6-ghe-gia-re-ghc-499",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn ghế ăn đẹp hiện đại gỗ sồi GHS-4311 (4 ghế, 6 ghế) - Bàn ăn",
+          "score": 218.61576,
+          "category": "Bàn ăn",
+          "price": 11500000.0,
+          "url": "https://gotrangtri.vn/shop/ban-an-hien-dai-4311",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bộ bàn ăn 4 ghế công nghiệp GHS-4179 (gỗ mdf sơn phủ bóng) - Bàn ăn",
+          "score": 217.764752,
+          "category": "Bàn ăn",
+          "price": 10900000.0,
+          "url": "https://gotrangtri.vn/shop/bo-ban-an-4-ghe-cong-nghiep-ghs-4179",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_category_matching_005",
+      "query": "So sánh thảm và rèm cho phòng khách",
+      "type": "multi_category_matching",
+      "expected_categories": [
+        "Thảm",
+        "Rèm"
+      ],
+      "represented_categories": [
+        "Thảm",
+        "Rèm"
+      ],
+      "required_terms_any": [
+        "thảm",
+        "tham",
+        "rèm",
+        "rem",
+        "phòng khách",
+        "phong khach"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 2,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 380.05,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Comparison across two decor categories.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Thảm trải sàn cao cấp cho phòng khách GHO-31065 - Thảm",
+          "score": 126.509212,
+          "category": "Thảm",
+          "price": 7600000.0,
+          "url": "https://gotrangtri.vn/shop/tham-trai-san-cao-cap-cho-phong-khach-gho-31065",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Rèm cửa hoa văn cao cấp GHO-614 - Rèm",
+          "score": 151.985572,
+          "category": "Rèm",
+          "price": 900000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cua-hoa-van-cao-cap-gho-614",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Thảm trải sàn nhập khẩu dùng cho phòng khách GHO-38730 - Thảm",
+          "score": 125.578944,
+          "category": "Thảm",
+          "price": 6900000.0,
+          "url": "https://gotrangtri.vn/shop/tham-trai-san-nhap-khau-dung-cho-phong-khach-gho-38730",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Thảm trải sàn lông cho phòng khách GHO-31093 - Thảm",
+          "score": 124.139739,
+          "category": "Thảm",
+          "price": 2500000.0,
+          "url": "https://gotrangtri.vn/shop/tham-trai-san-long-cho-phong-khach-gho-31093",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Thảm lông xù hiện đại cho phòng khách GHO-39040 - Thảm",
+          "score": 120.636166,
+          "category": "Thảm",
+          "price": 6200000.0,
+          "url": "https://gotrangtri.vn/shop/tham-long-xu-hien-dai-cho-phong-khach-gho-39040",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_category_matching_006",
+      "query": "Tôi muốn kệ sách và bàn làm việc nhỏ gọn",
+      "type": "multi_category_matching",
+      "expected_categories": [
+        "Kệ"
+      ],
+      "represented_categories": [
+        "Kệ"
+      ],
+      "required_terms_any": [
+        "kệ sách",
+        "ke sach",
+        "bàn làm việc",
+        "ban lam viec",
+        "bàn học",
+        "ban hoc",
+        "nhỏ gọn",
+        "nho gon"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 389.331,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Do not map desk intent to dining tables; KB desk products are currently categorized mostly as Kệ/Tủ, so category label only requires Kệ plus desk terms.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Kệ sách độc đáo, kệ sách nhỏ gọn để bàn làm việc GHC-2411 - Kệ",
+          "score": 297.44604,
+          "category": "Kệ",
+          "price": 400000.0,
+          "url": "https://gotrangtri.vn/shop/ke-sach-doc-dao-ke-sach-nho-gon-de-ban-lam-viec-ghc-2411",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn làm việc thiết kế nhỏ gọn hiện đại GHS-4748 - Kệ",
+          "score": 237.115287,
+          "category": "Kệ",
+          "price": 7000000.0,
+          "url": "https://gotrangtri.vn/shop/ban-lam-viec-thiet-ke-nho-gon-hien-dai-ghs-4748",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn làm việc gỗ thiết kế nhỏ gọn GHS-4580 - Kệ",
+          "score": 236.064416,
+          "category": "Kệ",
+          "price": 4500000.0,
+          "url": "https://gotrangtri.vn/shop/ban-lam-viec-go-thiet-ke-nho-gon-ghs-4580",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn làm việc nhỏ gọn, thiết kế hiện đại GHS-4539 - Kệ",
+          "score": 233.886753,
+          "category": "Kệ",
+          "price": 2900000.0,
+          "url": "https://gotrangtri.vn/shop/ban-lam-viec-nho-gon-thiet-ke-hien-dai-ghs-4539",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn làm việc đẹp thiết kế nhỏ gọn GHS-41239 - Kệ",
+          "score": 224.317002,
+          "category": "Kệ",
+          "price": 7000000.0,
+          "url": "https://gotrangtri.vn/shop/ban-lam-viec-dep-thiet-ke-nho-gon-ghs-41239",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_category_matching_007",
+      "query": "Có tranh treo tường và đèn trang trí không?",
+      "type": "multi_category_matching",
+      "expected_categories": [
+        "Tranh",
+        "Đèn"
+      ],
+      "represented_categories": [
+        "Tranh",
+        "Đèn"
+      ],
+      "required_terms_any": [
+        "tranh",
+        "đèn",
+        "den",
+        "trang trí",
+        "trang tri"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 2,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 408.732,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Wall art and lamp pairing.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Tranh treo tường trang trí không gian sống GHS-6364 - Tranh",
+          "score": 192.632723,
+          "category": "Tranh",
+          "price": 900000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-canvas-treo-tuong-trang-tri-khong-gian-song-ghs-6364",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Đèn treo tường hình bông hoa độc đáo trang trí phòng khách GHO-237 - Đèn",
+          "score": 161.636637,
+          "category": "Đèn",
+          "price": 400000.0,
+          "url": "https://gotrangtri.vn/shop/den-treo-tuong-hinh-bong-hoa-doc-dao-trang-tri-phong-khach-gho-237",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Tranh trang trí treo tường ấn tượng cho không gian gia đình GHS-6531 - Tranh",
+          "score": 183.300112,
+          "category": "Tranh",
+          "price": 1000000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-trang-tri-treo-tuong-an-tuong-cho-khong-gian-gia-dinh-ghs-6531",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Tranh trang trí treo tường phong cách ấn tượng GHS-6379-1 - Tranh",
+          "score": 181.985918,
+          "category": "Tranh",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-trang-tri-treo-tuong-phong-cach-an-tuong-ghs-6379-1",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Tranh treo tường đẹp trang trí phòng ngủ GHS-6369 - Tranh",
+          "score": 177.60564,
+          "category": "Tranh",
+          "price": 800000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-canvas-treo-tuong-trang-tri-phong-ngu-ghs-6369",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_category_matching_008",
+      "query": "Tôi cần giường và tủ cho phòng ngủ",
+      "type": "multi_category_matching",
+      "expected_categories": [
+        "Giường",
+        "Tủ"
+      ],
+      "represented_categories": [
+        "Giường",
+        "Tủ"
+      ],
+      "required_terms_any": [
+        "giường",
+        "giuong",
+        "tủ",
+        "tu",
+        "phòng ngủ",
+        "phong ngu"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 2,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 311.293,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Bedroom furniture pair.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Giường ngủ thông minh cho phòng ngủ nhỏ GHS-9425 – Tối ưu không gian sống - Giường",
+          "score": 190.729294,
+          "category": "Giường",
+          "price": 16300000.0,
+          "url": "https://gotrangtri.vn/shop/giuong-ngu-thong-minh-cho-phong-ngu-nho-ghs-9425-toi-uu-khong-gian-song",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Tủ gỗ nhiều ngăn cho phòng ngủ GHS-52608 - Tủ",
+          "score": 136.699644,
+          "category": "Tủ",
+          "price": 4300000.0,
+          "url": "https://gotrangtri.vn/shop/tu-go-nhieu-ngan-cho-phong-ngu-ghs-52608",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Tủ quần áo giường ngủ cho trẻ GHS-52276 - Giường",
+          "score": 177.636767,
+          "category": "Giường",
+          "price": 3100000.0,
+          "url": "https://gotrangtri.vn/shop/tu-quan-ao-giuong-ngu-cho-tre-ghs-52276",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Tủ nhỏ đầu giường đẹp cho phòng ngủ GHS-51990 - Giường",
+          "score": 175.997812,
+          "category": "Giường",
+          "price": 2500000.0,
+          "url": "https://gotrangtri.vn/shop/tu-nho-dau-giuong-dep-cho-phong-ngu-ghs-51990",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Giường tầng hiện đại cho phòng ngủ GHX-9104 - Giường",
+          "score": 169.645074,
+          "category": "Giường",
+          "price": 4800000.0,
+          "url": "https://gotrangtri.vn/shop/giuong-tang-hien-dai-cho-phong-ngu-ghx-9104",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_category_matching_009",
+      "query": "Có gương và tủ trang điểm không?",
+      "type": "multi_category_matching",
+      "expected_categories": [
+        "Gương",
+        "Tủ"
+      ],
+      "represented_categories": [
+        "Gương",
+        "Tủ"
+      ],
+      "required_terms_any": [
+        "gương",
+        "guong",
+        "tủ trang điểm",
+        "tu trang diem"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 2,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 247.681,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Vanity-related pairing.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn trang điểm gương vuông đơn giản GHS-41916 - Gương",
+          "score": 174.324244,
+          "category": "Gương",
+          "price": 4500000.0,
+          "url": "https://gotrangtri.vn/shop/ban-trang-diem-guong-vuong-don-gian-ghs-41916",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Tủ trang điểm có gương gỗ cao cấp GHS-42031 - Tủ",
+          "score": 221.532099,
+          "category": "Tủ",
+          "price": 5000000.0,
+          "url": "https://gotrangtri.vn/shop/tu-trang-diem-co-guong-go-cao-cap-ghs-42031",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn trang điểm gương gấp, bàn trang điểm nhỏ gọn GHC-4610 - Gương",
+          "score": 169.608188,
+          "category": "Gương",
+          "price": 2200000.0,
+          "url": "https://gotrangtri.vn/shop/ban-trang-diem-guong-gap-ban-trang-diem-thong-minh-ghc-4610",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn trang điểm kèm gương xinh xắn GHS-41903 - Gương",
+          "score": 156.320421,
+          "category": "Gương",
+          "price": 3700000.0,
+          "url": "https://gotrangtri.vn/shop/ban-trang-diem-kem-guong-xinh-xan-ghs-41903",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn trang điểm giấu gương độc đáo hiện đại GHS-41583 - Gương",
+          "score": 156.320421,
+          "category": "Gương",
+          "price": 3500000.0,
+          "url": "https://gotrangtri.vn/shop/ban-trang-diem-giau-guong-doc-dao-hien-dai-ghs-41583",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "multi_category_matching_010",
+      "query": "Tôi muốn sofa, bàn trà và thảm cho phòng khách",
+      "type": "multi_category_matching",
+      "expected_categories": [
+        "Sofa",
+        "Bàn trà",
+        "Thảm"
+      ],
+      "represented_categories": [
+        "Sofa",
+        "Bàn trà",
+        "Thảm"
+      ],
+      "required_terms_any": [
+        "sofa",
+        "bàn trà",
+        "ban tra",
+        "thảm",
+        "tham",
+        "phòng khách",
+        "phong khach"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 3,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 290.196,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Three-category living room query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bộ bàn ghế sofa phòng khách đổi góc GHS-8213 - Sofa",
+          "score": 171.302965,
+          "category": "Sofa",
+          "price": 12000000.0,
+          "url": "https://gotrangtri.vn/shop/bo-ban-ghe-sofa-8213",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Mẫu bàn trà sofa đẹp cho phòng khách GHS-41817 - Bàn trà",
+          "score": 268.582316,
+          "category": "Bàn trà",
+          "price": 5200000.0,
+          "url": "https://gotrangtri.vn/shop/mau-ban-tra-sofa-dep-cho-phong-khach-ghs-41817",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Thảm trải sàn trang trí phòng khách GHO-TC07 - Thảm",
+          "score": 156.932348,
+          "category": "Thảm",
+          "price": 3300000.0,
+          "url": "https://gotrangtri.vn/shop/tham-trai-san-trang-tri-phong-khach-gho-tc07",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn trà sofa phòng khách tiện dụng GHS-4699 - Bàn trà",
+          "score": 248.207211,
+          "category": "Bàn trà",
+          "price": 3900000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-sofa-phong-khach-tien-dung-ghs-4699",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn trà đẹp hiện đại cho phòng khách GHS-41068 - Bàn trà",
+          "score": 246.892712,
+          "category": "Bàn trà",
+          "price": 6200000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-dep-hien-dai-cho-phong-khach-ghs-41068",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "comparison_001",
+      "query": "So sánh rèm cuốn và rèm sáo",
+      "type": "comparison",
+      "expected_categories": [
+        "Rèm"
+      ],
+      "represented_categories": [
+        "Rèm"
+      ],
+      "required_terms_any": [
+        "rèm cuốn",
+        "rem cuon",
+        "rèm sáo",
+        "rem sao"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 205.519,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Curtain subtype comparison.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Rèm sáo nhôm nhập khẩu GHO-611 - Rèm",
+          "score": 353.808313,
+          "category": "Rèm",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/rem-sao-nhom-nhap-khau-gho-611",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Rèm cuốn đẹp chất lượng cao GHO-603 - Rèm",
+          "score": 341.746093,
+          "category": "Rèm",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cuon-dep-chat-luong-cao-gho-603",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Rèm sáo gỗ cao cấp GHO-618 - Rèm",
+          "score": 340.57505,
+          "category": "Rèm",
+          "price": 700000.0,
+          "url": "https://gotrangtri.vn/shop/rem-sao-go-cao-cap-gho-618",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Rèm cuốn cao cấp thời trang GHO-620 - Rèm",
+          "score": 339.105586,
+          "category": "Rèm",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cuon-cao-cap-gho-620",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Rèm cuốn cao cấp đẹp GHO-621 - Rèm",
+          "score": 336.674241,
+          "category": "Rèm",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cuon-cao-cap-gho-621",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "comparison_002",
+      "query": "So sánh sofa da và sofa nỉ",
+      "type": "comparison",
+      "expected_categories": [
+        "Sofa"
+      ],
+      "represented_categories": [
+        "Sofa"
+      ],
+      "required_terms_any": [
+        "sofa da",
+        "sofa nỉ",
+        "sofa ni"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 332.241,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Sofa material comparison.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Sofa văng, Sofa giường Da, Nỉ GHS-868 - Sofa",
+          "score": 223.00832,
+          "category": "Sofa",
+          "price": 14000000.0,
+          "url": "https://gotrangtri.vn/shop/sofa-vang-sofa-giuong-da-ni-ghs-868",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bộ sofa Scandinavian, sofa nỉ GHS-8120 - Sofa",
+          "score": 207.048487,
+          "category": "Sofa",
+          "price": 21600000.0,
+          "url": "https://gotrangtri.vn/shop/bo-sofa-scanadivia-sofa-ni-ghs-8120",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Sofa góc L bọc Nỉ, Sofa hiện đại GHS-8116 - Sofa",
+          "score": 204.740441,
+          "category": "Sofa",
+          "price": 21300000.0,
+          "url": "https://gotrangtri.vn/shop/sofa-goc-l-boc-ni-sofa-hien-dai-ghs-8116",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Sofa Nỉ, Sofa phong cách Scandinavia GHS-855 - Sofa",
+          "score": 204.197272,
+          "category": "Sofa",
+          "price": 8700000.0,
+          "url": "https://gotrangtri.vn/shop/sofa-ni-sofa-phong-cach-scandinavia-ghs-855",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Sofa Nỉ, Sofa phong cách Scandinavian GHS-856 - Sofa",
+          "score": 200.348271,
+          "category": "Sofa",
+          "price": 10600000.0,
+          "url": "https://gotrangtri.vn/shop/sofa-ni-sofa-phong-cach-scanadivia-ghs-856",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "comparison_003",
+      "query": "So sánh bàn trà gỗ tự nhiên và gỗ công nghiệp",
+      "type": "comparison",
+      "expected_categories": [
+        "Bàn trà"
+      ],
+      "represented_categories": [
+        "Bàn trà"
+      ],
+      "required_terms_any": [
+        "bàn trà",
+        "ban tra",
+        "gỗ tự nhiên",
+        "go tu nhien",
+        "gỗ công nghiệp",
+        "go cong nghiep"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 523.506,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Coffee table material comparison.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn trà gỗ công nghiệp thiết kế ấn tượng GHS-4709 - Bàn trà",
+          "score": 222.301975,
+          "category": "Bàn trà",
+          "price": 5100000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-go-cong-nghiep-thiet-ke-an-tuong-ghs-4709",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn làm việc kèm tủ bằng gỗ công nghiệp GHS-4997 - Tủ",
+          "score": 162.38952,
+          "category": "Tủ",
+          "price": 3800000.0,
+          "url": "https://gotrangtri.vn/shop/ban-lam-viec-kem-tu-bang-go-cong-nghiep-ghs-4997",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn trà gỗ công nghiệp bàn sofa phòng khách đẹp GHS-4713 - Bàn trà",
+          "score": 219.872459,
+          "category": "Bàn trà",
+          "price": 5600000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-go-cong-nghiep-ban-sofa-phong-khach-dep-ghs-4713",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn trà gỗ công nghiệp GHS-415 - Bàn trà",
+          "score": 217.836196,
+          "category": "Bàn trà",
+          "price": 4600000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-go-cong-nghiep-ghs-415",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn trà phòng khách gỗ công nghiệp đẹp hiện đại GHS-4716 - Bàn trà",
+          "score": 216.58044,
+          "category": "Bàn trà",
+          "price": 5500000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-phong-khach-go-cong-nghiep-dep-hien-dai-ghs-4716",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "comparison_004",
+      "query": "So sánh kệ tivi thấp và kệ tivi treo tường",
+      "type": "comparison",
+      "expected_categories": [
+        "Kệ"
+      ],
+      "represented_categories": [
+        "Kệ"
+      ],
+      "required_terms_any": [
+        "kệ tivi",
+        "ke tivi",
+        "treo tường",
+        "treo tuong"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 216.629,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "TV shelf subtype comparison.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Kệ treo tường để tivi GHY-908 - Kệ",
+          "score": 240.451925,
+          "category": "Kệ",
+          "price": 1700000.0,
+          "url": "https://gotrangtri.vn/shop/ke-treo-tuong-de-tivi-ghy-908",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Mẫu kệ treo tường tivi hiện đại GHS-3596 - Kệ",
+          "score": 236.412396,
+          "category": "Kệ",
+          "price": 2600000.0,
+          "url": "https://gotrangtri.vn/shop/mau-ke-treo-tuong-tivi-hien-dai-ghs-3596",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Mẫu kệ gỗ tivi treo tường sang trọng GHS-3583 - Kệ",
+          "score": 236.333143,
+          "category": "Kệ",
+          "price": 4400000.0,
+          "url": "https://gotrangtri.vn/shop/mau-ke-go-tivi-treo-tuong-sang-trong-ghs-3583",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Kệ tivi gỗ treo tường đơn giản GHS-3595 - Kệ",
+          "score": 236.253074,
+          "category": "Kệ",
+          "price": 3100000.0,
+          "url": "https://gotrangtri.vn/shop/ke-tivi-go-treo-tuong-don-gian-ghs-3595",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Kệ gỗ treo tường để tivi 1m6 GHS-3582 - Kệ",
+          "score": 233.776332,
+          "category": "Kệ",
+          "price": 2500000.0,
+          "url": "https://gotrangtri.vn/shop/ke-go-treo-tuong-de-tivi-1m6-ghs-3582",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "comparison_005",
+      "query": "Nên chọn thảm lông hay thảm hoa văn?",
+      "type": "comparison",
+      "expected_categories": [
+        "Thảm"
+      ],
+      "represented_categories": [
+        "Thảm"
+      ],
+      "required_terms_any": [
+        "thảm",
+        "tham",
+        "lông",
+        "long",
+        "hoa văn",
+        "hoa van"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 279.631,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Rug subtype comparison.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Thảm lông ngắn trải sàn hoa văn GHO-32370 - Thảm",
+          "score": 236.412244,
+          "category": "Thảm",
+          "price": 3900000.0,
+          "url": "https://gotrangtri.vn/shop/tham-long-ngan-trai-san-hoa-van-gho-32370",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Thảm lông ngắn họa tiết hoa GHO-33254 - Thảm",
+          "score": 199.682076,
+          "category": "Thảm",
+          "price": 6900000.0,
+          "url": "https://gotrangtri.vn/shop/tham-long-ngan-hoa-tiet-hoa-gho-33254",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Thảm trải sàn lông ngắn họa tiết ô vuông GHO-P08 - Thảm",
+          "score": 187.927616,
+          "category": "Thảm",
+          "price": 1400000.0,
+          "url": "https://gotrangtri.vn/shop/tham-trai-san-long-ngan-hoa-tiet-o-vuong-gho-p08",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Thảm lông ngắn họa tiết ô vuông GHO-33682 - Thảm",
+          "score": 186.547702,
+          "category": "Thảm",
+          "price": 7400000.0,
+          "url": "https://gotrangtri.vn/shop/tham-long-ngan-hoa-tiet-o-vuong-gho-33682",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Thảm lông ngắn nhập khẩu họa tiết GHO-C09 - Thảm",
+          "score": 185.996565,
+          "category": "Thảm",
+          "price": 3000000.0,
+          "url": "https://gotrangtri.vn/shop/tham-long-ngan-nhap-khau-hoa-tiet-gho-c09",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "comparison_006",
+      "query": "Đèn cây khác gì đèn bàn trang trí?",
+      "type": "comparison",
+      "expected_categories": [
+        "Đèn"
+      ],
+      "represented_categories": [
+        "Đèn"
+      ],
+      "required_terms_any": [
+        "đèn",
+        "den",
+        "đèn cây",
+        "den cay",
+        "đèn bàn",
+        "den ban"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 519.521,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Lamp subtype comparison.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Vách trang trí cầu thang gỗ CNC hình cây cói GHO-5117 - Đồ trang trí",
+          "score": 136.183866,
+          "category": "Đồ trang trí",
+          "price": 2100000.0,
+          "url": "https://gotrangtri.vn/shop/vach-trang-tri-cau-thang-go-cnc-hinh-cay-coi-gho-5117",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Đèn led chiếu sáng dùng để trồng cây GHO-241 - Đèn",
+          "score": 203.964212,
+          "category": "Đèn",
+          "price": 700000.0,
+          "url": "https://gotrangtri.vn/shop/den-led-chieu-sang-dung-de-trong-cay-gho-241",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Thảm trải sàn hiện đại hình lá cây GHO-301-4 - Thảm",
+          "score": 96.212227,
+          "category": "Thảm",
+          "price": 1000000.0,
+          "url": "https://gotrangtri.vn/shop/tham-trai-san-hien-dai-hinh-la-cay-gho-301-4",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Tranh trang trí đẹp hình chậu cây xương rồng GHS-6357 - Tranh",
+          "score": 115.804572,
+          "category": "Tranh",
+          "price": 700000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-canvas-dep-hinh-chau-cay-xuong-rong-ghs-6357",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Đèn trang trí để bàn bằng gỗ GHO-288 - Đèn",
+          "score": 175.675143,
+          "category": "Đèn",
+          "price": 700000.0,
+          "url": "https://gotrangtri.vn/shop/den-trang-tri-de-ban-bang-go-gho-288",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "comparison_007",
+      "query": "Tủ quần áo gỗ công nghiệp và tủ gỗ tự nhiên khác nhau thế nào?",
+      "type": "comparison",
+      "expected_categories": [
+        "Tủ"
+      ],
+      "represented_categories": [
+        "Tủ"
+      ],
+      "required_terms_any": [
+        "tủ",
+        "tu",
+        "gỗ công nghiệp",
+        "go cong nghiep",
+        "gỗ tự nhiên",
+        "go tu nhien"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 442.31,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Cabinet material comparison.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Tủ quần áo gỗ công nghiệp hiện đại GHS-5383 - Tủ",
+          "score": 277.916045,
+          "category": "Tủ",
+          "price": 15800000.0,
+          "url": "https://gotrangtri.vn/shop/tu-quan-ao-go-cong-nghiep-hien-dai-ghs-5383",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Tủ đựng quần áo gia đình gỗ công nghiệp đẹp hiện đại GHS-5695 - Tủ",
+          "score": 275.51089,
+          "category": "Tủ",
+          "price": 9100000.0,
+          "url": "https://gotrangtri.vn/shop/tu-dung-quan-ao-gia-dinh-go-cong-nghiep-dep-hien-dai-ghs-5695",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Tủ đựng quần áo gia đình gỗ công nghiệp hiện đại GHS-5691 - Tủ",
+          "score": 274.170619,
+          "category": "Tủ",
+          "price": 6200000.0,
+          "url": "https://gotrangtri.vn/shop/tu-dung-quan-ao-gia-dinh-go-cong-nghiep-hien-dai-ghs-5691",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Tủ đựng quần áo gỗ công nghiệp đẹp hiện đại GHS-5692 - Tủ",
+          "score": 269.86301,
+          "category": "Tủ",
+          "price": 8200000.0,
+          "url": "https://gotrangtri.vn/shop/tu-dung-quan-ao-go-cong-nghiep-dep-hien-dai-ghs-5692",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Tủ quần áo gia đình bằng gỗ công nghiệp đẹp hiện đại GHS-5764 - Tủ",
+          "score": 267.914598,
+          "category": "Tủ",
+          "price": 5600000.0,
+          "url": "https://gotrangtri.vn/shop/tu-quan-ao-gia-dinh-bang-go-cong-nghiep-dep-hien-dai-ghs-5764",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "comparison_008",
+      "query": "Bàn ăn tròn và bàn ăn chữ nhật nên chọn loại nào?",
+      "type": "comparison",
+      "expected_categories": [
+        "Bàn ăn"
+      ],
+      "represented_categories": [
+        "Bàn ăn"
+      ],
+      "required_terms_any": [
+        "bàn ăn",
+        "ban an",
+        "tròn",
+        "tron",
+        "chữ nhật",
+        "chu nhat"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 247.709,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Dining table shape comparison.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn ăn gỗ chân trụ tròn nghệ thuật sang trọng và hiện đại GHS-42040 - Bàn ăn",
+          "score": 302.263115,
+          "category": "Bàn ăn",
+          "price": 8300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-an-go-chan-tru-tron-nghe-thuat-sang-trong-va-hien-dai-ghs-42040",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn ăn tròn phong cách hiện đại cho gia đình GHS-4573 - Bàn ăn",
+          "score": 295.639809,
+          "category": "Bàn ăn",
+          "price": 13300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-an-tron-phong-cach-hien-dai-cho-gia-dinh-ghs-4573",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Khăn trải bàn ăn gia đình hình tròn GHS-6426 - Bàn ăn",
+          "score": 277.288722,
+          "category": "Bàn ăn",
+          "price": 200000.0,
+          "url": "https://gotrangtri.vn/shop/khan-trai-ban-an-gia-dinh-hinh-tron-ghs-6426",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn ăn gia đình hình tròn nhỏ gọn GHS-4778 - Bàn ăn",
+          "score": 275.61364,
+          "category": "Bàn ăn",
+          "price": 13200000.0,
+          "url": "https://gotrangtri.vn/shop/ban-an-gia-dinh-hinh-tron-nho-gon-ghs-4778",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bộ bàn ăn tròn phong cách hiện đại GHS-41149 - Bàn ăn",
+          "score": 272.46515,
+          "category": "Bàn ăn",
+          "price": 12700000.0,
+          "url": "https://gotrangtri.vn/shop/bo-ban-an-tron-phong-cach-hien-dai-ghs-41149",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "typo_and_variation_001",
+      "query": "co rem cua duoi 1 trieu khong",
+      "type": "typo_and_variation",
+      "expected_categories": [
+        "Rèm"
+      ],
+      "represented_categories": [
+        "Rèm"
+      ],
+      "required_terms_any": [
+        "rem",
+        "cua"
+      ],
+      "required_terms_hit": true,
+      "price": {
+        "max": 1000000
+      },
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": 1.0,
+      "duplicate_rate": 0.0,
+      "latency_ms": 172.355,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Unaccented price query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Rèm cửa hoa văn cao cấp GHO-614 - Rèm",
+          "score": 90.977531,
+          "category": "Rèm",
+          "price": 900000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cua-hoa-van-cao-cap-gho-614",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Rèm cửa giá rẻ chất lượng cao GHO-609 - Rèm",
+          "score": 90.561952,
+          "category": "Rèm",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cua-gia-re-chat-luong-cao-gho-609",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Rèm cửa sổ khách sạn cao cấp GHO-615 - Rèm",
+          "score": 90.369663,
+          "category": "Rèm",
+          "price": 900000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cua-so-khach-san-cao-cap-gho-615",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Rèm cửa văn phòng cao cấp GHO-606 - Rèm",
+          "score": 86.514501,
+          "category": "Rèm",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cua-van-phong-cao-cap-gho-606",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Rèm vải, rèm vải gia đình đẹp GHO-601 - Rèm",
+          "score": 84.057224,
+          "category": "Rèm",
+          "price": 1000000.0,
+          "url": "https://gotrangtri.vn/shop/rem-vai-gho-601",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "typo_and_variation_002",
+      "query": "den trang tri phong khach gia re",
+      "type": "typo_and_variation",
+      "expected_categories": [
+        "Đèn"
+      ],
+      "represented_categories": [
+        "Đèn"
+      ],
+      "required_terms_any": [
+        "den",
+        "trang tri",
+        "phong khach"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 316.546,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Unaccented vague cheap lamp query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Sofa giá rẻ Hà Nội phòng khách GHS-8241 - Sofa",
+          "score": 81.035724,
+          "category": "Sofa",
+          "price": 23900000.0,
+          "url": "https://gotrangtri.vn/shop/sofa-gia-re-8241",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn trà sofa phòng khách tiện dụng giá rẻ GHS-4558 - Bàn trà",
+          "score": 85.098809,
+          "category": "Bàn trà",
+          "price": 4900000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-sofa-phong-khach-tien-dung-gia-re-ghs-4558",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Mẫu kệ treo tivi giá rẻ GHS-3610 - Kệ",
+          "score": 64.668561,
+          "category": "Kệ",
+          "price": 4300000.0,
+          "url": "https://gotrangtri.vn/shop/mau-ke-treo-tivi-gia-re-ghs-3610",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Vách ốp tường trang trí phòng khách giả gỗ 900,000đ/m2 GHS-6909 - Đồ trang trí",
+          "score": 69.308489,
+          "category": "Đồ trang trí",
+          "price": 1000000.0,
+          "url": "https://gotrangtri.vn/shop/vach-op-tuong-trang-tri-phong-khach-gia-go-900000d-m2-ghs-6909",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Đèn treo tường hình bông hoa độc đáo trang trí phòng khách GHO-237 - Đèn",
+          "score": 74.186529,
+          "category": "Đèn",
+          "price": 400000.0,
+          "url": "https://gotrangtri.vn/shop/den-treo-tuong-hinh-bong-hoa-doc-dao-trang-tri-phong-khach-gho-237",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "typo_and_variation_003",
+      "query": "ke tivi go cong nghiep",
+      "type": "typo_and_variation",
+      "expected_categories": [
+        "Kệ"
+      ],
+      "represented_categories": [
+        "Kệ"
+      ],
+      "required_terms_any": [
+        "ke tivi",
+        "go cong nghiep"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 388.693,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Unaccented material query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Kệ tivi thiết kế tối giản bằng gỗ công nghiệp GHS-3537 - Kệ",
+          "score": 108.602218,
+          "category": "Kệ",
+          "price": 5600000.0,
+          "url": "https://gotrangtri.vn/shop/ke-tivi-thiet-ke-toi-gian-bang-go-cong-nghiep-ghs-3537",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Kệ tivi gỗ công nghiệp, kệ tivi modul GHS-3208 - Kệ",
+          "score": 107.016542,
+          "category": "Kệ",
+          "price": 7000000.0,
+          "url": "https://gotrangtri.vn/shop/ke-tivi-go-cong-nghiep-ke-tivi-modul-ghs-3208",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Kệ tivi gỗ công nghiệp MDF hiện đại GHS-3530 - Kệ",
+          "score": 104.7656,
+          "category": "Kệ",
+          "price": 5500000.0,
+          "url": "https://gotrangtri.vn/shop/ke-tivi-go-cong-nghiep-mdf-hien-dai-ghs-3530",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Kệ tivi đơn giản bằng gỗ công nghiệp GHS-3569 - Kệ",
+          "score": 104.583278,
+          "category": "Kệ",
+          "price": 3700000.0,
+          "url": "https://gotrangtri.vn/shop/ke-tivi-don-gian-bang-go-cong-nghiep-ghs-3569",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Kệ tivi gỗ công nghiệp kiểu dáng hiện đại GHS-3560 - Kệ",
+          "score": 103.688929,
+          "category": "Kệ",
+          "price": 4600000.0,
+          "url": "https://gotrangtri.vn/shop/ke-tivi-go-cong-nghiep-kieu-dang-hien-dai-ghs-3560",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "typo_and_variation_004",
+      "query": "sofa da phong khach",
+      "type": "typo_and_variation",
+      "expected_categories": [
+        "Sofa"
+      ],
+      "represented_categories": [
+        "Sofa"
+      ],
+      "required_terms_any": [
+        "sofa",
+        "da",
+        "phong khach"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 215.882,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Unaccented material and room query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Ghế sofa da nhập khẩu đẳng cấp cho phòng khách GHS-8277 - Sofa",
+          "score": 114.993467,
+          "category": "Sofa",
+          "price": 10900000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-sofa-da-nhap-khau-dang-cap-cho-phong-khach-ghs-8277",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Mẫu bàn trà sofa đẹp cho phòng khách GHS-41817 - Bàn trà",
+          "score": 82.948667,
+          "category": "Bàn trà",
+          "price": 5200000.0,
+          "url": "https://gotrangtri.vn/shop/mau-ban-tra-sofa-dep-cho-phong-khach-ghs-41817",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Kệ tivi phòng khách hiện đại thiết kế đa năng GHS-3509 - Kệ",
+          "score": 68.78571,
+          "category": "Kệ",
+          "price": 8700000.0,
+          "url": "https://gotrangtri.vn/shop/ke-tivi-phong-khach-hien-dai-thiet-ke-da-nang-ghs-3509",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Thảm phòng khách đa năng GHX-316 - Thảm",
+          "score": 78.297566,
+          "category": "Thảm",
+          "price": 7600000.0,
+          "url": "https://gotrangtri.vn/shop/tham-phong-khach-da-nang-ghx-316",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bộ sofa Da phòng khách hiện đại GHS-8103 - Sofa",
+          "score": 113.403819,
+          "category": "Sofa",
+          "price": 19300000.0,
+          "url": "https://gotrangtri.vn/shop/bo-sofa-da-phong-khach-hien-dai-ghs-8103",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "typo_and_variation_005",
+      "query": "ban tra toi gian",
+      "type": "typo_and_variation",
+      "expected_categories": [
+        "Bàn trà"
+      ],
+      "represented_categories": [
+        "Bàn trà"
+      ],
+      "required_terms_any": [
+        "ban tra",
+        "toi gian"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 209.343,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Unaccented style query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn trà hiện đại phong cách tối giản GHS-41643 - Bàn trà",
+          "score": 107.11354,
+          "category": "Bàn trà",
+          "price": 5300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-hien-dai-phong-cach-toi-gian-ghs-41643",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn gỗ chân sắt 1m2 thiết kế tối giản GHS-41753 - Kệ",
+          "score": 60.19765,
+          "category": "Kệ",
+          "price": 3900000.0,
+          "url": "https://gotrangtri.vn/shop/ban-go-chan-sat-1m2-thiet-ke-toi-gian-ghs-41753",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn trà tối giản bằng gỗ công nghiệp GHS-41638 - Bàn trà",
+          "score": 106.551713,
+          "category": "Bàn trà",
+          "price": 4100000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-toi-gian-bang-go-cong-nghiep-ghs-41638",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn trà tròn phong cách tối giản GHS-41815 - Bàn trà",
+          "score": 106.551713,
+          "category": "Bàn trà",
+          "price": 3700000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-tron-phong-cach-toi-gian-ghs-41815",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn trà gỗ công nghiệp tối giản GHS-41827 - Bàn trà",
+          "score": 106.551713,
+          "category": "Bàn trà",
+          "price": 2300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-go-cong-nghiep-toi-gian-ghs-41827",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "typo_and_variation_006",
+      "query": "tham trai san phong khach duoi 2tr",
+      "type": "typo_and_variation",
+      "expected_categories": [
+        "Thảm"
+      ],
+      "represented_categories": [
+        "Thảm"
+      ],
+      "required_terms_any": [
+        "tham",
+        "phong khach"
+      ],
+      "required_terms_hit": true,
+      "price": {
+        "max": 2000000
+      },
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": 1.0,
+      "duplicate_rate": 0.0,
+      "latency_ms": 188.201,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Unaccented compact price unit.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Khăn trải bàn trà phòng khách GHS-6241 - Bàn trà",
+          "score": 75.170045,
+          "category": "Bàn trà",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/khan-trai-ban-tra-phong-khach-ghs-6241",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Thảm trải sàn màu xám họa tiết kẻ GHO-32038 - Kệ",
+          "score": 60.792376,
+          "category": "Kệ",
+          "price": 1800000.0,
+          "url": "https://gotrangtri.vn/shop/tham-trai-san-mau-xam-hoa-tiet-ke-gho-32038",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Thảm trải sàn vằn đen – trắng GHO-P09 - Đèn",
+          "score": 60.844681,
+          "category": "Đèn",
+          "price": 1400000.0,
+          "url": "https://gotrangtri.vn/shop/tham-trai-san-van-den-trang-gho-p09",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Thảm trải sàn nhà giá rẻ hiện đại GHO-P10 - Thảm",
+          "score": 68.048959,
+          "category": "Thảm",
+          "price": 1500000.0,
+          "url": "https://gotrangtri.vn/shop/tham-trai-san-nha-gia-re-hien-dai-gho-p10",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Tranh decor phòng giấy xoắn hình trái tim GHX-6112 - Tranh",
+          "score": 64.433001,
+          "category": "Tranh",
+          "price": 1000000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-decor-phong-giay-xoan-hinh-trai-tim-ghx-6112",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "typo_and_variation_007",
+      "query": "tu quan ao go mdf",
+      "type": "typo_and_variation",
+      "expected_categories": [
+        "Tủ"
+      ],
+      "represented_categories": [
+        "Tủ"
+      ],
+      "required_terms_any": [
+        "tu",
+        "mdf"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 311.174,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Unaccented cabinet MDF query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Tủ để quần áo bằng gỗ công nghiệp MDF GHS-51821 - Tủ",
+          "score": 100.097374,
+          "category": "Tủ",
+          "price": 8700000.0,
+          "url": "https://gotrangtri.vn/shop/tu-de-quan-ao-bang-go-cong-nghiep-mdf-ghs-51821",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Tủ quần áo bằng gỗ MDF phun sơn đẹp GHS-51330 - Tủ",
+          "score": 97.701889,
+          "category": "Tủ",
+          "price": 21500000.0,
+          "url": "https://gotrangtri.vn/shop/tu-quan-ao-bang-go-mdf-phun-son-dep-ghs-51330",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Tủ để quần áo cánh trượt gỗ MDF cốt lõi xanh GHS-51342 - Tủ",
+          "score": 97.34661,
+          "category": "Tủ",
+          "price": 10000000.0,
+          "url": "https://gotrangtri.vn/shop/tu-de-quan-ao-canh-truot-go-mdf-cot-loi-xanh-ghs-51342",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Tủ đựng quần áo gỗ MDF chống ẩm GHS-51086 - Tủ",
+          "score": 97.034401,
+          "category": "Tủ",
+          "price": 5500000.0,
+          "url": "https://gotrangtri.vn/shop/tu-dung-quan-ao-go-mdf-chong-am-ghs-51086",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Hệ tủ quần áo gỗ MDF cốt lõi xanh GHS-51088 - Tủ",
+          "score": 96.642602,
+          "category": "Tủ",
+          "price": 28000000.0,
+          "url": "https://gotrangtri.vn/shop/he-tu-quan-ao-go-mdf-cot-loi-xanh-ghs-51088",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "typo_and_variation_008",
+      "query": "giuong ngu tre em hien dai",
+      "type": "typo_and_variation",
+      "expected_categories": [
+        "Giường"
+      ],
+      "represented_categories": [
+        "Giường"
+      ],
+      "required_terms_any": [
+        "giuong",
+        "tre em",
+        "hien dai"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 214.474,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Unaccented child bed query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Giường ngủ dành cho trẻ em thiết kế hiện đại GHS-9332 - Giường",
+          "score": 218.661751,
+          "category": "Giường",
+          "price": 12100000.0,
+          "url": "https://gotrangtri.vn/shop/giuong-ngu-danh-cho-tre-em-thiet-ke-hien-dai-ghs-9332",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Giường tầng cho trẻ em đẹp hiện đại GHS-9345 - Giường",
+          "score": 189.444761,
+          "category": "Giường",
+          "price": 15200000.0,
+          "url": "https://gotrangtri.vn/shop/giuong-tang-cho-tre-em-dep-hien-dai-ghs-9345",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Mẫu giường tầng cho trẻ em hiện đại GHS-9339 - Giường",
+          "score": 187.63442,
+          "category": "Giường",
+          "price": 14700000.0,
+          "url": "https://gotrangtri.vn/shop/mau-giuong-tang-cho-tre-em-hien-dai-ghs-9339",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Giường Trẻ Em Có Thanh Chắn GHS-9442 Đẹp Hiện Đại - Giường",
+          "score": 177.285727,
+          "category": "Giường",
+          "price": 4900000.0,
+          "url": "https://gotrangtri.vn/shop/giuong-tre-em-co-thanh-chan-ghs-9442-dep-hien-dai",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Mẫu giường trẻ em đẹp hiện đại GHS-9312 - Giường",
+          "score": 172.726376,
+          "category": "Giường",
+          "price": 11300000.0,
+          "url": "https://gotrangtri.vn/shop/mau-giuong-tre-em-dep-hien-dai-ghs-9312",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "typo_and_variation_009",
+      "query": "guong trang diem nho gon",
+      "type": "typo_and_variation",
+      "expected_categories": [
+        "Gương"
+      ],
+      "represented_categories": [
+        "Gương"
+      ],
+      "required_terms_any": [
+        "guong",
+        "trang diem",
+        "nho gon"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 385.338,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Unaccented compact vanity mirror query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn trang điểm gương gấp, bàn trang điểm nhỏ gọn GHC-4610 - Gương",
+          "score": 137.124349,
+          "category": "Gương",
+          "price": 2200000.0,
+          "url": "https://gotrangtri.vn/shop/ban-trang-diem-guong-gap-ban-trang-diem-thong-minh-ghc-4610",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Gương hình thú 3 in 1 nhỏ gọn GHX-626 - Gương",
+          "score": 109.696855,
+          "category": "Gương",
+          "price": 100000.0,
+          "url": "https://gotrangtri.vn/shop/guong-hinh-thu-3-in-1-nho-gon-ghx-626",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn trang điểm kèm gương xinh xắn GHS-41903 - Gương",
+          "score": 96.339852,
+          "category": "Gương",
+          "price": 3700000.0,
+          "url": "https://gotrangtri.vn/shop/ban-trang-diem-kem-guong-xinh-xan-ghs-41903",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn trang điểm giấu gương độc đáo hiện đại GHS-41583 - Gương",
+          "score": 96.339852,
+          "category": "Gương",
+          "price": 3500000.0,
+          "url": "https://gotrangtri.vn/shop/ban-trang-diem-giau-guong-doc-dao-hien-dai-ghs-41583",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn trang điểm gương lật độc đáo GHS-41596 - Gương",
+          "score": 96.339852,
+          "category": "Gương",
+          "price": 4400000.0,
+          "url": "https://gotrangtri.vn/shop/ban-trang-diem-guong-lat-doc-dao-ghs-41596",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "typo_and_variation_010",
+      "query": "tranh treo tuong gia re",
+      "type": "typo_and_variation",
+      "expected_categories": [
+        "Tranh"
+      ],
+      "represented_categories": [
+        "Tranh"
+      ],
+      "required_terms_any": [
+        "tranh",
+        "treo tuong"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 317.201,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Unaccented wall art query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Tranh treo tường hoa tulip, tranh giấy xoắn GHX-6107 - Tranh",
+          "score": 122.243887,
+          "category": "Tranh",
+          "price": 2500000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-treo-tuong-hoa-tulip-tranh-giay-xoan-ghx-6107",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Tranh bộ treo tường trang trí gia đình ấn tượng GHS-6408 - Tranh",
+          "score": 119.024441,
+          "category": "Tranh",
+          "price": 1200000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-bo-treo-tuong-trang-tri-gia-dinh-an-tuong-ghs-6408",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Tranh treo tường hoa lan thêu tay GHX-6105 - Tranh",
+          "score": 114.393586,
+          "category": "Tranh",
+          "price": 1500000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-treo-tuong-hoa-lan-theu-tay-ghx-6105",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Tranh treo tường mèo con giấy xoắn GHX-6118 - Tranh",
+          "score": 114.393586,
+          "category": "Tranh",
+          "price": 1000000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-treo-tuong-meo-con-giay-xoan-ghx-6118",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Tranh treo tường tết thêu tay sắc xuân GHX-6121 - Tranh",
+          "score": 114.393586,
+          "category": "Tranh",
+          "price": 2300000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-treo-tuong-tet-theu-tay-sac-xuan-ghx-6121",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "negation_or_exclusion_001",
+      "query": "Tôi không muốn rèm, có đèn trang trí không?",
+      "type": "negation_or_exclusion",
+      "expected_categories": [
+        "Đèn"
+      ],
+      "represented_categories": [
+        "Đèn"
+      ],
+      "required_terms_any": [
+        "đèn",
+        "den",
+        "trang trí",
+        "trang tri"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 592.555,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Desired category is lamp; negated curtain is intentionally not an expected category.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Rèm cuốn tranh cao cấp GHO-607 - Rèm",
+          "score": 162.027331,
+          "category": "Rèm",
+          "price": 700000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cuon-tranh-cao-cap-gho-607",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Đèn lồng trang trí sáng tạo GHO-287 - Đèn",
+          "score": 117.635094,
+          "category": "Đèn",
+          "price": 1800000.0,
+          "url": "https://gotrangtri.vn/shop/den-long-trang-tri-sang-tao-gho-287",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Đèn trần trang trí Retro dùng cho nhà hàng GHO-229 - Đèn",
+          "score": 116.710615,
+          "category": "Đèn",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/den-tran-kieu-retro-trang-tri-nha-hang-gho-229",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Nồi chiên không dầu Archer &#8211; Giảm đến 80% mỡ thừa GHX-435 - Đèn",
+          "score": 112.734498,
+          "category": "Đèn",
+          "price": 4500000.0,
+          "url": "https://gotrangtri.vn/shop/noi-chien-khong-dau-archer-giam-den-80-mo-thua-ghx-435",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Đèn trang trí quán cafe phong cách Retro GHO-213 - Đèn",
+          "score": 109.940081,
+          "category": "Đèn",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/den-trang-tri-quan-cafe-retro-gho-213",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "negation_or_exclusion_002",
+      "query": "Không lấy sofa, tôi muốn ghế thư giãn",
+      "type": "negation_or_exclusion",
+      "expected_categories": [
+        "Ghế"
+      ],
+      "represented_categories": [
+        "Ghế"
+      ],
+      "required_terms_any": [
+        "ghế",
+        "ghe",
+        "thư giãn",
+        "thu gian"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 448.359,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Desired category is chair; sofa is excluded.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bộ ghế sofa gia đình phòng khách GHS-8268 - Sofa",
+          "score": 160.459933,
+          "category": "Sofa",
+          "price": 25500000.0,
+          "url": "https://gotrangtri.vn/shop/bo-ghe-sofa-gia-dinh-phong-khach-ghs-8268",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Ghế thư giãn phong cách hiện đại GHC-716 - Ghế",
+          "score": 235.119537,
+          "category": "Ghế",
+          "price": 1600000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-thu-gian-phong-cach-hien-dai-ghc-716",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Ghế lưng cong, Ghế thư giãn GHS-718 - Ghế",
+          "score": 231.431342,
+          "category": "Ghế",
+          "price": 1300000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-lung-cong-ghe-thu-gian-ghs-718",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Ghế lưng cong, ghế thư giãn GHS-717 - Ghế",
+          "score": 227.359916,
+          "category": "Ghế",
+          "price": 2000000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-lung-cong-ghe-thu-gian-ghs-717",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Ghế Shelation trơn phong cách tối giản GHX-792 - Ghế",
+          "score": 147.95452,
+          "category": "Ghế",
+          "price": 1900000.0,
+          "url": "https://gotrangtri.vn/shop/ghe-shelation-tron-phong-cach-toi-gian-ghx-792",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "negation_or_exclusion_003",
+      "query": "Có kệ tivi nhưng không quá 2 triệu không?",
+      "type": "negation_or_exclusion",
+      "expected_categories": [
+        "Kệ"
+      ],
+      "represented_categories": [
+        "Kệ"
+      ],
+      "required_terms_any": [
+        "kệ tivi",
+        "ke tivi"
+      ],
+      "required_terms_hit": false,
+      "price": {
+        "max": 2000000
+      },
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": 1.0,
+      "duplicate_rate": 0.0,
+      "latency_ms": 247.936,
+      "result_count": 2,
+      "weak_success": true,
+      "notes": "Vietnamese phrase 'không quá' is a max-price constraint.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Kệ ô vuông 2 3 4 tầng thiết kế giấu vít GHY-612 - Kệ",
+          "score": 83.734182,
+          "category": "Kệ",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/ke-o-vuong-2-3-4-tang-ghy-612",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Nồi Chiên Không Dầu Giá rẻ chất lượng tốt GHX-436",
+          "score": 84.988675,
+          "category": "",
+          "price": 1500000.0,
+          "url": "https://gotrangtri.vn/shop/noi-chien-khong-dau-gia-re-chat-luong-tot-ghx-436",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "negation_or_exclusion_004",
+      "query": "Tôi muốn bàn trà, không cần bàn ăn",
+      "type": "negation_or_exclusion",
+      "expected_categories": [
+        "Bàn trà"
+      ],
+      "represented_categories": [
+        "Bàn trà"
+      ],
+      "required_terms_any": [
+        "bàn trà",
+        "ban tra"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 348.756,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Desired category is coffee table; dining table is excluded.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn trà tối giản bằng gỗ công nghiệp GHS-41638 - Bàn trà",
+          "score": 174.674438,
+          "category": "Bàn trà",
+          "price": 4100000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-toi-gian-bang-go-cong-nghiep-ghs-41638",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn ăn cho căn hộ chung cư hiện đại, tiện nghi GHS-41874a - Bàn ăn",
+          "score": 161.090935,
+          "category": "Bàn ăn",
+          "price": 9300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-an-cho-can-ho-chung-cu-hien-dai-tien-nghi-ghs-41874",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn trà hiện đại phong cách tối giản GHS-41643 - Bàn trà",
+          "score": 174.674438,
+          "category": "Bàn trà",
+          "price": 5300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-hien-dai-phong-cach-toi-gian-ghs-41643",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn trà tròn phong cách tối giản GHS-41815 - Bàn trà",
+          "score": 174.674438,
+          "category": "Bàn trà",
+          "price": 3700000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-tron-phong-cach-toi-gian-ghs-41815",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn trà gỗ công nghiệp tối giản GHS-41827 - Bàn trà",
+          "score": 174.674438,
+          "category": "Bàn trà",
+          "price": 2300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-go-cong-nghiep-toi-gian-ghs-41827",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "negation_or_exclusion_005",
+      "query": "Không cần tủ lớn, có kệ nhỏ gọn không?",
+      "type": "negation_or_exclusion",
+      "expected_categories": [
+        "Kệ"
+      ],
+      "represented_categories": [
+        "Kệ"
+      ],
+      "required_terms_any": [
+        "kệ",
+        "ke",
+        "nhỏ gọn",
+        "nho gon"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 436.746,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Desired category is shelf.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Tủ để giày dép nhỏ gọn tiết kiệm không gian GHS-51793 - Tủ",
+          "score": 165.637138,
+          "category": "Tủ",
+          "price": 2400000.0,
+          "url": "https://gotrangtri.vn/shop/tu-de-giay-dep-nho-gon-tiet-kiem-khong-gian-ghs-51793",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Tủ trang trí tiện dụng thiết kế nhỏ gọn GHS-5651 - Kệ",
+          "score": 168.033309,
+          "category": "Kệ",
+          "price": 4500000.0,
+          "url": "https://gotrangtri.vn/shop/tu-trang-tri-tien-dung-thiet-ke-nho-gon-ghs-5651",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Tủ rượu gỗ đứng nhỏ gọn GHS-5267 – Tiện nghi trong từng không gian - Tủ",
+          "score": 165.637138,
+          "category": "Tủ",
+          "price": 5900000.0,
+          "url": "https://gotrangtri.vn/shop/tu-ruou-go-dung-nho-gon-ghs-5267-tien-nghi-trong-tung-khong-gian",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Tủ nhiều ngăn cho bé thiết kế nhỏ gọn GHS-52261 - Kệ",
+          "score": 163.713649,
+          "category": "Kệ",
+          "price": 3700000.0,
+          "url": "https://gotrangtri.vn/shop/tu-nhieu-ngan-cho-be-thiet-ke-nho-gon-ghs-52261",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Tủ rượu gỗ có kính cao cấp, thiết kế nhỏ gọn sang trọng GHS-52612 - Kệ",
+          "score": 162.147482,
+          "category": "Kệ",
+          "price": 3300000.0,
+          "url": "https://gotrangtri.vn/shop/tu-ruou-go-co-kinh-cao-cap-thiet-ke-nho-gon-sang-trong-ghs-52612",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "negation_or_exclusion_006",
+      "query": "Tôi không thích thảm, muốn tranh treo tường",
+      "type": "negation_or_exclusion",
+      "expected_categories": [
+        "Tranh"
+      ],
+      "represented_categories": [
+        "Tranh"
+      ],
+      "required_terms_any": [
+        "tranh",
+        "treo tường",
+        "treo tuong"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 386.669,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Desired category is wall art.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Tranh spa treo tường thẩm mỹ đẹp nhất GHX-6013 - Thảm",
+          "score": 169.627537,
+          "category": "Thảm",
+          "price": 1400000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-spa-treo-tuong-tham-my-dep-nhat-ghx-6013",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Tranh treo tường decor được yêu thích nhất GHX-6090 - Tranh",
+          "score": 194.020004,
+          "category": "Tranh",
+          "price": 1700000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-treo-tuong-decor-duoc-yeu-thich-nhat-ghx-6090",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Tranh trang trí treo tường ấn tượng cho không gian gia đình GHS-6531 - Tranh",
+          "score": 164.849653,
+          "category": "Tranh",
+          "price": 1000000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-trang-tri-treo-tuong-an-tuong-cho-khong-gian-gia-dinh-ghs-6531",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Tranh treo tường trang trí không gian sống GHS-6364 - Tranh",
+          "score": 153.250291,
+          "category": "Tranh",
+          "price": 900000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-canvas-treo-tuong-trang-tri-khong-gian-song-ghs-6364",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Tranh treo tường đẹp trang trí phòng ngủ GHS-6369 - Tranh",
+          "score": 151.831126,
+          "category": "Tranh",
+          "price": 800000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-canvas-treo-tuong-trang-tri-phong-ngu-ghs-6369",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "negation_or_exclusion_007",
+      "query": "Đừng lấy đèn, tôi cần rèm cho cửa sổ",
+      "type": "negation_or_exclusion",
+      "expected_categories": [
+        "Rèm"
+      ],
+      "represented_categories": [
+        "Rèm"
+      ],
+      "required_terms_any": [
+        "rèm",
+        "rem",
+        "cửa sổ",
+        "cua so"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 414.289,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Desired category is curtain.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Đèn trang trí đẹp sáng tạo cho mọi căn phòng GHO-261 - Đèn",
+          "score": 108.81609,
+          "category": "Đèn",
+          "price": 1000000.0,
+          "url": "https://gotrangtri.vn/shop/den-trang-tri-dep-sang-tao-cho-moi-can-phong-gho-261",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Rèm cửa sổ khách sạn cao cấp GHO-615 - Rèm",
+          "score": 259.28219,
+          "category": "Rèm",
+          "price": 900000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cua-so-khach-san-cao-cap-gho-615",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Rèm cửa hoa văn cao cấp GHO-614 - Rèm",
+          "score": 179.614114,
+          "category": "Rèm",
+          "price": 900000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cua-hoa-van-cao-cap-gho-614",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Rèm cửa văn phòng cao cấp GHO-606 - Rèm",
+          "score": 165.622523,
+          "category": "Rèm",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cua-van-phong-cao-cap-gho-606",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Rèm cửa giá rẻ chất lượng cao GHO-609 - Rèm",
+          "score": 161.089962,
+          "category": "Rèm",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/rem-cua-gia-re-chat-luong-cao-gho-609",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "negation_or_exclusion_008",
+      "query": "Không mua bàn trà, chỉ xem kệ tivi gỗ",
+      "type": "negation_or_exclusion",
+      "expected_categories": [
+        "Kệ"
+      ],
+      "represented_categories": [
+        "Kệ"
+      ],
+      "required_terms_any": [
+        "kệ tivi",
+        "ke tivi",
+        "gỗ",
+        "go"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": true,
+      "category_coverage_count": 1,
+      "category_coverage": 1.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 301.824,
+      "result_count": 5,
+      "weak_success": true,
+      "notes": "Desired category is TV shelf.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn trà bằng gỗ thiết kế đẹp GHS-41065 - Bàn trà",
+          "score": 154.392414,
+          "category": "Bàn trà",
+          "price": 6200000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-bang-go-thiet-ke-dep-ghs-41065",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Kệ trang trí tivi bằng gỗ GHS-3579 - Kệ",
+          "score": 107.718565,
+          "category": "Kệ",
+          "price": 2500000.0,
+          "url": "https://gotrangtri.vn/shop/ke-trang-tri-tivi-bang-go-ghs-3579",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn trà gỗ tự nhiên thiết kế đẹp GHS-41067 - Bàn trà",
+          "score": 144.358111,
+          "category": "Bàn trà",
+          "price": 5400000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-go-tu-nhien-thiet-ke-dep-ghs-41067",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn trà gỗ sồi tự nhiên thiết kế đẹp hiện đại GHS-4762 - Bàn trà",
+          "score": 143.772424,
+          "category": "Bàn trà",
+          "price": 7200000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-go-soi-tu-nhien-thiet-ke-dep-hien-dai-ghs-4762",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn trà gỗ tự nhiên thiết kế đẹp GHS-4638 - Bàn trà",
+          "score": 143.532003,
+          "category": "Bàn trà",
+          "price": 7100000.0,
+          "url": "https://gotrangtri.vn/shop/ban-tra-go-tu-nhien-thiet-ke-dep-ghs-4638",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "out_of_scope_or_policy_001",
+      "query": "Chính sách đổi trả thế nào?",
+      "type": "out_of_scope_or_policy",
+      "expected_categories": [],
+      "represented_categories": [],
+      "required_terms_any": [
+        "chính sách",
+        "chinh sach",
+        "đổi trả",
+        "doi tra"
+      ],
+      "required_terms_hit": false,
+      "price": {},
+      "category_hit_at_k": null,
+      "category_coverage_count": 0,
+      "category_coverage": 0.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 110.231,
+      "result_count": 5,
+      "weak_success": null,
+      "notes": "Policy query; report-only for product retrieval.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Kệ kẹp sách chuyển đổi linh hoạt GHS-2547 - Kệ",
+          "score": 107.235717,
+          "category": "Kệ",
+          "price": 2800000.0,
+          "url": "https://gotrangtri.vn/shop/ke-kep-sach-chuyen-doi-linh-hoat-ghs-2547",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Giá sách mini Gỗ công nghiệp GHS-605",
+          "score": 93.244102,
+          "category": "",
+          "price": 600000.0,
+          "url": "https://gotrangtri.vn/shop/gia-sach-mini-go-cong-nghiep-ghs-605",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn học đôi kèm giá sách gỗ MDF GHS-42026",
+          "score": 88.310386,
+          "category": "",
+          "price": 8700000.0,
+          "url": "https://gotrangtri.vn/shop/ban-hoc-doi-kem-gia-sach-go-mdf-ghs-42026",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn học đôi liền giá sách tiện nghi cho 2 người dùng GHS-42014",
+          "score": 85.880217,
+          "category": "",
+          "price": 7000000.0,
+          "url": "https://gotrangtri.vn/shop/ban-hoc-doi-lien-gia-sach-tien-nghi-cho-2-nguoi-dung-ghs-42014",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn học đôi cho 2 người tích hợp giá sách GHS-42007",
+          "score": 85.880217,
+          "category": "",
+          "price": 6400000.0,
+          "url": "https://gotrangtri.vn/shop/ban-hoc-doi-cho-2-nguoi-tich-hop-gia-sach-ghs-42007-tien-loi-hien-dai",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "out_of_scope_or_policy_002",
+      "query": "Cửa hàng ở đâu?",
+      "type": "out_of_scope_or_policy",
+      "expected_categories": [],
+      "represented_categories": [],
+      "required_terms_any": [
+        "cửa hàng",
+        "cua hang",
+        "showroom"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": null,
+      "category_coverage_count": 0,
+      "category_coverage": 0.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 202.206,
+      "result_count": 5,
+      "weak_success": null,
+      "notes": "Store location query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn học ở nhà đa chức năng GHS-41880",
+          "score": 82.440006,
+          "category": "",
+          "price": 13800000.0,
+          "url": "https://gotrangtri.vn/shop/ban-hoc-o-nha-da-chuc-nang-ghs-41880",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Tủ giày đặt ở lối vào phong cách Châu Âu GHS-52052 - Tủ",
+          "score": 77.840791,
+          "category": "Tủ",
+          "price": 3800000.0,
+          "url": "https://gotrangtri.vn/shop/tu-giay-dat-o-loi-vao-phong-cach-chau-au-ghs-52052",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn học sinh cho bé ở nhà liền giá sách GHS-4950",
+          "score": 77.237622,
+          "category": "",
+          "price": 7600000.0,
+          "url": "https://gotrangtri.vn/shop/ban-hoc-sinh-cho-be-o-nha-lien-gia-sach-ghs-4950",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Tranh treo tường ô tô trang trí nhà cửa GHX-6033 - Tranh",
+          "score": 75.725351,
+          "category": "Tranh",
+          "price": 1700000.0,
+          "url": "https://gotrangtri.vn/shop/tranh-treo-tuong-o-to-trang-tri-nha-cua-ghx-6033",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn làm việc ở nhà khung sắt GHS-4106",
+          "score": 64.207546,
+          "category": "",
+          "price": 4800000.0,
+          "url": "https://gotrangtri.vn/shop/ban-lam-viec-ban-van-phong-ghs-4106",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "out_of_scope_or_policy_003",
+      "query": "Có bảo hành không?",
+      "type": "out_of_scope_or_policy",
+      "expected_categories": [],
+      "represented_categories": [],
+      "required_terms_any": [
+        "bảo hành",
+        "bao hanh"
+      ],
+      "required_terms_hit": false,
+      "price": {},
+      "category_hit_at_k": null,
+      "category_coverage_count": 0,
+      "category_coverage": 0.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 116.156,
+      "result_count": 5,
+      "weak_success": null,
+      "notes": "Warranty policy query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn trang trí gian thờ, tiền sảnh, hành lang đẹp GHS-41927 - Đồ trang trí",
+          "score": 102.297831,
+          "category": "Đồ trang trí",
+          "price": 7900000.0,
+          "url": "https://gotrangtri.vn/shop/ban-trang-tri-gian-tho-tien-sanh-hanh-lang-dep-ghs-41927",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Vách ngăn hoa văn gỗ CNC trang trí hành lang GHO-5104 - Đồ trang trí",
+          "score": 98.428634,
+          "category": "Đồ trang trí",
+          "price": 2100000.0,
+          "url": "https://gotrangtri.vn/shop/vach-ngan-hoa-van-go-cnc-trang-tri-hanh-lang-gho-5104",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn trang trí hành lang đẹp độc đáo GHS-41941 - Đồ trang trí",
+          "score": 90.125139,
+          "category": "Đồ trang trí",
+          "price": 6600000.0,
+          "url": "https://gotrangtri.vn/shop/ban-trang-tri-hanh-lang-dep-doc-dao-ghs-41941",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Mẫu tủ trang trí hành lang đẹp, hiện đại GHS-52515 - Tủ",
+          "score": 89.088361,
+          "category": "Tủ",
+          "price": 7100000.0,
+          "url": "https://gotrangtri.vn/shop/tu-trang-tri-hanh-lang-ghs-52515",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Mẫu tủ hành lang đẹp, kiểu dáng hiện đại GHS-52511 - Tủ",
+          "score": 89.088361,
+          "category": "Tủ",
+          "price": 7800000.0,
+          "url": "https://gotrangtri.vn/shop/tu-hanh-lang-ghs-52511",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "out_of_scope_or_policy_004",
+      "query": "Tôi muốn mua điện thoại",
+      "type": "out_of_scope_or_policy",
+      "expected_categories": [],
+      "represented_categories": [],
+      "required_terms_any": [
+        "điện thoại",
+        "dien thoai"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": null,
+      "category_coverage_count": 0,
+      "category_coverage": 0.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 84.651,
+      "result_count": 5,
+      "weak_success": null,
+      "notes": "Non-furniture product.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Lọ bút kèm giá đỡ điện thoại để bàn GHX-6615",
+          "score": 154.954219,
+          "category": "",
+          "price": 100000.0,
+          "url": "https://gotrangtri.vn/shop/lo-but-kem-gia-do-dien-thoai-de-ban-ghx-6615",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn hội nghị tối giản chân sắt tĩnh điện GHS-41684",
+          "score": 85.034534,
+          "category": "",
+          "price": 8300000.0,
+          "url": "https://gotrangtri.vn/shop/ban-hoi-nghi-toi-gian-chan-sat-tinh-dien-ghs-41684",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Quạt Mini cầm tay tích điện gấu dâu GHX-8003",
+          "score": 63.68238,
+          "category": "",
+          "price": 100000.0,
+          "url": "https://gotrangtri.vn/shop/quat-mini-cam-tay-tich-dien-gau-dau-ghx-8003",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Nồi cơm điện đa dụng dung tích 1,8L chính hãng GHX-540",
+          "score": 63.68238,
+          "category": "",
+          "price": null,
+          "url": "https://gotrangtri.vn/shop/noi-com-dien-da-dung-tich-18l-ghx-540",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Quạt tích điện mini sạc usb điều chỉnh độ cao GHX-8004",
+          "score": 63.68238,
+          "category": "",
+          "price": null,
+          "url": "https://gotrangtri.vn/shop/quat-tich-dien-mini-sac-usb-dieu-chinh-do-cao-ghx-8004",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "out_of_scope_or_policy_005",
+      "query": "Có tuyển nhân viên không?",
+      "type": "out_of_scope_or_policy",
+      "expected_categories": [],
+      "represented_categories": [],
+      "required_terms_any": [
+        "tuyển",
+        "tuyen",
+        "nhân viên",
+        "nhan vien"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": null,
+      "category_coverage_count": 0,
+      "category_coverage": 0.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 244.413,
+      "result_count": 5,
+      "weak_success": null,
+      "notes": "Hiring query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Bàn nhân viên thiết kế - Kệ",
+          "score": 147.020404,
+          "category": "Kệ",
+          "price": 3500000.0,
+          "url": "https://gotrangtri.vn/shop/ban-nhan-vien-thiet-ke",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Mẫu tủ đựng đồ cá nhân cho nhân viên tiện lợi GHS-52431 - Tủ",
+          "score": 138.299913,
+          "category": "Tủ",
+          "price": 4600000.0,
+          "url": "https://gotrangtri.vn/shop/mau-tu-dung-do-ca-nhan-cho-nhan-vien-tien-loi-ghs-52431",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Bàn làm việc nhân viên bằng gỗ thiết kế đơn giản GHS-41437 - Kệ",
+          "score": 128.327596,
+          "category": "Kệ",
+          "price": 2800000.0,
+          "url": "https://gotrangtri.vn/shop/ban-lam-viec-nhan-vien-bang-go-thiet-ke-don-gian-ghs-41437",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn văn phòng cho nhân viên bằng gỗ công nghiệp GHS-41479",
+          "score": 125.112766,
+          "category": "",
+          "price": 3700000.0,
+          "url": "https://gotrangtri.vn/shop/ban-van-phong-cho-nhan-vien-bang-go-cong-nghiep-ghs-41479",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Bàn nhân viên gỗ, bàn văn phòng thiết kế tiện lợi GHS-41483 - Kệ",
+          "score": 125.112766,
+          "category": "Kệ",
+          "price": 4100000.0,
+          "url": "https://gotrangtri.vn/shop/ban-nhan-vien-go-ban-van-phong-thiet-ke-tien-loi-ghs-41483",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "out_of_scope_or_policy_006",
+      "query": "Phí vận chuyển tính thế nào?",
+      "type": "out_of_scope_or_policy",
+      "expected_categories": [],
+      "represented_categories": [],
+      "required_terms_any": [
+        "vận chuyển",
+        "van chuyen",
+        "phí",
+        "phi"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": null,
+      "category_coverage_count": 0,
+      "category_coverage": 0.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 228.806,
+      "result_count": 5,
+      "weak_success": null,
+      "notes": "Delivery policy query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Dịch vụ vận chuyển",
+          "score": 228.316903,
+          "category": "",
+          "price": 200000.0,
+          "url": "https://gotrangtri.vn/shop/dich-vu-van-chuyen",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn học cho bé bằng gỗ GHS-4923 &#8211; Miễn phí giao hàng tận nơi",
+          "score": 123.594934,
+          "category": "",
+          "price": 3700000.0,
+          "url": "https://gotrangtri.vn/shop/ban-hoc-cho-be-bang-go-cong-nghiep-ghs-4923",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Giá đỡ case máy tính có bánh xe di chuyển 360 độ GHC-149",
+          "score": 113.587798,
+          "category": "",
+          "price": 300000.0,
+          "url": "https://gotrangtri.vn/shop/gia-do-case-may-tinh-co-banh-xe-di-chuyen-360-do-ghc-149",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Kệ kẹp sách chuyển đổi linh hoạt GHS-2547 - Kệ",
+          "score": 84.336678,
+          "category": "Kệ",
+          "price": 2800000.0,
+          "url": "https://gotrangtri.vn/shop/ke-kep-sach-chuyen-doi-linh-hoat-ghs-2547",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Giá sách 3 khoang di chuyển GHS-202",
+          "score": 78.918356,
+          "category": "",
+          "price": 7900000.0,
+          "url": "https://gotrangtri.vn/shop/gia-sach-3-khoang-di-chuyen-ghs-202",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "out_of_scope_or_policy_007",
+      "query": "Có nhận thiết kế nội thất trọn gói không?",
+      "type": "out_of_scope_or_policy",
+      "expected_categories": [],
+      "represented_categories": [],
+      "required_terms_any": [
+        "thiết kế",
+        "thiet ke",
+        "trọn gói",
+        "tron goi"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": null,
+      "category_coverage_count": 0,
+      "category_coverage": 0.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 292.994,
+      "result_count": 5,
+      "weak_success": null,
+      "notes": "Service query, not product retrieval.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Tủ quần áo gỗ công nghiệp thiết kế hiện đại nhã nhặn GHS-51265 - Kệ",
+          "score": 134.998887,
+          "category": "Kệ",
+          "price": 20200000.0,
+          "url": "https://gotrangtri.vn/shop/tu-quan-ao-go-cong-nghiep-thiet-ke-hien-dai-nha-nhan-ghs-51265",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Bàn học chữ L có giá sách GHS-42041 – Thiết kế thông minh, tối ưu không gian - Kệ",
+          "score": 134.684067,
+          "category": "Kệ",
+          "price": 7500000.0,
+          "url": "https://gotrangtri.vn/shop/ban-hoc-chu-l-co-gia-sach-ghs-42041-thiet-ke-thong-minh-toi-uu-khong-gian",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Tủ đồ dùng cá nhân thiết kế thông minh GHS-51492 - Kệ",
+          "score": 133.544706,
+          "category": "Kệ",
+          "price": 4700000.0,
+          "url": "https://gotrangtri.vn/shop/tu-do-dung-ca-nhan-thiet-ke-thong-minh-ghs-51492",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Bàn làm việc cá nhân tại nhà thiết kế tiện dụng GHS-4541 - Kệ",
+          "score": 128.054383,
+          "category": "Kệ",
+          "price": 4900000.0,
+          "url": "https://gotrangtri.vn/shop/ban-lam-viec-ca-nhan-tai-nha-thiet-ke-tien-dung-ghs-4541",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Kệ góc Bộ 03 hình tròn GHS-03 - Kệ",
+          "score": 128.024941,
+          "category": "Kệ",
+          "price": 500000.0,
+          "url": "https://gotrangtri.vn/shop/ke-goc-trang-tri-bo-03-hinh-tron-ghs-03",
+          "doc_type": "product"
+        }
+      ]
+    },
+    {
+      "id": "out_of_scope_or_policy_008",
+      "query": "Tôi muốn thanh toán chuyển khoản",
+      "type": "out_of_scope_or_policy",
+      "expected_categories": [],
+      "represented_categories": [],
+      "required_terms_any": [
+        "thanh toán",
+        "thanh toan",
+        "chuyển khoản",
+        "chuyen khoan"
+      ],
+      "required_terms_hit": true,
+      "price": {},
+      "category_hit_at_k": null,
+      "category_coverage_count": 0,
+      "category_coverage": 0.0,
+      "price_satisfaction": null,
+      "duplicate_rate": 0.0,
+      "latency_ms": 125.218,
+      "result_count": 5,
+      "weak_success": null,
+      "notes": "Payment policy query.",
+      "hits": [
+        {
+          "rank": 1,
+          "title": "Quầy thanh toán hiện đại, thanh lịch GHS-41748",
+          "score": 178.56013,
+          "category": "",
+          "price": 7900000.0,
+          "url": "https://gotrangtri.vn/shop/quay-thanh-toan-hien-dai-thanh-lich-ghs-41748",
+          "doc_type": "product"
+        },
+        {
+          "rank": 2,
+          "title": "Quầy thanh toán đơn giản bằng gỗ GHS-41809",
+          "score": 167.88334,
+          "category": "",
+          "price": 7400000.0,
+          "url": "https://gotrangtri.vn/shop/quay-thanh-toan-don-gian-bang-go-ghs-41809",
+          "doc_type": "product"
+        },
+        {
+          "rank": 3,
+          "title": "Quầy thanh toán cho cửa hàng quán cafe GHS-41666",
+          "score": 167.88334,
+          "category": "",
+          "price": 7900000.0,
+          "url": "https://gotrangtri.vn/shop/quay-thanh-toan-cho-cua-hang-quan-cafe-ghs-41666",
+          "doc_type": "product"
+        },
+        {
+          "rank": 4,
+          "title": "Quầy thanh toán gỗ MDF thiết kế hiện đại GHS-41394 - Kệ",
+          "score": 149.895839,
+          "category": "Kệ",
+          "price": 7200000.0,
+          "url": "https://gotrangtri.vn/shop/quay-thanh-toan-go-mdf-thiet-ke-hien-dai-ghs-41394",
+          "doc_type": "product"
+        },
+        {
+          "rank": 5,
+          "title": "Quầy thanh toán bằng gỗ công nghiệp GHS-41395",
+          "score": 149.895839,
+          "category": "",
+          "price": 7800000.0,
+          "url": "https://gotrangtri.vn/shop/quay-thanh-toan-bang-go-cong-nghiep-ghs-41395",
+          "doc_type": "product"
+        }
+      ]
+    }
+  ]
+}

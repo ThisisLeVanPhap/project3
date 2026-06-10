@@ -1,0 +1,457 @@
+{
+  "summary": {
+    "total_failed": 4,
+    "failure_type_counts": {
+      "answer_template_needed": 4,
+      "price_mismatch_real": 1,
+      "prompt_contract_not_followed": 2
+    },
+    "real_hallucination_count": 0,
+    "evaluator_false_positive_count": 0,
+    "price_mismatch_count": 1,
+    "source_link_missing_count": 0,
+    "missing_field_failure_count": 0,
+    "template_needed_count": 4,
+    "recommended_fix_counts": {
+      "answer_template": 4
+    },
+    "ignored_price_counts": {
+      "aggregate_price_ignored": 2,
+      "approximate_range_price_ignored": 3,
+      "query_constraint_price_ignored": 5
+    }
+  },
+  "failed_answers": [
+    {
+      "id": "listing_002",
+      "query": "Có sofa không?",
+      "type": "product_listing",
+      "failure_types": [
+        "answer_template_needed",
+        "prompt_contract_not_followed"
+      ],
+      "metrics": {
+        "has_required_citation": false,
+        "citation_validity": true,
+        "source_link_presence": false,
+        "price_consistency": true,
+        "product_name_grounded": false,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": true,
+        "price_details": {
+          "detected_prices": [],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [],
+          "context_prices": [
+            8300000,
+            10200000,
+            11000000,
+            13000000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [
+          "has_required_citation",
+          "source_link_presence",
+          "product_name_grounded"
+        ],
+        "out_of_scope_fallback_valid": false
+      },
+      "context_products": [
+        {
+          "pid": "P1",
+          "name": "Ghế sofa bệt có ngăn kéo GHS-8399",
+          "price": "13.000.000 VND",
+          "source_url": "https://gotrangtri.vn/shop/ghe-sofa-bet-co-ngan-keo-ghs-8399"
+        },
+        {
+          "pid": "P2",
+          "name": "Ghế sofa có hộc kéo để đồ GHS-8398",
+          "price": "11.000.000 VND",
+          "source_url": "https://gotrangtri.vn/shop/ghe-sofa-co-hoc-keo-de-do-ghs-8398"
+        },
+        {
+          "pid": "P3",
+          "name": "Sofa bệt có hộc kéo và kệ sách GHS-8400",
+          "price": "10.200.000 VND",
+          "source_url": "https://gotrangtri.vn/shop/sofa-bet-co-hoc-keo-va-ke-sach-ghs-8400"
+        }
+      ],
+      "answer_excerpt": "Có chứ bạn! Bên mình có khá nhiều mẫu sofa bệt tích hợp ngăn kéo/hộc kéo — vừa ngồi vừa có chỗ cất đồ, rất tiện cho căn hộ. Bạn đang cần sofa cho không gian như thế nào — phòng khách rộng hay căn hộ nhỏ gọn? Và ngân sách dự kiến của bạn là bao nhiêu để mình gợi ý cho phù hợp nhé? 😊",
+      "detected_prices": [],
+      "context_prices": [
+        8300000,
+        10200000,
+        11000000,
+        13000000
+      ],
+      "hallucinated_fields": [],
+      "diagnosis": "Answer does not follow the required grounded product format. LLM formatting is unstable enough that rendering product cards in code is likely safer.",
+      "recommended_fix": "answer_template"
+    },
+    {
+      "id": "listing_004",
+      "query": "Có đèn trang trí phòng khách không?",
+      "type": "product_listing",
+      "failure_types": [
+        "answer_template_needed",
+        "price_mismatch_real"
+      ],
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P5"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            1500000,
+            1700000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/den-long-go-trang-tri-phong-khach-gho-272",
+              "reason": "url"
+            },
+            {
+              "text": "[P5]",
+              "reason": "citation"
+            },
+            {
+              "text": "50cm",
+              "reason": "dimension"
+            },
+            {
+              "text": "GHO-272",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            1200000,
+            1700000,
+            2100000,
+            3500000,
+            6600000
+          ],
+          "reason": "answer_price_not_found_in_context_prices",
+          "mismatched_prices": [
+            1500000
+          ],
+          "consistent": false
+        },
+        "failure_reasons": [
+          "price_consistency"
+        ],
+        "out_of_scope_fallback_valid": false
+      },
+      "context_products": [
+        {
+          "pid": "P1",
+          "name": "Thảm trang trí sofa phòng khách GHO-38053",
+          "price": "3.500.000 VND",
+          "source_url": "https://gotrangtri.vn/shop/tham-trang-tri-sofa-phong-khach-gho-38053"
+        },
+        {
+          "pid": "P2",
+          "name": "Bàn trà gỗ uống nước phòng khách GHS-4711",
+          "price": "6.600.000 VND",
+          "source_url": "https://gotrangtri.vn/shop/ban-tra-go-uong-nuoc-phong-khach-ghs-4711"
+        },
+        {
+          "pid": "P3",
+          "name": "Vách trang trí CNC phòng khách thiết kế đẹp hiện đại GHO-5184",
+          "price": "2.100.000 VND",
+          "source_url": "https://gotrangtri.vn/shop/vach-trang-tri-cnc-phong-khach-thiet-ke-dep-hien-dai-gho-5184"
+        }
+      ],
+      "answer_excerpt": "Có chứ! Bên mình có **Đèn lồng gỗ trang trí phòng khách GHO-272** [P5] — giá tham khảo **1.700.000 VND**, làm từ gỗ tự nhiên với ánh sáng vàng ấm, dùng bóng LED tiết kiệm điện. Sản phẩm có **3 mẫu kích cỡ khác nhau** để bạn chọn tùy không gian, ví dụ mẫu nhỏ nhất đường kính 50cm giá 1.500.000 VND. 👉 Xem chi tiết tại: https://gotrangtri.vn/shop/den-long-go-trang-tri-phong-khach-gho-272 Phòng khách nhà bạn đang theo phong cách nào — hiện đại, vintage hay mộc mạc — để mình tư vấn mẫu phù hợp hơn nhé?",
+      "detected_prices": [
+        1500000,
+        1700000
+      ],
+      "context_prices": [
+        1200000,
+        1700000,
+        2100000,
+        3500000,
+        6600000
+      ],
+      "hallucinated_fields": [],
+      "diagnosis": "Answer contains prices not found in context: [1500000]. LLM formatting is unstable enough that rendering product cards in code is likely safer.",
+      "recommended_fix": "answer_template"
+    },
+    {
+      "id": "comparison_002",
+      "query": "So sánh rèm cuốn và rèm sáo",
+      "type": "comparison",
+      "failure_types": [
+        "answer_template_needed",
+        "prompt_contract_not_followed"
+      ],
+      "metrics": {
+        "has_required_citation": false,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": false,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [
+            500000,
+            700000
+          ],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/rem-cuon-cao-cap-gho-621",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/rem-cuon-cao-cap-gho-620",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/rem-sao-nhom-nhap-khau-gho-611",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/rem-sao-go-cao-cap-gho-618",
+              "reason": "url"
+            },
+            {
+              "text": "GHO-621",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-620",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-603",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-611",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-618",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-621",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-621",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-620",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-611",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-618",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            500000,
+            700000
+          ],
+          "reason": "approximate_or_range_price_ignored",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [
+          "has_required_citation",
+          "product_name_grounded"
+        ],
+        "out_of_scope_fallback_valid": false
+      },
+      "context_products": [
+        {
+          "pid": "P1",
+          "name": "Rèm sáo nhôm nhập khẩu GHO-611",
+          "price": "500.000 VND",
+          "source_url": "https://gotrangtri.vn/shop/rem-sao-nhom-nhap-khau-gho-611"
+        },
+        {
+          "pid": "P2",
+          "name": "Rèm cuốn đẹp chất lượng cao GHO-603",
+          "price": "500.000 VND",
+          "source_url": "https://gotrangtri.vn/shop/rem-cuon-dep-chat-luong-cao-gho-603"
+        },
+        {
+          "pid": "P3",
+          "name": "Rèm sáo gỗ cao cấp GHO-618",
+          "price": "700.000 VND",
+          "source_url": "https://gotrangtri.vn/shop/rem-sao-go-cao-cap-gho-618"
+        }
+      ],
+      "answer_excerpt": "Dưới đây là so sánh nhanh để bạn dễ hình dung: | Tiêu chí | Rèm cuốn | Rèm sáo | |---|---|---| | Ví dụ sản phẩm | GHO-621, GHO-620, GHO-603 | GHO-611 (nhôm), GHO-618 (gỗ) | | Giá tham khảo | 500.000 VND | 500.000 – 700.000 VND | | Chất liệu | Polyester (GHO-621), chưa rõ các mẫu khác | Nhôm hoặc gỗ cao cấp | | Phong cách | Hiện đại, tối giản – hợp nhà phố, căn hộ | Linh hoạt nhiều phong cách, kể cả cổ điển | | Điều chỉnh ánh sáng | Cuốn lên/xuống toàn bộ | Xoay thanh sáo – kiểm soát ánh sáng tinh tế hơn | Nguồn: [GHO-621](https://gotrangtri.vn/shop/rem-cuon-cao-cap-gho-621) · [GHO-620](https://gotrangtri.vn/shop/rem-cuon-cao-cap-gho-620) · [GHO-611](https://gotrangtri.vn/shop/rem-sao-nhom-nhap-khau-gho-611) · [GHO-618](https://gotrangtri.vn/shop/rem-sao-go-cao-cap-gho-618) Nếu bạn thích không gian gọn gàng, hiện đại thì rèm cuốn là lựa chọn phổ biến hơn. Còn nếu muốn điều tiết ánh sán...",
+      "detected_prices": [],
+      "context_prices": [
+        500000,
+        700000
+      ],
+      "hallucinated_fields": [],
+      "diagnosis": "Answer does not follow the required grounded product format. LLM formatting is unstable enough that rendering product cards in code is likely safer.",
+      "recommended_fix": "answer_template"
+    },
+    {
+      "id": "comparison_003",
+      "query": "So sánh bàn trà gỗ tự nhiên và gỗ công nghiệp",
+      "type": "comparison",
+      "failure_types": [
+        "answer_template_needed"
+      ],
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": false,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": true,
+        "price_details": {
+          "detected_prices": [],
+          "aggregate_prices": [
+            5100000,
+            5500000
+          ],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [
+            5000000
+          ],
+          "ignored_numbers": [
+            {
+              "text": "GHS-4709",
+              "reason": "sku"
+            },
+            {
+              "text": "GHS-4716",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            3800000,
+            4600000,
+            5100000,
+            5500000,
+            5600000
+          ],
+          "reason": "aggregate_price_not_compared_to_product_prices,approximate_or_range_price_ignored",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [
+          "source_link_presence"
+        ],
+        "out_of_scope_fallback_valid": false
+      },
+      "context_products": [
+        {
+          "pid": "P1",
+          "name": "Bàn trà gỗ công nghiệp thiết kế ấn tượng GHS-4709",
+          "price": "5.100.000 VND",
+          "source_url": "https://gotrangtri.vn/shop/ban-tra-go-cong-nghiep-thiet-ke-an-tuong-ghs-4709"
+        },
+        {
+          "pid": "P2",
+          "name": "Bàn làm việc kèm tủ bằng gỗ công nghiệp GHS-4997",
+          "price": "3.800.000 VND",
+          "source_url": "https://gotrangtri.vn/shop/ban-lam-viec-kem-tu-bang-go-cong-nghiep-ghs-4997"
+        },
+        {
+          "pid": "P3",
+          "name": "Bàn trà gỗ công nghiệp bàn sofa phòng khách đẹp GHS-4713",
+          "price": "5.600.000 VND",
+          "source_url": "https://gotrangtri.vn/shop/ban-tra-go-cong-nghiep-ban-sofa-phong-khach-dep-ghs-4713"
+        }
+      ],
+      "answer_excerpt": "Mình hiểu bạn đang cân nhắc giữa hai loại vật liệu — đây là so sánh nhanh để bạn dễ quyết định: | Tiêu chí | Gỗ tự nhiên | Gỗ công nghiệp (MDF lõi xanh phủ Melamine) | |---|---|---| | Độ bền | Rất cao, tuổi thọ dài | Tốt, chống cong vênh, chống ẩm tốt | | Chống ẩm | Kém hơn nếu không xử lý | **Lõi xanh chống ẩm** — phù hợp khí hậu VN | | Giá | Thường cao hơn đáng kể | Hợp lý hơn, từ ~4–5 triệu | | Màu sắc | Theo vân gỗ tự nhiên | Linh hoạt, chọn trong 12 mẫu vân/màu | | Phù hợp căn hộ | Tốt | **Rất phù hợp** — nhẹ, gọn, dễ bài trí | Trong dữ liệu hiện tại của cửa hàng, mình có các mẫu bàn trà gỗ công nghiệp MDF lõi xanh như **GHS-4709** (5.100.000 VND) và **GHS-4716** (5.500.000 VND) — cả hai đều cho phép tùy chọn màu tại cửa hàng. Với gỗ tự nhiên, mình chưa thấy thông tin sản phẩm cụ thể trong dữ liệu hiện có. Bạn đang dùng cho phòng khách căn hộ hay nhà phố, và ngân sách khoảng bao...",
+      "detected_prices": [],
+      "context_prices": [
+        3800000,
+        4600000,
+        5100000,
+        5500000,
+        5600000
+      ],
+      "hallucinated_fields": [],
+      "diagnosis": "LLM formatting is unstable enough that rendering product cards in code is likely safer.",
+      "recommended_fix": "answer_template"
+    }
+  ]
+}

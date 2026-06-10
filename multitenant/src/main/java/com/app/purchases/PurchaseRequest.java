@@ -2,6 +2,7 @@ package com.app.purchases;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -46,6 +47,27 @@ public class PurchaseRequest {
     @Column(name = "requested_product_ref", length = 512)
     private String requestedProductRef = "";
 
+    @Column(name = "handoff_id", length = 128)
+    private String handoffId;
+
+    @Column(name = "idempotency_key", length = 256)
+    private String idempotencyKey;
+
+    @Column(name = "product_sku", length = 128)
+    private String productSku;
+
+    @Column(name = "product_url", length = 1000)
+    private String productUrl;
+
+    @Column(name = "price", precision = 19, scale = 2)
+    private BigDecimal price;
+
+    @Column(name = "quantity")
+    private Integer quantity;
+
+    @Column(name = "email", length = 255)
+    private String email;
+
     @Column(name = "assigned_to_member_id")
     private UUID assignedToMemberId;
 
@@ -54,6 +76,9 @@ public class PurchaseRequest {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
+
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 
     public Long getId() {
         return id;
@@ -139,8 +164,68 @@ public class PurchaseRequest {
         this.requestedProductRef = requestedProductRef;
     }
 
+    public String getHandoffId() {
+        return handoffId;
+    }
+
+    public void setHandoffId(String handoffId) {
+        this.handoffId = handoffId;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
+    public String getProductSku() {
+        return productSku;
+    }
+
+    public void setProductSku(String productSku) {
+        this.productSku = productSku;
+    }
+
+    public String getProductUrl() {
+        return productUrl;
+    }
+
+    public void setProductUrl(String productUrl) {
+        this.productUrl = productUrl;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 
     public UUID getAssignedToMemberId() {
@@ -169,10 +254,39 @@ public class PurchaseRequest {
         shippingAddress = safe(shippingAddress);
         notes = safe(notes);
         requestedProductRef = safe(requestedProductRef);
+        handoffId = nullableSafe(handoffId);
+        idempotencyKey = nullableSafe(idempotencyKey);
+        productSku = nullableSafe(productSku);
+        productUrl = nullableSafe(productUrl);
+        email = nullableSafe(email);
+        status = safe(status).isBlank() ? PurchaseRequestStatus.NEW.name() : PurchaseRequestStatus.normalize(status);
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        updatedAt = Instant.now();
+        customerName = safe(customerName);
+        phone = safe(phone);
+        shippingAddress = safe(shippingAddress);
+        notes = safe(notes);
+        requestedProductRef = safe(requestedProductRef);
+        handoffId = nullableSafe(handoffId);
+        idempotencyKey = nullableSafe(idempotencyKey);
+        productSku = nullableSafe(productSku);
+        productUrl = nullableSafe(productUrl);
+        email = nullableSafe(email);
         status = safe(status).isBlank() ? PurchaseRequestStatus.NEW.name() : PurchaseRequestStatus.normalize(status);
     }
 
     private static String safe(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private static String nullableSafe(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isBlank() ? null : trimmed;
     }
 }

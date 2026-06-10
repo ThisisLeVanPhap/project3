@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -87,6 +88,30 @@ public class PurchaseRequestService {
         return saved;
     }
 
+    public PurchaseRequest updateDetails(String tenantId, Long purchaseRequestId, PurchaseRequestUpdateRequest request) {
+        PurchaseRequest purchaseRequest = requirePurchaseRequest(tenantId, purchaseRequestId);
+
+        if (request.customerName() != null && !request.customerName().isBlank()) {
+            purchaseRequest.setCustomerName(request.customerName().trim());
+        }
+        if (request.phone() != null && !request.phone().isBlank()) {
+            purchaseRequest.setPhone(request.phone().trim());
+        }
+        if (request.shippingAddress() != null && !request.shippingAddress().isBlank()) {
+            purchaseRequest.setShippingAddress(request.shippingAddress().trim());
+        }
+        if (request.notes() != null) {
+            purchaseRequest.setNotes(request.notes().trim());
+        }
+        if (request.requestedProductRef() != null) {
+            purchaseRequest.setRequestedProductRef(request.requestedProductRef().trim());
+        }
+
+        PurchaseRequest saved = purchaseRequestRepo.save(purchaseRequest);
+        log.info("Updated purchase request details id={} tenant={}", saved.getId(), saved.getTenantId());
+        return saved;
+    }
+
     public PurchaseRequest claim(String tenantId, Long purchaseRequestId, UUID memberId) {
         PurchaseRequest purchaseRequest = requirePurchaseRequest(tenantId, purchaseRequestId);
         TenantMember member = requireTenantMember(tenantId, memberId);
@@ -131,6 +156,72 @@ public class PurchaseRequestService {
         PurchaseRequest saved = purchaseRequestRepo.save(pr);
         log.info("Created purchase request from chat id={} tenant={} conversationId={}", saved.getId(), saved.getTenantId(), conversationId);
         return saved;
+    }
+
+    public ChatbotCreateResult createFromChatbotHandoff(ChatbotPurchaseRequestCreateRequest request) {
+        String tenantId = required(request.tenantId(), "tenant_id is required");
+        parseTenantUuid(tenantId);
+
+        String handoffId = required(request.handoffId(), "handoff_id is required");
+        String idempotencyKey = required(request.idempotencyKey(), "idempotency_key is required");
+        String phone = normalizeIncomingPhone(required(request.phone(), "phone is required"));
+        if (!isValidPhone(phone)) {
+            throw new IllegalArgumentException("Invalid phone");
+        }
+
+        String requestedProductRef = buildRequestedProductRef(request);
+        if (requestedProductRef.isBlank()) {
+            throw new IllegalArgumentException("requested_product_ref or product_sku is required");
+        }
+
+        Optional<PurchaseRequest> existingByIdempotency =
+                purchaseRequestRepo.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey);
+        if (existingByIdempotency.isPresent()) {
+            PurchaseRequest existing = existingByIdempotency.get();
+            requireCompatibleDuplicate(existing, request, phone, requestedProductRef);
+            return new ChatbotCreateResult(existing, false);
+        }
+
+        Optional<PurchaseRequest> existingByHandoff =
+                purchaseRequestRepo.findByTenantIdAndHandoffId(tenantId, handoffId);
+        if (existingByHandoff.isPresent()) {
+            throw new ResponseStatusException(CONFLICT, "handoff_id already exists with a different idempotency_key");
+        }
+
+        String conversationId = required(request.conversationId(), "conversation_id is required");
+        Optional<PurchaseRequest> existingByConversation =
+                purchaseRequestRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(tenantId, conversationId);
+        if (existingByConversation.isPresent()) {
+            throw new ResponseStatusException(CONFLICT, "conversation_id already has a purchase request");
+        }
+
+        PurchaseRequest created = new PurchaseRequest();
+        created.setTenantId(tenantId);
+        created.setChannel(defaultIfBlank(request.channel(), "chatbot"));
+        created.setConversationId(conversationId);
+        created.setCustomerName(defaultIfBlank(request.customerName(), "Chat User"));
+        created.setPhone(phone);
+        created.setEmail(nullableTrim(request.email()));
+        created.setShippingAddress(defaultIfBlank(request.shippingAddress(), ""));
+        created.setNotes(defaultIfBlank(request.notes(), ""));
+        created.setRequestedProductRef(requestedProductRef);
+        created.setHandoffId(handoffId);
+        created.setIdempotencyKey(idempotencyKey);
+        created.setProductSku(nullableTrim(request.productSku()));
+        created.setProductUrl(nullableTrim(request.productUrl()));
+        created.setPrice(request.price());
+        created.setQuantity(request.quantity());
+        created.setStatus(PurchaseRequestStatus.NEW.name());
+
+        PurchaseRequest saved = purchaseRequestRepo.save(created);
+        log.info(
+                "Created chatbot purchase request id={} tenant={} handoffId={} idempotencyKey={}",
+                saved.getId(),
+                saved.getTenantId(),
+                saved.getHandoffId(),
+                saved.getIdempotencyKey()
+        );
+        return new ChatbotCreateResult(saved, true);
     }
 
     public Map<UUID, String> findMemberDisplayNames(String tenantId) {
@@ -387,6 +478,10 @@ public class PurchaseRequestService {
         return normalize(value).replaceAll("[^\\d+]", "");
     }
 
+    private static String normalizeIncomingPhone(String value) {
+        return cleanPhone(value).replaceFirst("^\\+84", "84");
+    }
+
     private static boolean isValidPhone(String cleanedPhone) {
         return PHONE_VALIDATION_PATTERN.matcher(cleanedPhone).matches();
     }
@@ -430,6 +525,80 @@ public class PurchaseRequestService {
             return member.getDisplayName().trim();
         }
         return member.getEmail() == null ? "" : member.getEmail().trim();
+    }
+
+    private static String required(String value, String message) {
+        String normalized = normalize(value);
+        if (normalized.isBlank()) {
+            throw new IllegalArgumentException(message);
+        }
+        return normalized;
+    }
+
+    private static String nullableTrim(String value) {
+        String normalized = normalize(value);
+        return normalized.isBlank() ? null : normalized;
+    }
+
+    private static String defaultIfBlank(String value, String fallback) {
+        String normalized = normalize(value);
+        return normalized.isBlank() ? fallback : normalized;
+    }
+
+    private static String buildRequestedProductRef(ChatbotPurchaseRequestCreateRequest request) {
+        String requestedProductRef = normalize(request.requestedProductRef());
+        if (!requestedProductRef.isBlank()) {
+            return requestedProductRef;
+        }
+
+        String productSku = normalize(request.productSku());
+        String productUrl = normalize(request.productUrl());
+        if (!productSku.isBlank() && !productUrl.isBlank()) {
+            return productSku + " - " + productUrl;
+        }
+        return firstNonBlank(productSku, productUrl);
+    }
+
+    private static void requireCompatibleDuplicate(
+            PurchaseRequest existing,
+            ChatbotPurchaseRequestCreateRequest request,
+            String phone,
+            String requestedProductRef
+    ) {
+        requireSame("handoff_id", existing.getHandoffId(), request.handoffId());
+        requireSame("phone", existing.getPhone(), phone);
+        requireSame("requested_product_ref", existing.getRequestedProductRef(), requestedProductRef);
+        requireSame("product_sku", existing.getProductSku(), request.productSku());
+        requireSame("product_url", existing.getProductUrl(), request.productUrl());
+        requireSame("email", existing.getEmail(), request.email());
+        requireSame("price", existing.getPrice(), request.price());
+        requireSame("quantity", existing.getQuantity(), request.quantity());
+    }
+
+    private static void requireSame(String field, String existingValue, String incomingValue) {
+        String existing = normalize(existingValue);
+        String incoming = normalize(incomingValue);
+        if (!incoming.isBlank() && !existing.equals(incoming)) {
+            throw new ResponseStatusException(CONFLICT, "Conflicting duplicate payload field: " + field);
+        }
+    }
+
+    private static void requireSame(String field, BigDecimal existingValue, BigDecimal incomingValue) {
+        if (incomingValue != null && existingValue != null && existingValue.compareTo(incomingValue) != 0) {
+            throw new ResponseStatusException(CONFLICT, "Conflicting duplicate payload field: " + field);
+        }
+        if (incomingValue != null && existingValue == null) {
+            throw new ResponseStatusException(CONFLICT, "Conflicting duplicate payload field: " + field);
+        }
+    }
+
+    private static void requireSame(String field, Integer existingValue, Integer incomingValue) {
+        if (incomingValue != null && !incomingValue.equals(existingValue)) {
+            throw new ResponseStatusException(CONFLICT, "Conflicting duplicate payload field: " + field);
+        }
+    }
+
+    public record ChatbotCreateResult(PurchaseRequest purchaseRequest, boolean created) {
     }
 
     private record ExtractedPurchaseData(

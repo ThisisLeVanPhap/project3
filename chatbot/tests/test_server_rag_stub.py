@@ -277,8 +277,9 @@ class ServerRagStubTests(unittest.TestCase):
         self.assertEqual(debug["external_price_refs"], 0)
         self.assertFalse(debug["used_mock_price_data"])
         self.assertFalse(payload["trigger_purchase_request"])
-        self.assertIn("I do not have enough structured price references", payload["reply"])
-        self.assertIn("without inventing numbers", payload["reply"])
+        self.assertEqual(payload["model"], "structured_price")
+        self.assertIn("Chưa có đủ dữ liệu giá có cấu trúc", payload["reply"])
+        self.assertIn("phân tích sát hơn", payload["reply"])
 
     def test_market_price_debug_includes_mock_price_refs_when_enabled(self):
         if SERVER_IMPORT_ERROR is not None:
@@ -317,6 +318,7 @@ class ServerRagStubTests(unittest.TestCase):
         self.assertTrue(debug["used_mock_price_data"])
         self.assertEqual(debug["data_provider"], "mock_market_price")
         self.assertFalse(payload["trigger_purchase_request"])
+        self.assertEqual(payload["model"], "structured_price")
 
     def test_market_price_mock_provider_formats_range_and_warning(self):
         if SERVER_IMPORT_ERROR is not None:
@@ -353,12 +355,53 @@ class ServerRagStubTests(unittest.TestCase):
         self.assertGreater(debug["external_price_refs"], 0)
         self.assertTrue(debug["used_mock_price_data"])
         self.assertFalse(payload["trigger_purchase_request"])
-        self.assertIn("[stub][market_price]", payload["reply"])
-        self.assertIn("Nguồn dữ liệu dùng: mock_market_price", payload["reply"])
+        self.assertEqual(payload["model"], "structured_price")
+        self.assertIn("## Tham khảo giá SFG041", payload["reply"])
         self.assertIn("Khoảng giá tham khảo: khoảng 12.0-15.0 triệu VND", payload["reply"])
-        self.assertIn("Nhận xét mức giá: mức giá người dùng đưa ra đang trong khoảng tham chiếu.", payload["reply"])
-        self.assertIn("Cảnh báo dữ liệu: dữ liệu hiện tại là mock/demo", payload["reply"])
-        self.assertIn("Không gợi ý mua sản phẩm cụ thể. No purchase request.", payload["reply"])
+        self.assertIn("Dữ liệu đối chiếu: 2 mẫu tham chiếu hiện có.", payload["reply"])
+        self.assertIn("Nhận xét: Mức 14.0 triệu VND đang nằm trong khoảng tham chiếu.", payload["reply"])
+        self.assertIn("Lưu ý: Khoảng giá có thể thay đổi", payload["reply"])
+        self.assertNotIn("mock", payload["reply"].lower())
+        self.assertNotIn("provider", payload["reply"].lower())
+        self.assertNotIn("purchase request", payload["reply"].lower())
+
+    def test_market_price_generic_oak_sofa_reply_hides_internal_terms(self):
+        if SERVER_IMPORT_ERROR is not None:
+            raise unittest.SkipTest(f"chatbot server dependencies are not installed: {SERVER_IMPORT_ERROR}")
+
+        conversation_id = "market-price-oak-sofa"
+        reset_state(conversation_id)
+        previous_provider = server.PRICE_PROVIDER
+        server.PRICE_PROVIDER = MockMarketPriceProvider()
+        try:
+            response = self.client.post(
+                "/chat",
+                json={
+                    "message": "So sánh giá sofa gỗ sồi với mặt bằng chung",
+                    "history": [],
+                    "conversation_id": conversation_id,
+                    "tenant_id": "tenant-test",
+                    "gen": {
+                        "provider": "stub",
+                        "mode": "market_price",
+                        "retrieval_mode": "keyword",
+                        "retrieval_top_k": 4,
+                    },
+                },
+            )
+        finally:
+            server.PRICE_PROVIDER = previous_provider
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+
+        self.assertEqual(payload["model"], "structured_price")
+        self.assertIn("## Tham khảo giá sofa gỗ sồi", payload["reply"])
+        self.assertIn("Khoảng giá tham khảo:", payload["reply"])
+        self.assertIn("Dữ liệu đối chiếu:", payload["reply"])
+        self.assertNotIn("mock", payload["reply"].lower())
+        self.assertNotIn("provider", payload["reply"].lower())
+        self.assertNotIn("purchase request", payload["reply"].lower())
 
 
     def test_local_pipeline_cache_evicts_lru_without_loading_real_model(self):

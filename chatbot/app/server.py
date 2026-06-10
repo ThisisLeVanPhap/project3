@@ -3,6 +3,7 @@ import time
 import re
 import threading
 import gc
+import unicodedata
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Tuple, Any
 
@@ -15,9 +16,21 @@ from .logger import log_event, log_feedback, log_retrieval_debug
 # --- SALES FLOW imports ---
 from .state import get_state, save_turn, set_stage, reset_state
 from .sales_flow import extract_slots, next_stage, build_sales_prefix, detect_intent, has_sufficient_constraints
+from .purchase_request import build_purchase_request_draft
+from .sales_handoff import InMemorySalesHandoffService, StoredSalesHandoffService, build_sales_handoff_service
+from .sales_response_renderer import render_sales_response
+from .sales_slots import extract_sales_slots
+from .sales_state import (
+    SalesConversationState,
+    apply_message_to_state,
+    resolve_product_reference,
+    state_to_dict,
+    update_recommended_products,
+)
 
-from .prompt import build_messages, DEFAULT_SYSTEM
+from .prompt import build_messages, DEFAULT_SYSTEM, is_vietnamese_text
 from .modes import ChatMode, mode_system_instruction, normalize_chat_mode
+from .product_answer_renderer import render_product_answer
 from .market_data import (
     build_internal_catalog_provider,
     build_price_provider,
@@ -153,6 +166,82 @@ BAD_FACTS = re.compile(
     re.I,
 )
 
+UNSUPPORTED_PAYMENT_FACTS = re.compile(
+    r"\b(visa|credit\s+card|debit\s+card|card payment|the tin dung|tra gop)\b",
+    re.I,
+)
+GENERIC_GROUNDED_INTRO = re.compile(
+    r"\b(from the verified store data|i can confirm|store policy is available)\b",
+    re.I,
+)
+PAYMENT_POLICY_QUERY = re.compile(
+    r"\b(payment|pay|policy|thanh toan|dat coc|chuyen khoan|chinh sach)\b",
+    re.I,
+)
+CLEANING_COMPARISON_QUERY = re.compile(
+    r"\b(clean|cleaning|wipe|lau chui|ve sinh|de lau|de ve sinh)\b",
+    re.I,
+)
+
+
+def _apply_grounding_guard(user_msg: str, context: str, response: str) -> str:
+    """Keep replies inside verified KB facts for high-risk policy/comparison answers."""
+    user_msg = user_msg or ""
+    context = context or ""
+    response = response or ""
+    vietnamese = is_vietnamese_text(user_msg)
+
+    if PAYMENT_POLICY_QUERY.search(user_msg):
+        has_supported_payment_context = re.search(
+            r"\b(thanh toan|dat coc|chuyen khoan|sau khi giao hang|0-50km)\b",
+            context,
+            re.I,
+        )
+        has_bad_payment_claim = (
+            UNSUPPORTED_PAYMENT_FACTS.search(response)
+            or GENERIC_GROUNDED_INTRO.search(response)
+            or BAD_FACTS.search(response)
+        )
+        if has_supported_payment_context and has_bad_payment_claim:
+            if vietnamese:
+                return (
+                    "Theo thong tin cua hang, khach co the thanh toan hoac "
+                    "\u0111\u1eb7t c\u1ecdc truc tiep voi nhan vien ban hang. "
+                    "Cua hang co ho tro chuyen khoan; thanh toan sau khi giao hang "
+                    "ap dung trong pham vi 0-50km neu thong tin nay co trong chinh sach."
+                )
+            return (
+                "According to the store information, customers can pay or place a deposit "
+                "directly with sales staff. Bank transfer is supported; payment after delivery "
+                "applies within the 0-50km range when stated by the store policy."
+            )
+
+    if CLEANING_COMPARISON_QUERY.search(user_msg):
+        response_makes_cleaning_claim = re.search(
+            r"\b(easier to clean|de lau chui|de ve sinh|lau chui hon|cleaner)\b",
+            response,
+            re.I,
+        )
+        context_supports_cleaning = re.search(
+            r"\b(easier to clean|de lau chui|de ve sinh|lau chui|ve sinh)\b",
+            context,
+            re.I,
+        )
+        if response_makes_cleaning_claim and not context_supports_cleaning:
+            if vietnamese:
+                return (
+                    "Minh \u0063\u0068\u01b0\u0061 \u0111\u1ee7 du lieu tu kho tri thuc "
+                    "de ket luan chat lieu nao de ve sinh hon. Theo thong tin hien co, "
+                    "chi co the xac nhan sofa go co the duoc boc nem da hoac ni."
+                )
+            return (
+                "I do not have enough verified knowledge-base data to say which material "
+                "is easier to clean. The available context only supports that the wooden "
+                "sofa can be upholstered with leather or fabric cushions."
+            )
+
+    return response
+
 
 TRUE_VALUES = {"1", "true", "yes", "on"}
 
@@ -172,6 +261,7 @@ TOP_P_DEFAULT = float(os.getenv("TOP_P", "0.9"))
 TOP_K_DEFAULT = int(os.getenv("TOP_K", "50"))
 RETRIEVAL_MODE_DEFAULT = os.getenv("RETRIEVAL_MODE", "keyword")
 RETRIEVAL_TOP_K_DEFAULT = int(os.getenv("RETRIEVAL_TOP_K", "4"))
+PRODUCT_TEMPLATE_ANSWERS_DEFAULT = os.getenv("PRODUCT_TEMPLATE_ANSWERS", "false").lower() in TRUE_VALUES
 
 # Local fallback settings
 FALLBACK_TO_LOCAL_ENABLED = os.getenv("FALLBACK_TO_LOCAL_ENABLED", "false").lower() in TRUE_VALUES
@@ -239,6 +329,12 @@ if KB is not None:
 INTERNAL_CATALOG_PROVIDER = build_internal_catalog_provider(KB_DIR)
 PRICE_PROVIDER = build_price_provider()
 
+SALES_MODES = {"off", "shadow", "active"}
+SALES_STATE_STORE: Dict[Tuple[str, str], SalesConversationState] = {}
+SALES_STATE_LOCK = threading.Lock()
+SALES_STATE_TTL_SECONDS = int(os.getenv("SALES_STATE_TTL_SECONDS", "1800"))
+SALES_HANDOFF_SERVICE = build_sales_handoff_service()
+
 
 class GenerationConfig(BaseModel):
     base_model: Optional[str] = None
@@ -257,6 +353,8 @@ class GenerationConfig(BaseModel):
     mode: Optional[str] = None  # tenant_sales | general_compare | market_price
     retrieval_mode: Optional[str] = None
     retrieval_top_k: Optional[int] = None
+    answer_mode: Optional[str] = None  # llm | template
+    sales_mode: Optional[str] = None  # off | shadow | active
 
 
 class ChatReq(BaseModel):
@@ -308,8 +406,287 @@ def _select_provider(cfg: GenerationConfig) -> str:
     return "claude"
 
 
+def _resolve_answer_mode(cfg: GenerationConfig) -> str:
+    value = (cfg.answer_mode or "").strip().lower()
+    if not value:
+        return "template" if PRODUCT_TEMPLATE_ANSWERS_DEFAULT else "llm"
+    if value in {"llm", "template"}:
+        return value
+    raise ValueError(f"Unsupported answer_mode: {cfg.answer_mode}")
+
+
+def _resolve_sales_mode(cfg: GenerationConfig) -> str:
+    request_value = cfg.sales_mode
+    value = (request_value if request_value is not None else os.getenv("SALES_CONVERSATION_MODE", "off"))
+    normalized = (value or "off").strip().lower()
+    if normalized not in SALES_MODES:
+        raise ValueError(f"Unsupported sales_mode: {value}")
+    return normalized
+
+
+def _sales_state_key(tenant_id: Optional[str], conversation_id: Optional[str]) -> Tuple[str, str]:
+    return ((tenant_id or "default").strip() or "default", (conversation_id or "anon").strip() or "anon")
+
+
+def _sales_state_is_persistent(conversation_id: Optional[str]) -> bool:
+    return bool((conversation_id or "").strip())
+
+
+def _cleanup_sales_states(now: Optional[float] = None) -> int:
+    now = time.time() if now is None else now
+    if SALES_STATE_TTL_SECONDS <= 0:
+        return 0
+    with SALES_STATE_LOCK:
+        expired = [
+            key for key, state in SALES_STATE_STORE.items()
+            if now - getattr(state, "updated_at", now) > SALES_STATE_TTL_SECONDS
+        ]
+        for key in expired:
+            SALES_STATE_STORE.pop(key, None)
+    return len(expired)
+
+
+def _load_sales_state(tenant_id: Optional[str], conversation_id: Optional[str]) -> SalesConversationState:
+    if not _sales_state_is_persistent(conversation_id):
+        return SalesConversationState(tenant_id=tenant_id, conversation_id=conversation_id)
+    _cleanup_sales_states()
+    key = _sales_state_key(tenant_id, conversation_id)
+    with SALES_STATE_LOCK:
+        state = SALES_STATE_STORE.get(key)
+        if state is None:
+            state = SalesConversationState(tenant_id=tenant_id, conversation_id=conversation_id)
+            SALES_STATE_STORE[key] = state
+        return state
+
+
+def _save_sales_state(state: SalesConversationState) -> None:
+    if not _sales_state_is_persistent(state.conversation_id):
+        return
+    state.updated_at = time.time()
+    key = _sales_state_key(state.tenant_id, state.conversation_id)
+    with SALES_STATE_LOCK:
+        SALES_STATE_STORE[key] = state
+
+
+def _clear_sales_state(tenant_id: Optional[str], conversation_id: Optional[str]) -> None:
+    if not _sales_state_is_persistent(conversation_id):
+        return
+    key = _sales_state_key(tenant_id, conversation_id)
+    with SALES_STATE_LOCK:
+        SALES_STATE_STORE.pop(key, None)
+
+
+def _purchase_request_status(state: Optional[SalesConversationState]) -> Optional[str]:
+    if not state or not state.purchase_request:
+        return None
+    return state.purchase_request.get("status")
+
+
+def _safe_sales_products(products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    safe = []
+    for product in products:
+        safe.append({
+            "pid": product.get("pid"),
+            "sku": product.get("sku"),
+            "product_name": product.get("product_name"),
+            "source_url": product.get("source_url"),
+            "price": product.get("price"),
+        })
+    return safe
+
+
+def _sales_debug_payload(
+    sales_mode: str,
+    state: Optional[SalesConversationState],
+    sales_result: Optional[Dict[str, Any]],
+    action: str,
+    persistent: bool = True,
+    state_warning: Optional[str] = None,
+) -> Dict[str, Any]:
+    slots = (sales_result or {}).get("slots") or {}
+    payload = {
+        "sales_mode": sales_mode,
+        "sales_intents": slots.get("intents", []),
+        "lead_score": getattr(state, "lead_score", 0) if state else 0,
+        "lead_status": getattr(state, "lead_status", "cold") if state else "cold",
+        "selected_products": _safe_sales_products(list(getattr(state, "selected_products", []) or [])) if state else [],
+        "last_recommended_count": len(getattr(state, "last_recommended_products", []) or []) if state else 0,
+        "purchase_request_status": _purchase_request_status(state),
+        "confirmation_status": getattr(state, "confirmation_status", "none") if state else "none",
+        "handoff_status": getattr(state, "handoff_status", "not_ready") if state else "not_ready",
+        "handoff_id": getattr(state, "handoff_id", None) if state else None,
+        "missing_fields": list(getattr(state, "missing_fields", []) or []) if state else [],
+        "handoff_required": bool(getattr(state, "handoff_required", False)) if state else False,
+        "sales_action_taken": action,
+        "sales_state_persistent": persistent,
+    }
+    if state_warning:
+        payload["sales_state_warning"] = state_warning
+    if slots.get("is_product_reference_question"):
+        payload["is_product_reference_question"] = True
+    return payload
+
+
+def _sales_action_from_state(
+    state: SalesConversationState,
+    sales_result: Dict[str, Any],
+    draft: Optional[Dict[str, Any]],
+) -> str:
+    slots = sales_result.get("slots") or {}
+    intents = slots.get("intents") or []
+    status = (draft or {}).get("status")
+    if "cancel" in intents:
+        return "cancelled"
+    if "handoff_request" in intents:
+        return "handoff"
+    if status == "draft" and ("purchase_intent" in intents or "contact_provided" in intents):
+        return "ask_confirmation"
+    if status == "needs_contact" and "purchase_intent" in intents:
+        return "ask_contact"
+    if status == "needs_product" and ("purchase_intent" in intents or ("contact_provided" in intents and state.purchase_request)):
+        return "ask_product"
+    return "none"
+
+
+def _has_sendable_pending_draft(state: SalesConversationState) -> bool:
+    draft = state.purchase_request or {}
+    return (
+        state.confirmation_status == "pending"
+        and state.handoff_status == "pending_confirmation"
+        and draft.get("status") == "draft"
+        and bool(draft.get("products"))
+        and bool((draft.get("contact") or {}).get("phone") or (draft.get("contact") or {}).get("email"))
+    )
+
+
+def _has_retryable_failed_draft(state: SalesConversationState) -> bool:
+    draft = state.purchase_request or {}
+    return (
+        state.confirmation_status == "confirmed"
+        and state.handoff_status == "failed"
+        and draft.get("status") == "draft"
+        and bool(draft.get("products"))
+        and bool((draft.get("contact") or {}).get("phone") or (draft.get("contact") or {}).get("email"))
+    )
+
+
+def _is_pending_draft_update(state: SalesConversationState, slots: Dict[str, Any]) -> bool:
+    if state.confirmation_status != "pending" or state.handoff_status != "pending_confirmation":
+        return False
+    if slots.get("confirmation_intent") == "confirm":
+        return False
+    return bool(
+        slots.get("phone")
+        or slots.get("email")
+        or slots.get("quantity")
+        or slots.get("has_product_reference")
+    )
+
+
+def _apply_pending_draft_update(
+    state: SalesConversationState,
+    message: str,
+    slots: Dict[str, Any],
+) -> Tuple[str, Dict[str, Any]]:
+    if slots.get("phone"):
+        state.contact["phone"] = slots["phone"]
+    if slots.get("email"):
+        state.contact["email"] = slots["email"]
+    if slots.get("quantity"):
+        state.slots["quantity"] = slots["quantity"]
+
+    if slots.get("has_product_reference"):
+        resolved = resolve_product_reference(message, state)
+        if resolved.matched and resolved.product:
+            state.selected_products = [resolved.product]
+
+    draft = build_purchase_request_draft(state, "dat hang")
+    _ensure_durable_pending_request(state, draft, event_type="draft_updated")
+    state.updated_at = time.time()
+    return _sales_action_from_state(state, {"slots": {"intents": ["purchase_intent"]}}, draft), draft
+
+
+def _durable_handoff_service() -> Optional[StoredSalesHandoffService]:
+    if isinstance(SALES_HANDOFF_SERVICE, StoredSalesHandoffService):
+        return SALES_HANDOFF_SERVICE
+    return None
+
+
+def _ensure_durable_pending_request(
+    state: SalesConversationState,
+    draft: Optional[Dict[str, Any]],
+    event_type: str | None = None,
+) -> None:
+    if not draft or draft.get("status") != "draft":
+        return
+    service = _durable_handoff_service()
+    if service is None:
+        return
+    service.ensure_pending_request(draft, state, event_type=event_type)
+
+
+def _append_durable_event(state: SalesConversationState, event_type: str, payload: Optional[Dict[str, Any]] = None) -> None:
+    service = _durable_handoff_service()
+    if service is not None:
+        service.append_state_event(state, event_type, payload or {})
+
+
+def _handle_pending_confirmation(
+    state: SalesConversationState,
+    confirmation_intent: Optional[str],
+) -> Optional[Tuple[str, Dict[str, Any]]]:
+    if confirmation_intent is None:
+        return None
+    if confirmation_intent == "reject" and state.handoff_status == "sent":
+        _append_durable_event(state, "duplicate_confirm_ignored", {"reason": "cancel_after_sent"})
+        return "handoff_already_sent", state.purchase_request or {}
+    if confirmation_intent == "reject" and state.confirmation_status == "pending":
+        state.confirmation_status = "cancelled"
+        state.handoff_status = "cancelled"
+        if state.purchase_request:
+            state.purchase_request["status"] = "cancelled"
+        service = _durable_handoff_service()
+        if service is not None:
+            service.cancel_pending_request(state, "user_cancelled_pending_confirmation")
+        state.updated_at = time.time()
+        return "confirmation_cancelled", state.purchase_request or {}
+    if confirmation_intent != "confirm":
+        return None
+    if state.handoff_status == "sent":
+        _append_durable_event(state, "duplicate_confirm_ignored", {"reason": "already_sent_state"})
+        return "handoff_already_sent", state.purchase_request or {}
+    if not _has_sendable_pending_draft(state) and not _has_retryable_failed_draft(state):
+        _append_durable_event(state, "confirmation_without_pending_ignored", {
+            "confirmation_status": state.confirmation_status,
+            "handoff_status": state.handoff_status,
+        })
+        return "confirmation_without_pending", state.purchase_request or {}
+
+    state.confirmation_status = "confirmed"
+    state.confirmed_at = time.time()
+    result = SALES_HANDOFF_SERVICE.send_purchase_request(state.purchase_request or {}, state)
+    if result.success:
+        state.handoff_status = "sent"
+        state.handoff_id = result.handoff_id
+        state.handoff_error = None
+        state.sent_at = time.time()
+        state.updated_at = time.time()
+        if result.already_sent:
+            return "handoff_already_sent", state.purchase_request or {}
+        return "handoff_sent", state.purchase_request or {}
+    state.handoff_status = "failed"
+    state.handoff_error = result.error
+    state.updated_at = time.time()
+    return "handoff_failed", state.purchase_request or {}
+
+
 def _is_tenant_sales_mode(mode: str) -> bool:
     return mode == ChatMode.TENANT_SALES.value
+
+
+def _prefer_vietnamese_response(req: "ChatReq", mode: str) -> bool:
+    channel = (req.channel or "").strip().lower()
+    return is_vietnamese_text(req.message) or channel in {"messenger", "telegram", "web"}
 
 
 def _mode_default_stage(mode: str) -> str:
@@ -399,6 +776,90 @@ def _format_vnd_range(min_price: float, max_price: float) -> str:
     if min_price == max_price:
         return f"khoảng {min_m:.1f} triệu VND"
     return f"khoảng {min_m:.1f}-{max_m:.1f} triệu VND"
+
+
+def _format_vnd_value(price: float) -> str:
+    if price >= 1_000_000:
+        return f"{price / 1_000_000:.1f} triệu VND"
+    return f"{price:,.0f} VND"
+
+
+def _strip_accents(text: str) -> str:
+    normalized = unicodedata.normalize("NFD", text or "")
+    without_marks = "".join(ch for ch in normalized if unicodedata.category(ch) != "Mn")
+    return without_marks.replace("đ", "d").replace("Đ", "D")
+
+
+def _market_price_subject(user_message: str, price_refs: List[Any]) -> str:
+    message = user_message or ""
+    code_match = re.search(r"\b[A-Z]{2,}[A-Z0-9-]*\d+[A-Z0-9-]*\b", message.upper())
+    if code_match:
+        return code_match.group(0)
+
+    plain = _strip_accents(message).lower()
+    if "sofa" in plain and "go soi" in plain:
+        return "sofa gỗ sồi"
+    if "sofa" in plain:
+        return "sofa"
+    if "ban an" in plain:
+        return "bàn ăn"
+    if "tu quan ao" in plain or "tu ao" in plain:
+        return "tủ quần áo"
+    if "giuong" in plain:
+        return "giường"
+
+    return next(
+        (
+            str(value)
+            for ref in price_refs
+            for value in (getattr(ref, "product_id", None), getattr(ref, "name", None))
+            if value
+        ),
+        "sản phẩm",
+    )
+
+
+def _build_market_price_reply(
+    user_message: str,
+    price_refs: List[Any],
+    debug_trace: Dict[str, Any],
+) -> str:
+    price_values = [
+        float(getattr(ref, "price"))
+        for ref in price_refs
+        if getattr(ref, "price", None) is not None
+    ]
+    if not price_values:
+        return (
+            "Chưa có đủ dữ liệu giá có cấu trúc để ước lượng khoảng giá hoặc phát hiện bất thường. "
+            "Bạn có thể gửi thêm tên sản phẩm, mã sản phẩm, vật liệu, kích thước hoặc một mức giá cụ thể "
+            "để mình phân tích sát hơn."
+        )
+
+    min_price = min(price_values)
+    max_price = max(price_values)
+    candidate_price = _extract_candidate_price_vnd(user_message)
+    product_label = _market_price_subject(user_message, price_refs)
+
+    if candidate_price is None:
+        judgement = (
+            "Nếu chưa có mức giá cụ thể để đối chiếu, có thể dùng khoảng này làm mốc tham khảo ban đầu."
+        )
+    elif candidate_price < min_price:
+        judgement = f"Mức {_format_vnd_value(candidate_price)} đang thấp hơn khoảng tham chiếu."
+    elif candidate_price > max_price:
+        judgement = f"Mức {_format_vnd_value(candidate_price)} đang cao hơn khoảng tham chiếu."
+    else:
+        judgement = f"Mức {_format_vnd_value(candidate_price)} đang nằm trong khoảng tham chiếu."
+
+    return (
+        f"## Tham khảo giá {product_label}\n"
+        f"Khoảng giá tham khảo: {_format_vnd_range(min_price, max_price)}.\n"
+        f"Dữ liệu đối chiếu: {len(price_values)} mẫu tham chiếu hiện có.\n"
+        f"Nhận xét: {judgement}\n"
+        "Lưu ý: Khoảng giá có thể thay đổi theo kích thước, chất liệu, độ mới, thương hiệu và chi phí vận chuyển/lắp đặt."
+    )
+
 
 def _stub_generate(messages: List[Dict[str, Any]], context: str, debug_trace: Dict[str, Any]) -> str:
     prompt_text = _messages_to_plain_prompt(messages)
@@ -727,6 +1188,14 @@ def chat(req: ChatReq):
     tokenizer_path = cfg.tokenizer_path or TOKENIZER_DEFAULT
     provider = _select_provider(cfg)
     try:
+        answer_mode = _resolve_answer_mode(cfg)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    try:
+        sales_mode = _resolve_sales_mode(cfg)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    try:
         mode = normalize_chat_mode(cfg.mode, req.message)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -780,6 +1249,13 @@ def chat(req: ChatReq):
 
     # Ensure conversation_id exists for stateful flow
     conv_id = req.conversation_id or "anon"
+    sales_state: Optional[SalesConversationState] = None
+    sales_result: Optional[Dict[str, Any]] = None
+    sales_draft: Optional[Dict[str, Any]] = None
+    sales_action_taken = "none"
+    sales_enabled = sales_mode in {"shadow", "active"}
+    sales_state_persistent = _sales_state_is_persistent(req.conversation_id)
+    sales_state_warning = None if sales_state_persistent else "missing_conversation_id_ephemeral_state"
 
     # =========================================================
     # (NEW) RESET COMMAND: /reset | reset | new scenario
@@ -792,6 +1268,8 @@ def chat(req: ChatReq):
                 reset_state(conv_id)
             except Exception:
                 pass
+        if sales_enabled:
+            _clear_sales_state(req.tenant_id, req.conversation_id)
 
         debug_trace = _build_debug_trace(
             mode=mode,
@@ -799,6 +1277,15 @@ def chat(req: ChatReq):
             slots={},
             retrieval_mode=retrieval_mode,
         )
+        if sales_enabled:
+            debug_trace.update(_sales_debug_payload(
+                sales_mode,
+                None,
+                None,
+                "none",
+                persistent=sales_state_persistent,
+                state_warning=sales_state_warning,
+            ))
         log_event({
             "event": "reset",
             "channel": req.channel,
@@ -815,6 +1302,109 @@ def chat(req: ChatReq):
             debug=debug_trace,
         )
 
+    if sales_enabled:
+        previous_purchase_status = None
+        sales_state = _load_sales_state(req.tenant_id, req.conversation_id)
+        previous_purchase_status = _purchase_request_status(sales_state)
+        sales_state.tenant_id = req.tenant_id
+        sales_state.conversation_id = req.conversation_id
+        confirmation_slots = extract_sales_slots(req.message)
+        confirmation_result = None
+        if sales_mode == "active":
+            if _is_pending_draft_update(sales_state, confirmation_slots):
+                confirmation_result = _apply_pending_draft_update(
+                    sales_state,
+                    req.message,
+                    confirmation_slots,
+                )
+            else:
+                confirmation_result = _handle_pending_confirmation(
+                    sales_state,
+                    confirmation_slots.get("confirmation_intent"),
+                )
+        if confirmation_result is not None:
+            sales_action_taken, sales_draft = confirmation_result
+            sales_result = {
+                "slots": confirmation_slots,
+                "resolved_product": None,
+            }
+            _save_sales_state(sales_state)
+            if sales_mode == "active":
+                debug_trace = _build_debug_trace(
+                    mode=mode,
+                    stage=_mode_default_stage(mode),
+                    slots={},
+                    retrieval_mode=retrieval_mode,
+                )
+                debug_trace.update(_sales_debug_payload(
+                    sales_mode,
+                    sales_state,
+                    sales_result,
+                    sales_action_taken,
+                    persistent=sales_state_persistent,
+                    state_warning=sales_state_warning,
+                ))
+                reply = render_sales_response(sales_action_taken, sales_draft, sales_state)
+                try:
+                    save_turn(conv_id, req.message, reply[:1200])
+                except Exception:
+                    pass
+                return ChatResp(
+                    reply=reply[:1200],
+                    latency_ms=0,
+                    model="sales-template",
+                    adapter=None,
+                    trigger_purchase_request=False,
+                    debug=debug_trace,
+                )
+        sales_result = apply_message_to_state(sales_state, req.message)
+        sales_slots_for_action = sales_result.get("slots") or {}
+        sales_intents_for_action = sales_slots_for_action.get("intents") or []
+        should_build_sales_draft = (
+            "cancel" in sales_intents_for_action
+            or "handoff_request" in sales_intents_for_action
+            or "purchase_intent" in sales_intents_for_action
+            or (
+                "contact_provided" in sales_intents_for_action
+                and previous_purchase_status in {"needs_contact", "draft"}
+            )
+        )
+        if should_build_sales_draft:
+            sales_draft = build_purchase_request_draft(sales_state, req.message)
+            if (sales_draft or {}).get("status") == "draft":
+                event_type = "draft_created" if previous_purchase_status != "draft" else "draft_updated"
+                _ensure_durable_pending_request(sales_state, sales_draft, event_type=event_type)
+        sales_action_taken = _sales_action_from_state(sales_state, sales_result, sales_draft)
+        _save_sales_state(sales_state)
+        if sales_mode == "active" and sales_action_taken != "none":
+            debug_trace = _build_debug_trace(
+                mode=mode,
+                stage=_mode_default_stage(mode),
+                slots={},
+                retrieval_mode=retrieval_mode,
+            )
+            debug_trace.update(_sales_debug_payload(
+                sales_mode,
+                sales_state,
+                sales_result,
+                sales_action_taken,
+                persistent=sales_state_persistent,
+                state_warning=sales_state_warning,
+            ))
+            reply = render_sales_response(sales_action_taken, sales_draft, sales_state)
+            try:
+                save_turn(conv_id, req.message, reply[:1200])
+            except Exception:
+                pass
+            return ChatResp(
+                reply=reply[:1200],
+                latency_ms=0,
+                model="sales-template",
+                adapter=None,
+                trigger_purchase_request=False,
+                debug=debug_trace,
+            )
+
     # ---- RULE layer (guardrails) ----
     rr = rule_reply(req.message)
     if rr:
@@ -825,6 +1415,15 @@ def chat(req: ChatReq):
             slots=getattr(st_for_rule, "slots", {}),
             retrieval_mode=retrieval_mode,
         )
+        if sales_enabled:
+            debug_trace.update(_sales_debug_payload(
+                sales_mode,
+                sales_state,
+                sales_result,
+                sales_action_taken,
+                persistent=sales_state_persistent,
+                state_warning=sales_state_warning,
+            ))
         log_event({
             "event": "rule_hit",
             "rule_type": rr["type"],
@@ -885,7 +1484,7 @@ def chat(req: ChatReq):
         # Don't break chat if slot extractor fails
         pass
 
-    pipe = get_or_create_pipe(base_model, adapter, tokenizer_path) if provider == "local" else None
+    pipe = get_or_create_pipe(base_model, adapter, tokenizer_path) if provider == "local" and answer_mode != "template" else None
 
     # ---- RAG context from KB + optional structured providers ----
     retrieval_hits = []
@@ -956,6 +1555,10 @@ def chat(req: ChatReq):
     else:
         context = retrieval_context
 
+    if sales_enabled and sales_state is not None and retrieval_hits:
+        update_recommended_products(sales_state, retrieval_hits)
+        _save_sales_state(sales_state)
+
     debug_trace = _build_debug_trace(
         mode=mode,
         stage=stage_for_debug,
@@ -969,6 +1572,20 @@ def chat(req: ChatReq):
         price_provider=price_provider_name,
         used_mock_price_data=used_mock_price_data,
     )
+    debug_trace.update({
+        "answer_mode": answer_mode,
+        "template_renderer": answer_mode == "template",
+        "retrieval_count": len(retrieval_hits),
+    })
+    if sales_enabled:
+        debug_trace.update(_sales_debug_payload(
+            sales_mode,
+            sales_state,
+            sales_result,
+            sales_action_taken,
+            persistent=sales_state_persistent,
+            state_warning=sales_state_warning,
+        ))
     log_retrieval_debug({
         **debug_trace,
         **summarize_retrieval_debug(retrieval_hits, context),
@@ -978,6 +1595,59 @@ def chat(req: ChatReq):
         "tenant_id": req.tenant_id,
         "allow_rag": allow_rag,
     })
+
+    if answer_mode == "template":
+        t0 = time.time()
+        resp = render_product_answer(req.message, context)
+        latency_ms = int((time.time() - t0) * 1000)
+        debug_trace.update({
+            "answer_mode": "template",
+            "template_renderer": True,
+            "retrieval_count": len(retrieval_hits),
+        })
+        if sales_enabled:
+            debug_trace.update(_sales_debug_payload(
+                sales_mode,
+                sales_state,
+                sales_result,
+                sales_action_taken,
+                persistent=sales_state_persistent,
+                state_warning=sales_state_warning,
+            ))
+        log_event({
+            "event": "chat",
+            "question": req.message,
+            "answer": resp[:1200],
+            "latency_ms": latency_ms,
+            "model": "product-template",
+            "adapter": None,
+            "provider": provider,
+            "channel": req.channel,
+            "conversation_id": conv_id,
+            "tenant_id": req.tenant_id,
+            "context_length": len(context),
+            "kb_loaded": active_kb is not None,
+            "sales_stage": stage_for_debug,
+            "sales_slots": slots_for_debug,
+            "debug": debug_trace,
+        })
+        try:
+            save_turn(conv_id, req.message, resp)
+        except Exception:
+            pass
+        if sales_enabled and sales_state is not None:
+            _save_sales_state(sales_state)
+        response_trigger_purchase_request = False if sales_enabled else (trigger_purchase_request if _is_tenant_sales_mode(mode) else False)
+        return ChatResp(
+            reply=resp[:1200],
+            latency_ms=latency_ms,
+            model="product-template",
+            adapter=None,
+            trigger_purchase_request=response_trigger_purchase_request,
+            captured_phone=captured_phone if _is_tenant_sales_mode(mode) else None,
+            captured_name=captured_name if _is_tenant_sales_mode(mode) else None,
+            debug=debug_trace,
+        )
 
     # ---- SIMILAR SUGGESTION (use KB hits) ----
     if _is_tenant_sales_mode(mode) and active_kb is not None and allow_rag and want_similar(req.message):
@@ -1008,6 +1678,8 @@ def chat(req: ChatReq):
                 save_turn(conv_id, req.message, reply[:1200])
             except Exception:
                 pass
+            if sales_enabled and sales_state is not None:
+                _save_sales_state(sales_state)
 
             return ChatResp(
                 reply=reply[:1200],
@@ -1026,6 +1698,13 @@ def chat(req: ChatReq):
         sales_prefix = ""
 
     sys_prompt = _build_system_prompt(mode, sales_prefix, cfg.system_prompt)
+    if _prefer_vietnamese_response(req, mode):
+        sys_prompt += (
+            "\n\nLANGUAGE PREFERENCE:\n"
+            "- Reply in Vietnamese by default for this tenant sales chat.\n"
+            "- If the user writes a short greeting like 'hi' or 'hello', answer in Vietnamese and ask what furniture item they need.\n"
+            "- Only switch to English if the user explicitly asks to use English."
+        )
 
     t0 = time.time()
     messages = build_messages(
@@ -1035,7 +1714,11 @@ def chat(req: ChatReq):
         grounding_context=context if context else None,
     )
 
-    if provider == "stub":
+    if mode == ChatMode.MARKET_PRICE.value:
+        out = _build_market_price_reply(req.message, price_refs, debug_trace)
+        response_model = "structured_price"
+        response_adapter = None
+    elif provider == "stub":
         out = _stub_generate(messages, context, debug_trace)
         response_model = "stub"
         response_adapter = None
@@ -1097,18 +1780,20 @@ def chat(req: ChatReq):
     resp = out.strip() if out else "Sorry, I couldn't process that request right now."
 
     # Keep answers concise, but not too short for consultative flow
-    sentences = re.split(r'(?<=[.!?])\s+', resp)
-    resp = " ".join(sentences[:6]).strip()
+    if response_model != "structured_price":
+        sentences = re.split(r'(?<=[.!?])\s+', resp)
+        resp = " ".join(sentences[:6]).strip()
 
     NOT_FOUND = "I couldn’t find that in this store’s data."
 
-    if mode == ChatMode.MARKET_PRICE.value and not price_refs:
-        resp = (
-            "I do not have enough structured price references to judge a market range or outlier. "
-            "Please provide product prices, links, or enable a demo/external price provider so I can analyze the range without inventing numbers."
-        )
-    elif provider != "stub":
-        if _is_tenant_sales_mode(mode) and ((not context) or (NOT_FOUND.lower() in resp.lower())):
+    if provider != "stub":
+        if _is_tenant_sales_mode(mode) and _prefer_vietnamese_response(req, mode) and ((not context) or (NOT_FOUND.lower() in resp.lower())):
+            resp = (
+                "Mình chưa có đủ dữ liệu từ kho tri thức của cửa hàng để trả lời thật chính xác. "
+                "Bạn gửi giúp mình tên sản phẩm, mã sản phẩm hoặc nhu cầu cụ thể hơn nhé; "
+                "mình cũng có thể chuyển cho nhân viên tư vấn nếu bạn muốn."
+            )
+        elif _is_tenant_sales_mode(mode) and ((not context) or (NOT_FOUND.lower() in resp.lower())):
             resp = (
                 "Sorry, I couldn’t find enough information to answer that accurately. "
                 "If you can share the product name or code, I can try again, "
@@ -1128,6 +1813,8 @@ def chat(req: ChatReq):
             "I can’t process payments directly in chat."
         )
 
+    resp = _apply_grounding_guard(req.message, context, resp)
+
     # --- Output guardrail: if model slips into unverified facts, replace with safe fallback ---
     if BAD_FACTS.search(resp):
         resp = (
@@ -1136,6 +1823,15 @@ def chat(req: ChatReq):
         )
 
     latency_ms = int((time.time() - t0) * 1000)
+    if sales_enabled:
+        debug_trace.update(_sales_debug_payload(
+            sales_mode,
+            sales_state,
+            sales_result,
+            sales_action_taken,
+            persistent=sales_state_persistent,
+            state_warning=sales_state_warning,
+        ))
 
     log_event({
         "event": "chat",
@@ -1160,8 +1856,10 @@ def chat(req: ChatReq):
         save_turn(conv_id, req.message, resp)
     except Exception:
         pass
+    if sales_enabled and sales_state is not None:
+        _save_sales_state(sales_state)
 
-    response_trigger_purchase_request = trigger_purchase_request if _is_tenant_sales_mode(mode) else False
+    response_trigger_purchase_request = False if sales_enabled else (trigger_purchase_request if _is_tenant_sales_mode(mode) else False)
     if _is_test_mode() and _force_non_sales_purchase_trigger() and not _is_tenant_sales_mode(mode):
         response_trigger_purchase_request = True
 

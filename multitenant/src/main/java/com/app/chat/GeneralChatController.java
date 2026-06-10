@@ -32,8 +32,8 @@ public class GeneralChatController {
     private final LlmInstanceManager llmInstanceManager;
 
     private ChatbotInstance getGeneralChatbot() {
-        return botRepo.findByModeAndStatus(ChatbotMode.GENERAL_COMPARE, "ACTIVE")
-                .or(() -> botRepo.findByModeAndStatus(LEGACY_GENERAL_CHATBOT_MODE, "ACTIVE"))
+        return findPreferredActiveBot(ChatbotMode.GENERAL_COMPARE)
+                .or(() -> findPreferredActiveBot(LEGACY_GENERAL_CHATBOT_MODE))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "General comparison chatbot not configured. Please set up a chatbot with mode='general_compare'"));
     }
@@ -41,7 +41,7 @@ public class GeneralChatController {
     private ChatbotInstance getChatbotForMode(String requestedMode) {
         String mode = resolveGeneralMode(requestedMode);
         if (ChatbotMode.MARKET_PRICE.equals(mode)) {
-            return botRepo.findByModeAndStatus(ChatbotMode.MARKET_PRICE, "ACTIVE")
+            return findPreferredActiveBot(ChatbotMode.MARKET_PRICE)
                     .or(this::optionalGeneralChatbot)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                             "Market price chatbot not configured. Please set up a chatbot with mode='market_price'"));
@@ -50,8 +50,21 @@ public class GeneralChatController {
     }
 
     private Optional<ChatbotInstance> optionalGeneralChatbot() {
-        return botRepo.findByModeAndStatus(ChatbotMode.GENERAL_COMPARE, "ACTIVE")
-                .or(() -> botRepo.findByModeAndStatus(LEGACY_GENERAL_CHATBOT_MODE, "ACTIVE"));
+        return findPreferredActiveBot(ChatbotMode.GENERAL_COMPARE)
+                .or(() -> findPreferredActiveBot(LEGACY_GENERAL_CHATBOT_MODE));
+    }
+
+    private Optional<ChatbotInstance> findPreferredActiveBot(String mode) {
+        List<ChatbotInstance> bots = botRepo.findAllByModeAndStatusOrderByNameAsc(mode, "ACTIVE");
+        return bots.stream()
+                .min(Comparator.comparing((ChatbotInstance bot) -> isDemoBot(bot) ? 0 : 1)
+                        .thenComparing(bot -> safe(bot.getName())))
+                .or(() -> bots.stream().findFirst());
+    }
+
+    private boolean isDemoBot(ChatbotInstance bot) {
+        String name = bot.getName();
+        return name != null && name.trim().toUpperCase(Locale.ROOT).startsWith("DEMO");
     }
 
     private String resolveGeneralMode(String rawMode) {

@@ -1,0 +1,89 @@
+{
+  "run_id": "20260529T190615Z-gotrangtri-818be9c2",
+  "source_name": "gotrangtri",
+  "tenant_id": "demo-tenant",
+  "generated_at": "2026-05-29T19:06:15.044657+00:00",
+  "output_path": "data_pipeline/output/sitemap_gotrangtri_products.jsonl",
+  "counts": {
+    "fetched_count": 100,
+    "extracted_count": 100,
+    "failed_count": 0,
+    "skipped_count": 0,
+    "quality_high_count": 100,
+    "quality_medium_count": 0,
+    "quality_low_count": 0
+  },
+  "field_coverage": {
+    "tenant_id": 100,
+    "product_name": 100,
+    "price": 100,
+    "category": 97,
+    "material": 54,
+    "color": 4,
+    "dimensions": 25,
+    "brand": 100,
+    "image_urls": 100,
+    "sku": 100,
+    "availability": 100
+  },
+  "category_distribution": {
+    "Rèm": 20,
+    "Đèn": 48,
+    "Kệ": 1,
+    "Thảm": 28
+  },
+  "extractor_distribution": {
+    "json_ld": 100
+  },
+  "data_quality_distribution": {
+    "high": 100
+  },
+  "errors": [],
+  "sample_products": [
+    {
+      "product_name": "Rèm nhà tắm nhập khẩu GHO-613",
+      "price": 900000.0,
+      "category": "Rèm",
+      "material": null,
+      "dimensions": null,
+      "data_quality": "high",
+      "source_url": "https://gotrangtri.vn/shop/rem-nha-tam-nhap-khau-gho-613"
+    },
+    {
+      "product_name": "Rèm sáo gỗ nhập khẩu cao cấp GHO-610",
+      "price": 700000.0,
+      "category": "Rèm",
+      "material": null,
+      "dimensions": "Mành sáo gỗ phải đo kích thước vừa với khuôn cửa vì thế hãy liên hệ với bên bán rèm để họ đo kích thước, khảo sát cửa và",
+      "data_quality": "high",
+      "source_url": "https://gotrangtri.vn/shop/rem-sao-go-cao-cap-gho-610"
+    },
+    {
+      "product_name": "Rèm cửa giá rẻ chất lượng cao GHO-609",
+      "price": 500000.0,
+      "category": "Rèm",
+      "material": null,
+      "dimensions": null,
+      "data_quality": "high",
+      "source_url": "https://gotrangtri.vn/shop/rem-cua-gia-re-chat-luong-cao-gho-609"
+    },
+    {
+      "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+      "price": 700000.0,
+      "category": "Rèm",
+      "material": null,
+      "dimensions": null,
+      "data_quality": "high",
+      "source_url": "https://gotrangtri.vn/shop/rem-cuon-tranh-cao-cap-gho-607"
+    },
+    {
+      "product_name": "Rèm cửa văn phòng cao cấp GHO-606",
+      "price": 500000.0,
+      "category": "Rèm",
+      "material": null,
+      "dimensions": null,
+      "data_quality": "high",
+      "source_url": "https://gotrangtri.vn/shop/rem-cua-van-phong-cao-cap-gho-606"
+    }
+  ]
+}

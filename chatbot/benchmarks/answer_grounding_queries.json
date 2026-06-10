@@ -1,0 +1,367 @@
+[
+  {
+    "id": "listing_001",
+    "query": "Có rèm nào dưới 1 triệu không?",
+    "type": "product_listing",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": true,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 5,
+      "price": {"max": 1000000},
+      "expected_categories": ["Rèm"]
+    },
+    "notes": "List relevant curtain products from context with [P#] references."
+  },
+  {
+    "id": "listing_002",
+    "query": "Có sofa không?",
+    "type": "product_listing",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 5,
+      "expected_categories": ["Sofa"]
+    },
+    "notes": "Answer should cite sofa products."
+  },
+  {
+    "id": "listing_003",
+    "query": "Có kệ tivi gỗ không?",
+    "type": "product_listing",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 5,
+      "expected_categories": ["Kệ"]
+    },
+    "notes": "Answer should cite TV shelf products and avoid unsupported material claims."
+  },
+  {
+    "id": "listing_004",
+    "query": "Có đèn trang trí phòng khách không?",
+    "type": "product_listing",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 5,
+      "expected_categories": ["Đèn"]
+    },
+    "notes": "Decorative lamp query."
+  },
+  {
+    "id": "listing_005",
+    "query": "Có bàn trà nào hợp phòng khách nhỏ không?",
+    "type": "product_listing",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 5,
+      "expected_categories": ["Bàn trà"]
+    },
+    "notes": "Coffee table listing with room intent."
+  },
+  {
+    "id": "price_001",
+    "query": "Có thảm dưới 2 triệu không?",
+    "type": "price_constraint",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": true,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 5,
+      "price": {"max": 2000000},
+      "expected_categories": ["Thảm"]
+    },
+    "notes": "Price-filtered rug answer."
+  },
+  {
+    "id": "price_002",
+    "query": "Có bàn trà từ 1 đến 3 triệu không?",
+    "type": "price_constraint",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": true,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 5,
+      "price": {"min": 1000000, "max": 3000000},
+      "expected_categories": ["Bàn trà"]
+    },
+    "notes": "Range price answer."
+  },
+  {
+    "id": "price_003",
+    "query": "Có đèn dưới 500k không?",
+    "type": "price_constraint",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": true,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 5,
+      "price": {"max": 500000},
+      "expected_categories": ["Đèn"]
+    },
+    "notes": "Low-price lamp answer."
+  },
+  {
+    "id": "price_004",
+    "query": "Có ghế thư giãn dưới 3 triệu không?",
+    "type": "price_constraint",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": true,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 5,
+      "price": {"max": 3000000},
+      "expected_categories": ["Ghế"]
+    },
+    "notes": "Chair with price constraint."
+  },
+  {
+    "id": "price_005",
+    "query": "Có rèm cửa dưới 700k không?",
+    "type": "price_constraint",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": true,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 5,
+      "price": {"max": 700000},
+      "expected_categories": ["Rèm"]
+    },
+    "notes": "Tight curtain price."
+  },
+  {
+    "id": "comparison_001",
+    "query": "So sánh sofa và ghế thư giãn",
+    "type": "comparison",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": true,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 6,
+      "expected_categories": ["Sofa", "Ghế"]
+    },
+    "notes": "Comparison should cite at least two product groups when present."
+  },
+  {
+    "id": "comparison_002",
+    "query": "So sánh rèm cuốn và rèm sáo",
+    "type": "comparison",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": true,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 6,
+      "expected_categories": ["Rèm"]
+    },
+    "notes": "Curtain subtype comparison."
+  },
+  {
+    "id": "comparison_003",
+    "query": "So sánh bàn trà gỗ tự nhiên và gỗ công nghiệp",
+    "type": "comparison",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": true,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 6,
+      "expected_categories": ["Bàn trà"]
+    },
+    "notes": "Material comparison within coffee tables."
+  },
+  {
+    "id": "comparison_004",
+    "query": "So sánh kệ tivi thấp và kệ tivi treo tường",
+    "type": "comparison",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 6,
+      "expected_categories": ["Kệ"]
+    },
+    "notes": "TV shelf comparison."
+  },
+  {
+    "id": "matching_001",
+    "query": "Có bàn trà nào hợp với kệ tivi không?",
+    "type": "matching",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 5,
+      "expected_categories": ["Bàn trà", "Kệ"]
+    },
+    "notes": "Multi-category answer should cite both groups if available."
+  },
+  {
+    "id": "matching_002",
+    "query": "Tôi muốn bàn ăn và ghế ăn",
+    "type": "matching",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 5,
+      "expected_categories": ["Bàn ăn", "Ghế"]
+    },
+    "notes": "Dining set answer."
+  },
+  {
+    "id": "matching_003",
+    "query": "Tư vấn rèm và đèn cho phòng khách",
+    "type": "matching",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 5,
+      "expected_categories": ["Rèm", "Đèn"]
+    },
+    "notes": "Room matching across two categories."
+  },
+  {
+    "id": "matching_004",
+    "query": "Tôi muốn sofa, bàn trà và thảm cho phòng khách",
+    "type": "matching",
+    "expected_behavior": {
+      "must_have_citation": true,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": true,
+      "max_products_to_answer": 6,
+      "expected_categories": ["Sofa", "Bàn trà", "Thảm"]
+    },
+    "notes": "Three product groups."
+  },
+  {
+    "id": "missing_001",
+    "query": "Sản phẩm này bảo hành bao lâu?",
+    "type": "missing_field",
+    "expected_behavior": {
+      "must_have_citation": false,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": false,
+      "max_products_to_answer": 3
+    },
+    "notes": "Answer should not invent warranty if context lacks it."
+  },
+  {
+    "id": "missing_002",
+    "query": "Kệ tivi này có miễn phí vận chuyển không?",
+    "type": "missing_field",
+    "expected_behavior": {
+      "must_have_citation": false,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": false,
+      "max_products_to_answer": 3,
+      "expected_categories": ["Kệ"]
+    },
+    "notes": "Do not invent free shipping."
+  },
+  {
+    "id": "missing_003",
+    "query": "Rèm này có lắp đặt tận nhà không?",
+    "type": "missing_field",
+    "expected_behavior": {
+      "must_have_citation": false,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": false,
+      "max_products_to_answer": 3,
+      "expected_categories": ["Rèm"]
+    },
+    "notes": "Do not invent installation service."
+  },
+  {
+    "id": "missing_004",
+    "query": "Sofa này còn hàng ở showroom không?",
+    "type": "missing_field",
+    "expected_behavior": {
+      "must_have_citation": false,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": false,
+      "max_products_to_answer": 3,
+      "expected_categories": ["Sofa"]
+    },
+    "notes": "Do not invent showroom stock status."
+  },
+  {
+    "id": "policy_001",
+    "query": "Chính sách đổi trả thế nào?",
+    "type": "out_of_scope_or_policy",
+    "expected_behavior": {
+      "must_have_citation": false,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": false,
+      "max_products_to_answer": 0
+    },
+    "notes": "Policy answer should use policy context if available."
+  },
+  {
+    "id": "policy_002",
+    "query": "Cửa hàng ở đâu?",
+    "type": "out_of_scope_or_policy",
+    "expected_behavior": {
+      "must_have_citation": false,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": false,
+      "max_products_to_answer": 0
+    },
+    "notes": "Do not invent address."
+  },
+  {
+    "id": "policy_003",
+    "query": "Có tuyển nhân viên không?",
+    "type": "out_of_scope_or_policy",
+    "expected_behavior": {
+      "must_have_citation": false,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": false,
+      "max_products_to_answer": 0
+    },
+    "notes": "Hiring query should not get product hallucination."
+  },
+  {
+    "id": "policy_004",
+    "query": "Tôi muốn mua điện thoại",
+    "type": "out_of_scope_or_policy",
+    "expected_behavior": {
+      "must_have_citation": false,
+      "must_mention_price": false,
+      "must_not_fabricate_missing_fields": true,
+      "should_include_source_link": false,
+      "max_products_to_answer": 0
+    },
+    "notes": "Non-furniture product should get fallback."
+  }
+]

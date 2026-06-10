@@ -1,189 +1,33 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Shop Dashboard</title>
+    <title>Tenant Workspace</title>
     <link rel="stylesheet" href="/tenant/styles.css" />
 </head>
 <body>
-<div class="container">
-
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">Tenant Workspace</div>
+            <div class="tenant-name" id="tenantLabel">—</div>
+        </div>
+        <nav class="sidebar-nav" id="sidebarNav"></nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-name" id="identityLabel">-</div>
+                <div class="user-role" id="roleLabel">-</div>
+            </div>
+            <button class="btn btn-logout" id="btn-logout">Logout</button>
+        </div>
+    </aside>
     <header class="topbar">
-        <div>
-            <div class="title">Shop Dashboard</div>
-            <div class="sub">Your purchase requests</div>
-        </div>
-        <div class="right">
-            <span class="chip">Tenant: <b id="tenantLabel">—</b></span>
-            <span class="chip">User: <b id="identityLabel">-</b></span>
-            <span class="chip">Role: <b id="roleLabel">-</b></span>
-            <button class="secondary" id="btn-refresh">Refresh</button>
-            <button class="danger" id="btn-logout" title="Clear session and return to login">Logout</button>
-        </div>
+        <div class="page-title" id="pageTitle">Dashboard</div>
     </header>
-
-    <section id="tenantAdminTools" class="card hidden">
-        <div class="head">
-            <div>
-                <div class="title">Tenant Admin Tools</div>
-                <div class="sub">Visible only to tenant admins. Uses the current tenant-scoped config APIs.</div>
-            </div>
-            <div class="row">
-                <button class="secondary" id="btn-load-chatbots">Load chatbots</button>
-                <button class="secondary" id="btn-load-telegram-bindings">Load Telegram bindings</button>
-                <button class="secondary" id="btn-load-messenger-bindings">Load Messenger bindings</button>
-            </div>
-        </div>
-        <div class="grid3">
-            <div>
-                <label>Email</label>
-                <input id="tenantMemberEmail" />
-            </div>
-            <div>
-                <label>Display name</label>
-                <input id="tenantMemberDisplayName" />
-            </div>
-            <div>
-                <label>Password</label>
-                <input id="tenantMemberPassword" type="password" />
-            </div>
-        </div>
-        <div class="grid3">
-            <div>
-                <label>Role</label>
-                <select id="tenantMemberRole">
-                    <option value="TENANT_MEMBER" selected>TENANT_MEMBER</option>
-                    <option value="TENANT_ADMIN">TENANT_ADMIN</option>
-                </select>
-            </div>
-            <div>
-                <label>Status</label>
-                <select id="tenantMemberStatus">
-                    <option value="ACTIVE" selected>ACTIVE</option>
-                    <option value="INACTIVE">INACTIVE</option>
-                </select>
-            </div>
-            <div class="row end">
-                <button id="btn-create-member">Create member</button>
-            </div>
-        </div>
-        <div class="row">
-            <button class="secondary" id="btn-load-members">Load members</button>
-            <span class="muted" id="tenantMembersMsg"></span>
-        </div>
-        <hr />
-        <div class="grid3">
-            <div>
-                <label>New KB source URL</label>
-                <input id="kbSourceUrl" placeholder="https://example.com/help-center" />
-            </div>
-            <div class="row end">
-                <button id="btn-add-kb-source">Add source URL</button>
-            </div>
-            <div class="row end">
-                <button class="secondary" id="btn-load-kb-sources">Load source URLs</button>
-            </div>
-        </div>
-        <div class="row">
-            <span class="muted" id="kbSourcesMsg"></span>
-        </div>
-        <div class="row">
-            <button id="btn-rebuild-kb">Rebuild KB</button>
-            <span class="muted" id="kbRebuildMsg"></span>
-        </div>
-        <div class="row">
-            <button class="secondary" id="btn-load-tenant-ops">Load operations snapshot</button>
-            <button class="secondary" id="btn-evict-tenant-runtime">Evict runtime</button>
-            <span class="muted" id="tenantOpsMsg"></span>
-        </div>
-        <div id="tenantOpsSummary" class="note hidden"></div>
-        <div class="table-wrap">
-            <table class="table" id="kb-sources-table">
-                <thead>
-                <tr>
-                    <th>Source URL</th>
-                    <th>Action</th>
-                </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-        <pre id="tenantAdminToolsOut" class="out"></pre>
-    </section>
-
-    <section class="card">
-        <table class="table" id="leads-table">
-            <thead>
-            <tr>
-                <th>Created</th>
-                <th>Status</th>
-                <th>Channel</th>
-                <th>Customer</th>
-                <th>Conversation</th>
-                <th>Actions</th>
-            </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <div id="lead-details" class="drawer hidden">
-            <div class="drawer-header">
-                <h3>Lead Details</h3>
-                <button id="btn-close" class="secondary">Close</button>
-            </div>
-
-            <pre id="lead-slots" class="pre"></pre>
-            <pre id="lead-transcript" class="pre"></pre>
-
-            <!-- ✅ Delivery info (staff collects) -->
-            <div class="order-box">
-                <label for="orderInfo">Delivery info</label>
-                <textarea id="orderInfo" placeholder="Name:\nPhone:\nAddress:"></textarea>
-
-                <div class="row end">
-                    <button id="btn-save-order" class="secondary">Save delivery info</button>
-                    <button id="btn-mark-shipped">Mark shipped</button>
-                </div>
-                <div id="orderStatus" class="muted"></div>
-            </div>
-            <!-- ✅ Reply box (staff → customer) -->
-            <div class="reply-box">
-                <label for="replyText">Reply</label>
-                <textarea id="replyText" placeholder="Type a message to the customer..."></textarea>
-                <div class="row end">
-                    <button id="btn-send-reply">Send</button>
-                </div>
-                <div id="replyStatus" class="muted"></div>
-            </div>
-        </div>
-    </section>
-
-    <footer class="footer muted">
-        Tenant workspace with role-based sections
-    </footer>
-
-</div>
-
-<script src="/tenant/app.js"></script>
-
-<!-- ✅ Minimal logout hook -->
-<script>
-    (function(){
-        var btn = document.getElementById("btn-logout");
-        if(!btn) return;
-        btn.addEventListener("click", async function(){
-            try {
-                await fetch("/api/login/logout", { method: "POST" });
-            } catch (e) {
-                console.error(e);
-            } finally {
-                localStorage.removeItem("tenant_id");
-                localStorage.removeItem("tenant_name");
-                window.location.href = "/login";
-            }
-        });
-    })();
-</script>
+    <main class="main-content" id="app">
+        <div class="page"><h1>Loading...</h1></div>
+    </main>
+    <div id="toast-container" class="toast-container"></div>
+    <script src="/tenant/app.js"></script>
 </body>
 </html>

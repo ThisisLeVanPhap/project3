@@ -1,0 +1,1833 @@
+{
+  "summary": {
+    "total_answers": 26,
+    "pass_rate": 0.846154,
+    "citation_validity_rate": 1.0,
+    "price_consistency_rate": 0.961538,
+    "hallucination_failure_count": 3
+  },
+  "answers": [
+    {
+      "id": "listing_001",
+      "query": "Có rèm nào dưới 1 triệu không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1",
+          "P5"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            500000,
+            700000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [
+            1000000
+          ],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/rem-che-nang-chat-luong-cao-gho-605",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/rem-cuon-tranh-cao-cap-gho-607",
+              "reason": "url"
+            },
+            {
+              "text": "[P5]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P1]",
+              "reason": "citation"
+            },
+            {
+              "text": "GHO-605",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-607",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            500000,
+            700000,
+            900000,
+            1000000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "listing_002",
+      "query": "Có sofa không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": false,
+        "citation_validity": true,
+        "source_link_presence": false,
+        "price_consistency": true,
+        "product_name_grounded": false,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": true,
+        "price_details": {
+          "detected_prices": [],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [],
+          "context_prices": [
+            8300000,
+            10200000,
+            11000000,
+            13000000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [
+          "has_required_citation",
+          "source_link_presence",
+          "product_name_grounded"
+        ],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "listing_003",
+      "query": "Có kệ tivi gỗ không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P4",
+          "P5"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            7000000,
+            7200000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/ke-tivi-co-dien-go-tu-nhien-ghs-358",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/ke-tivi-phong-khach-thiet-ke-dep-bang-go-ghs-3470",
+              "reason": "url"
+            },
+            {
+              "text": "[P4]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P5]",
+              "reason": "citation"
+            },
+            {
+              "text": "1725x380x430mm",
+              "reason": "dimension"
+            },
+            {
+              "text": "1800x360x535mm",
+              "reason": "dimension"
+            },
+            {
+              "text": "GHS-358",
+              "reason": "sku"
+            },
+            {
+              "text": "GHS-3470",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            7000000,
+            7200000,
+            7500000,
+            9000000,
+            11600000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "listing_004",
+      "query": "Có đèn trang trí phòng khách không?",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": false,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [
+          "P5"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            1500000,
+            1700000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/den-long-go-trang-tri-phong-khach-gho-272",
+              "reason": "url"
+            },
+            {
+              "text": "[P5]",
+              "reason": "citation"
+            },
+            {
+              "text": "50cm",
+              "reason": "dimension"
+            },
+            {
+              "text": "GHO-272",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            1200000,
+            1700000,
+            2100000,
+            3500000,
+            6600000
+          ],
+          "reason": "answer_price_not_found_in_context_prices",
+          "mismatched_prices": [
+            1500000
+          ],
+          "consistent": false
+        },
+        "failure_reasons": [
+          "price_consistency"
+        ],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "listing_005",
+      "query": "Có bàn trà nào hợp phòng khách nhỏ không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P2"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            4600000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/ban-tra-go-phong-khach-nho-gon-da-nang-ghs-4917",
+              "reason": "url"
+            },
+            {
+              "text": "[P2]",
+              "reason": "citation"
+            },
+            {
+              "text": "1200 x 600 x 440mm",
+              "reason": "dimension"
+            },
+            {
+              "text": "GHS-4917",
+              "reason": "sku"
+            },
+            {
+              "text": "GHS-4917",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            4400000,
+            4600000,
+            6300000,
+            7600000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "price_001",
+      "query": "Có thảm dưới 2 triệu không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P2",
+          "P3"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            1400000,
+            1700000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [
+            2000000
+          ],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/tham-long-ngan-nhap-khau-tho-nhi-ky-gho-p07",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/tham-trai-san-nha-da-kich-thuoc-gho-d07",
+              "reason": "url"
+            },
+            {
+              "text": "[P2]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P3]",
+              "reason": "citation"
+            }
+          ],
+          "context_prices": [
+            1400000,
+            1700000,
+            1800000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "price_002",
+      "query": "Có bàn trà từ 1 đến 3 triệu không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P2",
+          "P3"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            1800000,
+            2200000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/ban-tra-bac-au-thiet-ke-an-tuong-ghs-41823",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/ban-go-phong-khach-ban-tra-bang-go-cong-nghiep-ghs-405",
+              "reason": "url"
+            },
+            {
+              "text": "[P2]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P3]",
+              "reason": "citation"
+            },
+            {
+              "text": "114x55x42cm",
+              "reason": "dimension"
+            },
+            {
+              "text": "120x60x60cm",
+              "reason": "dimension"
+            },
+            {
+              "text": "GHS-41823",
+              "reason": "sku"
+            },
+            {
+              "text": "GHS-405",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            1800000,
+            2200000,
+            2300000,
+            2900000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "price_003",
+      "query": "Có đèn dưới 500k không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P4",
+          "P5"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            400000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [
+            500000
+          ],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/den-de-ban-kieu-dang-hien-dai-gho-290",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/den-tha-trang-tri-mang-phong-cach-retro-gho-243",
+              "reason": "url"
+            },
+            {
+              "text": "[P5]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P4]",
+              "reason": "citation"
+            },
+            {
+              "text": "GHO-290",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-243",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            200000,
+            300000,
+            400000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "price_004",
+      "query": "Có ghế thư giãn dưới 3 triệu không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1",
+          "P2"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            1300000,
+            2000000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [
+            3000000
+          ],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/ghe-lung-cong-ghe-thu-gian-ghs-718",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/ghe-lung-cong-ghe-thu-gian-ghs-717",
+              "reason": "url"
+            },
+            {
+              "text": "[P1]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P2]",
+              "reason": "citation"
+            },
+            {
+              "text": "460×600×680",
+              "reason": "dimension"
+            },
+            {
+              "text": "680×630×660",
+              "reason": "dimension"
+            },
+            {
+              "text": "GHS-718",
+              "reason": "sku"
+            },
+            {
+              "text": "GHS-717",
+              "reason": "sku"
+            },
+            {
+              "text": "GHS-717",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            1000000,
+            1100000,
+            1300000,
+            1600000,
+            2000000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "price_005",
+      "query": "Có rèm cửa dưới 700k không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1",
+          "P3"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            500000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [
+            500000,
+            700000
+          ],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/rem-cua-gia-re-chat-luong-cao-gho-609",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/rem-sao-nhom-nhap-khau-gho-611",
+              "reason": "url"
+            },
+            {
+              "text": "[P1]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P3]",
+              "reason": "citation"
+            },
+            {
+              "text": "GHO-609",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-611",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            500000,
+            700000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "comparison_001",
+      "query": "So sánh sofa và ghế thư giãn",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1",
+          "P4"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            1600000,
+            25500000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/bo-ghe-sofa-gia-dinh-phong-khach-ghs-8268",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/ghe-thu-gian-phong-cach-hien-dai-ghc-716",
+              "reason": "url"
+            },
+            {
+              "text": "[P1]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P4]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P1]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P4]",
+              "reason": "citation"
+            },
+            {
+              "text": "2800 x 1520 x 830mm",
+              "reason": "dimension"
+            },
+            {
+              "text": "GHS-8268",
+              "reason": "sku"
+            },
+            {
+              "text": "GHC-716",
+              "reason": "sku"
+            },
+            {
+              "text": "GHS-8268",
+              "reason": "sku"
+            },
+            {
+              "text": "GHC-716",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            1300000,
+            1600000,
+            2000000,
+            13000000,
+            25500000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "comparison_002",
+      "query": "So sánh rèm cuốn và rèm sáo",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": false,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": false,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [
+            500000,
+            700000
+          ],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/rem-cuon-cao-cap-gho-621",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/rem-cuon-cao-cap-gho-620",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/rem-sao-nhom-nhap-khau-gho-611",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/rem-sao-go-cao-cap-gho-618",
+              "reason": "url"
+            },
+            {
+              "text": "GHO-621",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-620",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-603",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-611",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-618",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-621",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-621",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-620",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-611",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-618",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            500000,
+            700000
+          ],
+          "reason": "approximate_or_range_price_ignored",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [
+          "has_required_citation",
+          "product_name_grounded"
+        ],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "comparison_003",
+      "query": "So sánh bàn trà gỗ tự nhiên và gỗ công nghiệp",
+      "pass": false,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": false,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": false,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": true,
+        "price_details": {
+          "detected_prices": [],
+          "aggregate_prices": [
+            5100000,
+            5500000
+          ],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [
+            5000000
+          ],
+          "ignored_numbers": [
+            {
+              "text": "GHS-4709",
+              "reason": "sku"
+            },
+            {
+              "text": "GHS-4716",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            3800000,
+            4600000,
+            5100000,
+            5500000,
+            5600000
+          ],
+          "reason": "aggregate_price_not_compared_to_product_prices,approximate_or_range_price_ignored",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [
+          "source_link_presence"
+        ],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "comparison_004",
+      "query": "So sánh kệ tivi thấp và kệ tivi treo tường",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1",
+          "P2"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            1700000,
+            2600000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [
+            1700000,
+            4400000
+          ],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/ke-treo-tuong-de-tivi-ghy-908",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/mau-ke-treo-tuong-tivi-hien-dai-ghs-3596",
+              "reason": "url"
+            },
+            {
+              "text": "[P1]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P2]",
+              "reason": "citation"
+            },
+            {
+              "text": "160x23x17cm",
+              "reason": "dimension"
+            },
+            {
+              "text": "1214x237x270mm",
+              "reason": "dimension"
+            },
+            {
+              "text": "160cm",
+              "reason": "dimension"
+            },
+            {
+              "text": "GHY-908",
+              "reason": "sku"
+            },
+            {
+              "text": "GHS-3596",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            1700000,
+            2500000,
+            2600000,
+            3100000,
+            4400000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "matching_001",
+      "query": "Có bàn trà nào hợp với kệ tivi không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1",
+          "P3"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            6200000,
+            6800000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/ban-tra-dep-go-tu-nhien-ghs-4501",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/ban-tra-gia-dinh-thiet-ke-thong-minh-ghs-41074",
+              "reason": "url"
+            },
+            {
+              "text": "[P3]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P1]",
+              "reason": "citation"
+            },
+            {
+              "text": "1150 x 600 x 410mm",
+              "reason": "dimension"
+            },
+            {
+              "text": "1200 x 600 x 435mm",
+              "reason": "dimension"
+            },
+            {
+              "text": "GHS-4501",
+              "reason": "sku"
+            },
+            {
+              "text": "GHS-41074",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            6200000,
+            6300000,
+            6800000,
+            7200000,
+            7500000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "matching_002",
+      "query": "Tôi muốn bàn ăn và ghế ăn",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1",
+          "P3"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            9900000,
+            11500000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/ban-an-hien-dai-4311",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/bo-ban-an-lunar-natural-trang-nha-ghc-4122",
+              "reason": "url"
+            },
+            {
+              "text": "[P1]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P3]",
+              "reason": "citation"
+            },
+            {
+              "text": "1300 x 760mm",
+              "reason": "dimension"
+            },
+            {
+              "text": "GHS-4311",
+              "reason": "sku"
+            },
+            {
+              "text": "GHC-4122",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            3000000,
+            9900000,
+            11500000,
+            13900000,
+            17900000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "matching_003",
+      "query": "Tư vấn rèm và đèn cho phòng khách",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P2",
+          "P3"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            900000,
+            2800000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/rem-cua-hoa-van-cao-cap-gho-614",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/den-chum-hien-dai-cho-phong-khach-them-dep-gho-262",
+              "reason": "url"
+            },
+            {
+              "text": "[P2]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P3]",
+              "reason": "citation"
+            },
+            {
+              "text": "GHO-614",
+              "reason": "sku"
+            },
+            {
+              "text": "GHO-262",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            900000,
+            1000000,
+            1700000,
+            2800000,
+            2900000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "matching_004",
+      "query": "Tôi muốn sofa, bàn trà và thảm cho phòng khách",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P1",
+          "P3",
+          "P4"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            3300000,
+            3900000,
+            12000000
+          ],
+          "aggregate_prices": [
+            19500000
+          ],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "https://gotrangtri.vn/shop/bo-ban-ghe-sofa-8213",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/ban-tra-sofa-phong-khach-tien-dung-ghs-4699",
+              "reason": "url"
+            },
+            {
+              "text": "https://gotrangtri.vn/shop/tham-trai-san-trang-tri-phong-khach-gho-tc07",
+              "reason": "url"
+            },
+            {
+              "text": "[P1]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P4]",
+              "reason": "citation"
+            },
+            {
+              "text": "[P3]",
+              "reason": "citation"
+            },
+            {
+              "text": "1200x600x400mm",
+              "reason": "dimension"
+            },
+            {
+              "text": "GHS-8213",
+              "reason": "sku"
+            },
+            {
+              "text": "GHS-4699",
+              "reason": "sku"
+            },
+            {
+              "text": "TC07",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            3300000,
+            3900000,
+            5200000,
+            6200000,
+            12000000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "missing_001",
+      "query": "Sản phẩm này bảo hành bao lâu?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [],
+          "context_prices": [
+            2100000,
+            7100000,
+            7500000,
+            7800000,
+            7900000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "missing_002",
+      "query": "Kệ tivi này có miễn phí vận chuyển không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [
+          "P2"
+        ],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [
+            200000
+          ],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [
+            {
+              "text": "[P2]",
+              "reason": "citation"
+            },
+            {
+              "text": "GHS-3511",
+              "reason": "sku"
+            }
+          ],
+          "context_prices": [
+            200000,
+            300000,
+            2800000,
+            3700000,
+            8900000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "missing_003",
+      "query": "Rèm này có lắp đặt tận nhà không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [],
+          "context_prices": [
+            500000,
+            900000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "missing_004",
+      "query": "Sofa này còn hàng ở showroom không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [],
+          "context_prices": [
+            3800000,
+            5400000,
+            8500000,
+            14400000,
+            25800000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": false
+      }
+    },
+    {
+      "id": "policy_001",
+      "query": "Chính sách đổi trả thế nào?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [],
+          "context_prices": [
+            600000,
+            2800000,
+            6400000,
+            7000000,
+            8700000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": true
+      }
+    },
+    {
+      "id": "policy_002",
+      "query": "Cửa hàng ở đâu?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [],
+          "context_prices": [
+            1700000,
+            3800000,
+            4800000,
+            7600000,
+            13800000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": true
+      }
+    },
+    {
+      "id": "policy_003",
+      "query": "Có tuyển nhân viên không?",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [],
+          "context_prices": [
+            2800000,
+            3500000,
+            3700000,
+            4100000,
+            4600000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": true
+      }
+    },
+    {
+      "id": "policy_004",
+      "query": "Tôi muốn mua điện thoại",
+      "pass": true,
+      "metrics": {
+        "has_required_citation": true,
+        "citation_validity": true,
+        "source_link_presence": true,
+        "price_consistency": true,
+        "product_name_grounded": true,
+        "missing_field_handling": true,
+        "no_forbidden_hallucination": true,
+        "answer_usefulness": true,
+        "pass": true,
+        "citations": [],
+        "valid_context_citations": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "context_product_count": 5,
+        "context_source_count": 5,
+        "source_link_missing": false,
+        "price_details": {
+          "detected_prices": [],
+          "aggregate_prices": [],
+          "query_constraint_prices": [],
+          "approximate_or_range_prices": [],
+          "ignored_numbers": [],
+          "context_prices": [
+            100000,
+            8300000
+          ],
+          "reason": "ok",
+          "mismatched_prices": [],
+          "consistent": true
+        },
+        "failure_reasons": [],
+        "out_of_scope_fallback_valid": true
+      }
+    }
+  ]
+}

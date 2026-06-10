@@ -1,0 +1,50 @@
+[
+  {
+    "id": "sample_good_price_001",
+    "query": "Có rèm nào dưới 1 triệu không?",
+    "context": "[P1]\nTên sản phẩm: Rèm cuốn tranh cao cấp GHO-607\nDanh mục: Rèm\nGiá: 700.000 VND\nLink nguồn: https://example.test/rem-cuon\nMô tả ngắn: Rèm cuốn tranh cho phòng khách.",
+    "answer": "Có, bạn có thể xem Rèm cuốn tranh cao cấp GHO-607 [P1], giá tham khảo 700.000 VND. Nguồn: https://example.test/rem-cuon"
+  },
+  {
+    "id": "sample_good_compare_001",
+    "query": "So sánh sofa và ghế thư giãn",
+    "context": "[P1]\nTên sản phẩm: Bộ ghế sofa GHS-8268\nDanh mục: Sofa\nGiá: 25.500.000 VND\nChất liệu: vải nỉ\nLink nguồn: https://example.test/sofa\n\n[P2]\nTên sản phẩm: Ghế thư giãn GHS-717\nDanh mục: Ghế\nGiá: 2.000.000 VND\nChất liệu: nỉ thổ cẩm\nLink nguồn: https://example.test/ghe",
+    "answer": "- Bộ ghế sofa GHS-8268 [P1]: 25.500.000 VND, chất liệu vải nỉ, nguồn https://example.test/sofa\n- Ghế thư giãn GHS-717 [P2]: 2.000.000 VND, chất liệu nỉ thổ cẩm, nguồn https://example.test/ghe"
+  },
+  {
+    "id": "sample_bad_price_001",
+    "query": "Có rèm nào dưới 1 triệu không?",
+    "context": "[P1]\nTên sản phẩm: Rèm cuốn tranh cao cấp GHO-607\nDanh mục: Rèm\nGiá: 700.000 VND\nLink nguồn: https://example.test/rem-cuon",
+    "answer": "Rèm cuốn tranh cao cấp GHO-607 [P1] có giá 900.000 VND. Nguồn: https://example.test/rem-cuon"
+  },
+  {
+    "id": "sample_bad_citation_001",
+    "query": "Có sofa không?",
+    "context": "[P1]\nTên sản phẩm: Sofa nhỏ gọn SFG041\nDanh mục: Sofa\nGiá: 12.000.000 VND\nLink nguồn: https://example.test/sofa",
+    "answer": "Bạn có thể xem Sofa nhỏ gọn SFG041 [P99], giá 12.000.000 VND."
+  },
+  {
+    "id": "sample_bad_product_name_001",
+    "query": "Có sofa không?",
+    "context": "[P1]\nTên sản phẩm: Sofa nhỏ gọn SFG041\nDanh mục: Sofa\nGiá: 12.000.000 VND\nLink nguồn: https://example.test/sofa",
+    "answer": "Sofa Phantom là lựa chọn tốt cho phòng khách và có giá 12.000.000 VND."
+  },
+  {
+    "id": "sample_bad_warranty_001",
+    "query": "Sản phẩm này bảo hành bao lâu?",
+    "context": "[P1]\nTên sản phẩm: Kệ tivi GHS-3208\nDanh mục: Kệ\nGiá: 7.000.000 VND\nLink nguồn: https://example.test/ke-tivi",
+    "answer": "Kệ tivi GHS-3208 được bảo hành 12 tháng và miễn phí vận chuyển."
+  },
+  {
+    "id": "sample_good_missing_field_001",
+    "query": "Sản phẩm này bảo hành bao lâu?",
+    "context": "[P1]\nTên sản phẩm: Kệ tivi GHS-3208\nDanh mục: Kệ\nGiá: 7.000.000 VND\nLink nguồn: https://example.test/ke-tivi",
+    "answer": "Mình chưa thấy thông tin này trong dữ liệu hiện có. Bạn có thể hỏi cửa hàng để xác nhận chính sách bảo hành cho Kệ tivi GHS-3208 [P1]."
+  },
+  {
+    "id": "sample_bad_link_001",
+    "query": "Có sofa không?",
+    "context": "[P1]\nTên sản phẩm: Sofa nhỏ gọn SFG041\nDanh mục: Sofa\nGiá: 12.000.000 VND\nLink nguồn: https://example.test/sofa",
+    "answer": "Sofa nhỏ gọn SFG041 [P1] có giá 12.000.000 VND. Link: https://fake.example/sofa"
+  }
+]

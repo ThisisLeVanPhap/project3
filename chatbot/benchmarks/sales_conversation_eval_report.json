@@ -1,0 +1,1117 @@
+{
+  "summary": {
+    "total_scenarios": 20,
+    "pass_rate": 1.0,
+    "intent_accuracy": 1.0,
+    "product_resolution_accuracy": 1.0,
+    "contact_extraction_accuracy": 1.0,
+    "purchase_request_accuracy": 1.0,
+    "lead_status_accuracy": 1.0
+  },
+  "failed_cases": [],
+  "cases": [
+    {
+      "id": "s01_product_inquiry_only",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s01_product_inquiry_only",
+        "state": {
+          "lead_status": "cold",
+          "lead_score": 0.0,
+          "selected_products": [],
+          "contact": {},
+          "handoff_required": false,
+          "missing_fields": []
+        },
+        "final_intent": "product_inquiry",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s01_product_inquiry_only",
+          "products": [],
+          "contact": {
+            "phone": "",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "needs_product",
+          "handoff_required": false
+        },
+        "resolved_product": null
+      }
+    },
+    {
+      "id": "s02_ask_price_then_exit",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s02_ask_price_then_exit",
+        "state": {
+          "lead_status": "cold",
+          "lead_score": 0.0,
+          "selected_products": [],
+          "contact": {},
+          "handoff_required": false,
+          "missing_fields": []
+        },
+        "final_intent": "cancel",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s02_ask_price_then_exit",
+          "products": [],
+          "contact": {
+            "phone": "",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "cancelled",
+          "handoff_required": false
+        },
+        "resolved_product": null
+      }
+    },
+    {
+      "id": "s03_wants_buy_missing_phone",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s03_wants_buy_missing_phone",
+        "state": {
+          "lead_status": "cold",
+          "lead_score": 2.0,
+          "selected_products": [],
+          "contact": {},
+          "handoff_required": false,
+          "missing_fields": [
+            "product"
+          ]
+        },
+        "final_intent": "purchase_intent",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s03_wants_buy_missing_phone",
+          "products": [],
+          "contact": {
+            "phone": "",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "needs_product",
+          "handoff_required": false
+        },
+        "resolved_product": null
+      }
+    },
+    {
+      "id": "s04_buy_choose_p1",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true,
+        "quantity": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s04_buy_choose_p1",
+        "state": {
+          "lead_status": "hot",
+          "lead_score": 7.0,
+          "selected_products": [
+            {
+              "sku": "SF-700",
+              "product_name": "Sofa Nami",
+              "source_url": "https://shop.test/sofa-nami",
+              "price": 700000,
+              "pid": "P1",
+              "price_number": 700000
+            }
+          ],
+          "contact": {
+            "phone": "0901234567"
+          },
+          "handoff_required": false,
+          "missing_fields": []
+        },
+        "final_intent": "contact_provided",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s04_buy_choose_p1",
+          "products": [
+            {
+              "sku": "SF-700",
+              "product_name": "Sofa Nami",
+              "source_url": "https://shop.test/sofa-nami",
+              "price": 700000,
+              "quantity": 1
+            }
+          ],
+          "contact": {
+            "phone": "0901234567",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "draft",
+          "handoff_required": false
+        },
+        "resolved_product": {
+          "sku": "SF-700",
+          "product_name": "Sofa Nami",
+          "source_url": "https://shop.test/sofa-nami",
+          "price": 700000,
+          "pid": "P1",
+          "price_number": 700000
+        }
+      }
+    },
+    {
+      "id": "s05_choose_second_model",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true,
+        "quantity": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s05_choose_second_model",
+        "state": {
+          "lead_status": "hot",
+          "lead_score": 7.0,
+          "selected_products": [
+            {
+              "sku": "B2",
+              "product_name": "Bàn B",
+              "source_url": "https://shop.test/b",
+              "price": 700000,
+              "pid": "P2",
+              "price_number": 700000
+            }
+          ],
+          "contact": {
+            "phone": "0987654321"
+          },
+          "handoff_required": false,
+          "missing_fields": []
+        },
+        "final_intent": "contact_provided",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s05_choose_second_model",
+          "products": [
+            {
+              "sku": "B2",
+              "product_name": "Bàn B",
+              "source_url": "https://shop.test/b",
+              "price": 700000,
+              "quantity": 1
+            }
+          ],
+          "contact": {
+            "phone": "0987654321",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "draft",
+          "handoff_required": false
+        },
+        "resolved_product": {
+          "sku": "B2",
+          "product_name": "Bàn B",
+          "source_url": "https://shop.test/b",
+          "price": 700000,
+          "pid": "P2",
+          "price_number": 700000
+        }
+      }
+    },
+    {
+      "id": "s06_choose_by_sku",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true,
+        "quantity": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s06_choose_by_sku",
+        "state": {
+          "lead_status": "hot",
+          "lead_score": 7.0,
+          "selected_products": [
+            {
+              "sku": "B2",
+              "product_name": "Bàn B",
+              "source_url": "https://shop.test/b",
+              "price": 700000,
+              "pid": "P2",
+              "price_number": 700000
+            }
+          ],
+          "contact": {
+            "email": "a@test.com"
+          },
+          "handoff_required": false,
+          "missing_fields": []
+        },
+        "final_intent": "contact_provided",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s06_choose_by_sku",
+          "products": [
+            {
+              "sku": "B2",
+              "product_name": "Bàn B",
+              "source_url": "https://shop.test/b",
+              "price": 700000,
+              "quantity": 1
+            }
+          ],
+          "contact": {
+            "phone": "",
+            "email": "a@test.com"
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "draft",
+          "handoff_required": false
+        },
+        "resolved_product": {
+          "sku": "B2",
+          "product_name": "Bàn B",
+          "source_url": "https://shop.test/b",
+          "price": 700000,
+          "pid": "P2",
+          "price_number": 700000
+        }
+      }
+    },
+    {
+      "id": "s07_choose_by_price_700k",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true,
+        "quantity": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s07_choose_by_price_700k",
+        "state": {
+          "lead_status": "hot",
+          "lead_score": 7.0,
+          "selected_products": [
+            {
+              "sku": "B2",
+              "product_name": "Ghế B",
+              "source_url": "https://shop.test/b",
+              "price": 700000,
+              "pid": "P2",
+              "price_number": 700000
+            }
+          ],
+          "contact": {
+            "phone": "0977000000"
+          },
+          "handoff_required": false,
+          "missing_fields": []
+        },
+        "final_intent": "contact_provided",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s07_choose_by_price_700k",
+          "products": [
+            {
+              "sku": "B2",
+              "product_name": "Ghế B",
+              "source_url": "https://shop.test/b",
+              "price": 700000,
+              "quantity": 1
+            }
+          ],
+          "contact": {
+            "phone": "0977000000",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "draft",
+          "handoff_required": false
+        },
+        "resolved_product": {
+          "sku": "B2",
+          "product_name": "Ghế B",
+          "source_url": "https://shop.test/b",
+          "price": 700000,
+          "pid": "P2",
+          "price_number": 700000
+        }
+      }
+    },
+    {
+      "id": "s08_phone_only",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s08_phone_only",
+        "state": {
+          "lead_status": "warm",
+          "lead_score": 3.0,
+          "selected_products": [],
+          "contact": {
+            "phone": "0933444555"
+          },
+          "handoff_required": false,
+          "missing_fields": [
+            "product"
+          ]
+        },
+        "final_intent": "contact_provided",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s08_phone_only",
+          "products": [],
+          "contact": {
+            "phone": "0933444555",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "needs_product",
+          "handoff_required": false
+        },
+        "resolved_product": null
+      }
+    },
+    {
+      "id": "s09_email_only",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s09_email_only",
+        "state": {
+          "lead_status": "warm",
+          "lead_score": 3.0,
+          "selected_products": [],
+          "contact": {
+            "email": "buyer@example.com"
+          },
+          "handoff_required": false,
+          "missing_fields": [
+            "product"
+          ]
+        },
+        "final_intent": "contact_provided",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s09_email_only",
+          "products": [],
+          "contact": {
+            "phone": "",
+            "email": "buyer@example.com"
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "needs_product",
+          "handoff_required": false
+        },
+        "resolved_product": null
+      }
+    },
+    {
+      "id": "s10_multiple_products",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true,
+        "quantity": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s10_multiple_products",
+        "state": {
+          "lead_status": "hot",
+          "lead_score": 7.0,
+          "selected_products": [
+            {
+              "sku": "P1SKU",
+              "product_name": "Ghế P1",
+              "source_url": "https://shop.test/p1",
+              "price": 600000,
+              "pid": "P1",
+              "price_number": 600000
+            }
+          ],
+          "contact": {
+            "phone": "0909999888"
+          },
+          "handoff_required": false,
+          "missing_fields": []
+        },
+        "final_intent": "contact_provided",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s10_multiple_products",
+          "products": [
+            {
+              "sku": "P1SKU",
+              "product_name": "Ghế P1",
+              "source_url": "https://shop.test/p1",
+              "price": 600000,
+              "quantity": 1
+            }
+          ],
+          "contact": {
+            "phone": "0909999888",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "draft",
+          "handoff_required": false
+        },
+        "resolved_product": {
+          "sku": "P1SKU",
+          "product_name": "Ghế P1",
+          "source_url": "https://shop.test/p1",
+          "price": 600000,
+          "pid": "P1",
+          "price_number": 600000
+        }
+      }
+    },
+    {
+      "id": "s11_ask_ship_no_contact",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true,
+        "quantity": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s11_ask_ship_no_contact",
+        "state": {
+          "lead_status": "warm",
+          "lead_score": 4.0,
+          "selected_products": [
+            {
+              "sku": "SF-700",
+              "product_name": "Sofa Nami",
+              "source_url": "https://shop.test/sofa-nami",
+              "price": 700000,
+              "pid": "P1",
+              "price_number": 700000
+            }
+          ],
+          "contact": {},
+          "handoff_required": false,
+          "missing_fields": [
+            "contact"
+          ]
+        },
+        "final_intent": "product_inquiry",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s11_ask_ship_no_contact",
+          "products": [
+            {
+              "sku": "SF-700",
+              "product_name": "Sofa Nami",
+              "source_url": "https://shop.test/sofa-nami",
+              "price": 700000,
+              "quantity": 1
+            }
+          ],
+          "contact": {
+            "phone": "",
+            "email": ""
+          },
+          "location": "Hà Nội",
+          "address": "P1 ship Hà Nội được không?",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "needs_contact",
+          "handoff_required": false
+        },
+        "resolved_product": {
+          "sku": "SF-700",
+          "product_name": "Sofa Nami",
+          "source_url": "https://shop.test/sofa-nami",
+          "price": 700000,
+          "pid": "P1",
+          "price_number": 700000
+        }
+      }
+    },
+    {
+      "id": "s12_cancel_purchase",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s12_cancel_purchase",
+        "state": {
+          "lead_status": "cold",
+          "lead_score": 1.0,
+          "selected_products": [
+            {
+              "sku": "SF-700",
+              "product_name": "Sofa Nami",
+              "source_url": "https://shop.test/sofa-nami",
+              "price": 700000,
+              "pid": "P1",
+              "price_number": 700000
+            }
+          ],
+          "contact": {},
+          "handoff_required": false,
+          "missing_fields": [
+            "contact"
+          ]
+        },
+        "final_intent": "cancel",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s12_cancel_purchase",
+          "products": [
+            {
+              "sku": "SF-700",
+              "product_name": "Sofa Nami",
+              "source_url": "https://shop.test/sofa-nami",
+              "price": 700000,
+              "quantity": 1
+            }
+          ],
+          "contact": {
+            "phone": "",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "cancelled",
+          "handoff_required": false
+        },
+        "resolved_product": {
+          "sku": "SF-700",
+          "product_name": "Sofa Nami",
+          "source_url": "https://shop.test/sofa-nami",
+          "price": 700000,
+          "pid": "P1",
+          "price_number": 700000
+        }
+      }
+    },
+    {
+      "id": "s13_out_of_scope",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s13_out_of_scope",
+        "state": {
+          "lead_status": "cold",
+          "lead_score": 0.0,
+          "selected_products": [],
+          "contact": {},
+          "handoff_required": false,
+          "missing_fields": []
+        },
+        "final_intent": "out_of_scope",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s13_out_of_scope",
+          "products": [],
+          "contact": {
+            "phone": "",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "needs_product",
+          "handoff_required": false
+        },
+        "resolved_product": null
+      }
+    },
+    {
+      "id": "s14_handoff_staff",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s14_handoff_staff",
+        "state": {
+          "lead_status": "cold",
+          "lead_score": 0.0,
+          "selected_products": [],
+          "contact": {},
+          "handoff_required": true,
+          "missing_fields": []
+        },
+        "final_intent": "handoff_request",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s14_handoff_staff",
+          "products": [],
+          "contact": {
+            "phone": "",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "needs_product",
+          "handoff_required": true
+        },
+        "resolved_product": null
+      }
+    },
+    {
+      "id": "s15_compare_previous_model",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s15_compare_previous_model",
+        "state": {
+          "lead_status": "cold",
+          "lead_score": 0.0,
+          "selected_products": [],
+          "contact": {},
+          "handoff_required": false,
+          "missing_fields": []
+        },
+        "final_intent": "product_inquiry",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s15_compare_previous_model",
+          "products": [],
+          "contact": {
+            "phone": "",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "needs_product",
+          "handoff_required": false
+        },
+        "resolved_product": null
+      }
+    },
+    {
+      "id": "s16_missing_product_selection",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s16_missing_product_selection",
+        "state": {
+          "lead_status": "warm",
+          "lead_score": 5.0,
+          "selected_products": [],
+          "contact": {
+            "phone": "0901234567"
+          },
+          "handoff_required": false,
+          "missing_fields": [
+            "product"
+          ]
+        },
+        "final_intent": "contact_provided",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s16_missing_product_selection",
+          "products": [],
+          "contact": {
+            "phone": "0901234567",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "needs_product",
+          "handoff_required": false
+        },
+        "resolved_product": null
+      }
+    },
+    {
+      "id": "s17_missing_contact",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true,
+        "quantity": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s17_missing_contact",
+        "state": {
+          "lead_status": "warm",
+          "lead_score": 4.0,
+          "selected_products": [
+            {
+              "sku": "SF-700",
+              "product_name": "Sofa Nami",
+              "source_url": "https://shop.test/sofa-nami",
+              "price": 700000,
+              "pid": "P1",
+              "price_number": 700000
+            }
+          ],
+          "contact": {},
+          "handoff_required": false,
+          "missing_fields": [
+            "contact"
+          ]
+        },
+        "final_intent": "purchase_intent",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s17_missing_contact",
+          "products": [
+            {
+              "sku": "SF-700",
+              "product_name": "Sofa Nami",
+              "source_url": "https://shop.test/sofa-nami",
+              "price": 700000,
+              "quantity": 1
+            }
+          ],
+          "contact": {
+            "phone": "",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "needs_contact",
+          "handoff_required": false
+        },
+        "resolved_product": {
+          "sku": "SF-700",
+          "product_name": "Sofa Nami",
+          "source_url": "https://shop.test/sofa-nami",
+          "price": 700000,
+          "pid": "P1",
+          "price_number": 700000
+        }
+      }
+    },
+    {
+      "id": "s18_with_location",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true,
+        "quantity": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s18_with_location",
+        "state": {
+          "lead_status": "hot",
+          "lead_score": 8.0,
+          "selected_products": [
+            {
+              "sku": "SF-700",
+              "product_name": "Sofa Nami",
+              "source_url": "https://shop.test/sofa-nami",
+              "price": 700000,
+              "pid": "P1",
+              "price_number": 700000
+            }
+          ],
+          "contact": {
+            "phone": "0908888777"
+          },
+          "handoff_required": false,
+          "missing_fields": []
+        },
+        "final_intent": "contact_provided",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s18_with_location",
+          "products": [
+            {
+              "sku": "SF-700",
+              "product_name": "Sofa Nami",
+              "source_url": "https://shop.test/sofa-nami",
+              "price": 700000,
+              "quantity": 1
+            }
+          ],
+          "contact": {
+            "phone": "0908888777",
+            "email": ""
+          },
+          "location": "Đà Nẵng",
+          "address": "Mua P1 giao ở Đà Nẵng, số 0908888777",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "draft",
+          "handoff_required": false
+        },
+        "resolved_product": {
+          "sku": "SF-700",
+          "product_name": "Sofa Nami",
+          "source_url": "https://shop.test/sofa-nami",
+          "price": 700000,
+          "pid": "P1",
+          "price_number": 700000
+        }
+      }
+    },
+    {
+      "id": "s19_with_quantity",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true,
+        "quantity": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s19_with_quantity",
+        "state": {
+          "lead_status": "hot",
+          "lead_score": 8.0,
+          "selected_products": [
+            {
+              "sku": "SF-700",
+              "product_name": "Sofa Nami",
+              "source_url": "https://shop.test/sofa-nami",
+              "price": 700000,
+              "pid": "P1",
+              "price_number": 700000
+            }
+          ],
+          "contact": {
+            "phone": "0908888777"
+          },
+          "handoff_required": false,
+          "missing_fields": []
+        },
+        "final_intent": "contact_provided",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s19_with_quantity",
+          "products": [
+            {
+              "sku": "SF-700",
+              "product_name": "Sofa Nami",
+              "source_url": "https://shop.test/sofa-nami",
+              "price": 700000,
+              "quantity": 3
+            }
+          ],
+          "contact": {
+            "phone": "0908888777",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "draft",
+          "handoff_required": false
+        },
+        "resolved_product": {
+          "sku": "SF-700",
+          "product_name": "Sofa Nami",
+          "source_url": "https://shop.test/sofa-nami",
+          "price": 700000,
+          "pid": "P1",
+          "price_number": 700000
+        }
+      }
+    },
+    {
+      "id": "s20_ambiguous_need_followup",
+      "passed": true,
+      "checks": {
+        "intent": true,
+        "product_resolution": true,
+        "contact_extraction": true,
+        "purchase_request": true,
+        "lead_status": true,
+        "handoff": true,
+        "missing_info": true
+      },
+      "failures": [],
+      "actual": {
+        "scenario_id": "s20_ambiguous_need_followup",
+        "state": {
+          "lead_status": "cold",
+          "lead_score": 0.0,
+          "selected_products": [],
+          "contact": {},
+          "handoff_required": false,
+          "missing_fields": []
+        },
+        "final_intent": "unknown",
+        "purchase_request": {
+          "tenant_id": null,
+          "conversation_id": "s20_ambiguous_need_followup",
+          "products": [],
+          "contact": {
+            "phone": "",
+            "email": ""
+          },
+          "location": "",
+          "address": "",
+          "notes": "Purchase request draft only. Not an order confirmation; stock, delivery and final price must be confirmed by staff.",
+          "status": "needs_product",
+          "handoff_required": false
+        },
+        "resolved_product": null
+      }
+    }
+  ]
+}

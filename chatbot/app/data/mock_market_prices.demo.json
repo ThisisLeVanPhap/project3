@@ -1,32 +1,105 @@
-{
-  "notice": "DEMO/REFERENCE ONLY. These rows are mock market-price references for tests and demos; they are not a real market catalog.",
-  "references": [
-    {
-      "product_id": "SFG041",
-      "name": "Demo reference sofa SFG041",
-      "category": "sofa",
-      "price": 12000000,
-      "currency": "VND",
-      "source": "mock://demo-market-price/SFG041-a",
-      "notes": "Demo/reference only, not an absolute market price."
-    },
-    {
-      "product_id": "SFG041",
-      "name": "Demo comparable sofa SFG041 style",
-      "category": "sofa",
-      "price": 13500000,
-      "currency": "VND",
-      "source": "mock://demo-market-price/SFG041-b",
-      "notes": "Demo/reference only, separate from tenant KB."
-    },
-    {
-      "product_id": "SOFA-OAK-REF",
-      "name": "Demo oak sofa reference",
-      "category": "sofa go soi",
-      "price": 15000000,
-      "currency": "VND",
-      "source": "mock://demo-market-price/oak-sofa",
-      "notes": "Demo/reference only for price-check workflow."
-    }
-  ]
-}
+[
+  {
+    "product_id": "SFG041",
+    "name": "Sofa SFG041 reference low",
+    "category": "sofa",
+    "price": 12000000,
+    "currency": "VND",
+    "source": "mock://caco/SFG041-low",
+    "material": "go soi",
+    "dimensions": "2m x 0m9",
+    "notes": "Mock/demo lower reference for SFG041"
+  },
+  {
+    "product_id": "SFG041",
+    "name": "Sofa SFG041 reference high",
+    "category": "sofa",
+    "price": 15000000,
+    "currency": "VND",
+    "source": "mock://caco/SFG041-high",
+    "material": "go soi",
+    "dimensions": "2m2 x 0m9",
+    "notes": "Mock/demo upper reference for SFG041"
+  },
+  {
+    "product_id": "SOFA-GOC-L-01",
+    "name": "Sofa góc chữ L bọc vải nỉ",
+    "category": "sofa",
+    "price": 12500000,
+    "currency": "VND",
+    "source": "CaCo Demo Catalog",
+    "material": "vải nỉ nhập khẩu",
+    "dimensions": "2m6 x 1m7",
+    "notes": "Phù hợp phòng khách nhỏ"
+  },
+  {
+    "product_id": "SOFA-GOC-L-02",
+    "name": "Sofa góc chữ L da công nghiệp",
+    "category": "sofa",
+    "price": 18900000,
+    "currency": "VND",
+    "source": "MOHO Demo Catalog",
+    "material": "da công nghiệp Malaysia",
+    "dimensions": "2m8 x 1m8"
+  },
+  {
+    "product_id": "BAN-AN-GO-01",
+    "name": "Bàn ăn gỗ sồi Nga 4 ghế",
+    "category": "bàn ăn",
+    "price": 8500000,
+    "currency": "VND",
+    "source": "CaCo Demo Catalog",
+    "material": "gỗ sồi Nga tự nhiên",
+    "dimensions": "1m4 x 0m8"
+  },
+  {
+    "product_id": "BAN-AN-GO-02",
+    "name": "Bàn ăn gỗ xoan đào 6 ghế",
+    "category": "bàn ăn",
+    "price": 14200000,
+    "currency": "VND",
+    "source": "MOHO Demo Catalog",
+    "material": "gỗ xoan đào",
+    "dimensions": "1m6 x 0m9"
+  },
+  {
+    "product_id": "GIUONG-1M6-01",
+    "name": "Giường ngủ gỗ MDF phủ Melamine 1m6",
+    "category": "giường",
+    "price": 6800000,
+    "currency": "VND",
+    "source": "CaCo Demo Catalog",
+    "material": "gỗ MDF phủ Melamine",
+    "dimensions": "1m6 x 2m"
+  },
+  {
+    "product_id": "TU-AO-01",
+    "name": "Tủ quần áo 2 cánh gỗ công nghiệp",
+    "category": "tủ quần áo",
+    "price": 5500000,
+    "currency": "VND",
+    "source": "MOHO Demo Catalog",
+    "material": "gỗ MDF phủ Melamine",
+    "dimensions": "1m2 x 2m"
+  },
+  {
+    "product_id": "SOFA-VANG-01",
+    "name": "Sofa văng 2 chỗ bọc nhung",
+    "category": "sofa",
+    "price": 9800000,
+    "currency": "VND",
+    "source": "CaCo Demo Catalog",
+    "material": "nhung cao cấp",
+    "dimensions": "1m8 x 0m9"
+  },
+  {
+    "product_id": "BAN-TRA-01",
+    "name": "Bàn trà mặt đá chân inox mạ vàng",
+    "category": "bàn trà",
+    "price": 4200000,
+    "currency": "VND",
+    "source": "MOHO Demo Catalog",
+    "material": "mặt đá ceramic + chân inox mạ vàng",
+    "dimensions": "1m x 0m6"
+  }
+]

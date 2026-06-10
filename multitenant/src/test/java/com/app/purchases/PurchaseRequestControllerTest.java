@@ -74,7 +74,7 @@ class PurchaseRequestControllerTest {
                 .andExpect(jsonPath("$[0].assigned_to_display_name").value("Assigned Owner"))
                 .andExpect(jsonPath("$[0].claimed_at").exists())
                 .andExpect(jsonPath("$[0].created_at").exists())
-                .andExpect(jsonPath("$[0].notes").doesNotExist())
+                .andExpect(jsonPath("$[0].notes").value("Call before delivery"))
                 .andExpect(jsonPath("$[1].id").value(99))
                 .andExpect(jsonPath("$[1].customer_name").value("Tran Thi B"))
                 .andExpect(jsonPath("$[1].created_at").exists());
@@ -108,7 +108,7 @@ class PurchaseRequestControllerTest {
                 .andExpect(jsonPath("$[0].id").value(42))
                 .andExpect(jsonPath("$[0].customer_name").value("Nguyen Van A"))
                 .andExpect(jsonPath("$[0].status").value("NEW"))
-                .andExpect(jsonPath("$[0].notes").doesNotExist());
+                .andExpect(jsonPath("$[0].notes").value(""));
 
         verify(purchaseRequestService).findRecentByTenantAndStatus(tenantId, "NEW");
     }

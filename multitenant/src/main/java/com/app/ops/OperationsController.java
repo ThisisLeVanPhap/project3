@@ -43,7 +43,7 @@ public class OperationsController {
 
     @GetMapping("/tenant")
     public TenantOperationsSnapshotDto tenantSnapshot() {
-        UUID tenantId = UUID.fromString(principalAccessor.requireTenantAdmin().tenantId());
+        UUID tenantId = UUID.fromString(principalAccessor.requireTenantOperator().tenantId());
         return operationsSnapshotService.getTenantSnapshot(tenantId);
     }
 

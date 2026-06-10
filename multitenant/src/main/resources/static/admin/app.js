@@ -28,8 +28,30 @@ const state = {
     editingBotId: null,
     currentPrincipal: null,
     onboardingRequests: [],
-    selectedOnboardingRequestId: null
+    selectedOnboardingRequestId: null,
+    messengerBindings: [],
+    currentTab: "overview"
 };
+
+const PRIMARY_GROUPS = {
+    dashboard: ["overview", "monitor", "stats"],
+    tenantManagement: ["tenants", "members", "onboarding"],
+    chatbotChannels: ["chatbots", "bindings", "messenger-status", "telegram-status"],
+    knowledgeBase: ["kb-dirs", "kb-versions", "kb-rebuild", "product-datasets"],
+    businessData: ["leads", "purchase-requests"],
+    operations: ["runtime", "health", "benchmark", "dev-debug"]
+};
+
+const DEFAULT_SUB_TABS = {
+    dashboard: "overview",
+    tenantManagement: "tenants",
+    chatbotChannels: "chatbots",
+    knowledgeBase: "product-datasets",
+    businessData: "leads",
+    operations: "runtime"
+};
+
+const ALL_ADMIN_TABS = Object.values(PRIMARY_GROUPS).flat();
 
 async function loadCurrentPrincipal(){
     const res = await fetch("/api/me");
@@ -67,6 +89,107 @@ function fmtDateTime(value){
     return date.toLocaleString();
 }
 
+function displayValue(value){
+    if(value === null || value === undefined || value === "") return "-";
+    return String(value);
+}
+
+function escapeHtml(value){
+    return displayValue(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function boolLabel(value){
+    if(value === true) return "Yes";
+    if(value === false) return "No";
+    return "-";
+}
+
+function sanitizeSensitive(value){
+    if(Array.isArray(value)){
+        return value.map(sanitizeSensitive);
+    }
+    if(value && typeof value === "object"){
+        const out = {};
+        for(const [key, child] of Object.entries(value)){
+            const normalizedKey = key.toLowerCase();
+            if(
+                normalizedKey === "pageaccesstoken" ||
+                normalizedKey === "page_access_token" ||
+                normalizedKey === "pagetoken" ||
+                normalizedKey === "page_token" ||
+                normalizedKey === "apikey" ||
+                normalizedKey === "api_key" ||
+                normalizedKey === "bottoken" ||
+                normalizedKey === "bot_token" ||
+                normalizedKey === "token" ||
+                normalizedKey === "password" ||
+                normalizedKey === "basicauth" ||
+                normalizedKey === "basic_auth" ||
+                normalizedKey === "authorization"
+            ){
+                out[key] = "[redacted]";
+            } else {
+                out[key] = sanitizeSensitive(child);
+            }
+        }
+        return out;
+    }
+    return value;
+}
+
+function setJsonOutput(id, value, sanitize=false){
+    const el = $(id);
+    if(!el) return;
+    el.innerText = JSON.stringify(sanitize ? sanitizeSensitive(value) : value, null, 2);
+}
+
+function setButtonLoading(button, loading, loadingText="Loading..."){
+    if(!button) return;
+    if(loading){
+        button.dataset.originalText = button.dataset.originalText || button.textContent;
+        button.textContent = loadingText;
+        button.disabled = true;
+        button.classList.add("is-loading");
+        return;
+    }
+    button.textContent = button.dataset.originalText || button.textContent;
+    button.disabled = false;
+    button.classList.remove("is-loading");
+    delete button.dataset.originalText;
+}
+
+async function withButtonLoading(button, loadingText, task){
+    setButtonLoading(button, true, loadingText);
+    try{
+        return await task();
+    } finally {
+        setButtonLoading(button, false);
+    }
+}
+
+function renderPanelState(panelId, message, kind="empty"){
+    const panel = $(panelId);
+    if(!panel) return;
+    panel.classList.remove("hidden");
+    panel.innerHTML = `<div class="panel-state ${kind}">${escapeHtml(message)}</div>`;
+}
+
+function wireRawOutputToggle(buttonId, outputId){
+    const button = $(buttonId);
+    const output = $(outputId);
+    if(!button || !output) return;
+    button.addEventListener("click", ()=>{
+        const willShow = output.classList.contains("hidden");
+        output.classList.toggle("hidden", !willShow);
+        button.textContent = willShow ? "Hide raw response" : "Show raw response";
+    });
+}
+
 function loadCfg(){
     $("apiBase").value = localStorage.getItem(cfgKeys.apiBase) || "http://localhost:8080";
     $("basicAuth").value = localStorage.getItem(cfgKeys.basicAuth) || "";
@@ -89,8 +212,10 @@ function baseUrl(){
 function headersJson(){
     const h = { "Content-Type": "application/json" };
     const auth = $("basicAuth").value.trim();
-    const apiKey = $("apiKey").value.trim();
-    const tenantId = $("tenantId").value.trim();
+    const selectedApiKey = state.selectedTenant?.apiKey || "";
+    const selectedTenantId = state.selectedTenant?.id || "";
+    const apiKey = selectedApiKey || $("apiKey").value.trim();
+    const tenantId = selectedTenantId || $("tenantId").value.trim();
 
     if(auth) h["Authorization"] = auth;
 
@@ -122,6 +247,57 @@ async function req(method, path, body, opts = { tenantHeaders: true }){
     let data = text;
     try { data = JSON.parse(text); } catch(e) {}
     return { ok: res.ok, status: res.status, data };
+}
+
+function renderSystemStatusSummary(statusResult){
+    const el = $("systemStatusSummary");
+    if(!el) return;
+
+    el.classList.remove("hidden");
+    if(!statusResult?.ok){
+        el.innerHTML = `
+            <div><b>System status</b></div>
+            <div class="panel-state error">Unable to load system status (${statusResult?.status || "-"})</div>
+        `;
+        return;
+    }
+
+    const s = statusResult.data || {};
+    const messenger = s.messenger_bindings || {};
+    const kb = s.kb || {};
+    const runtime = s.runtime || {};
+    const purchase = s.purchase_requests || {};
+    const cards = [
+        ["Tenants", s.tenants?.total],
+        ["Chatbots", s.chatbots?.total],
+        ["Messenger total", messenger.total],
+        ["Messenger active", messenger.active],
+        ["Messenger inactive", messenger.inactive],
+        ["Token configured", messenger.token_configured],
+        ["KB versions", kb.versions_total],
+        ["KB ready", kb.ready],
+        ["KB failed", kb.failed],
+        ["KB building", kb.building],
+        ["KB archived", kb.archived],
+        ["Java runtimes", runtime.java_spawned_running],
+        ["External runtime", boolLabel(runtime.external_mode)],
+        ["Purchase requests", purchase.total],
+        ["PR new", purchase.new],
+        ["PR contacted", purchase.contacted],
+        ["PR completed", purchase.completed]
+    ];
+
+    el.innerHTML = `
+        <div><b>System status</b></div>
+        <div class="ops-stats-grid">
+            ${cards.map(([label, value]) => `
+                <div class="ops-stat-card">
+                    <div class="muted">${escapeHtml(label)}</div>
+                    <div><b>${escapeHtml(displayValue(value))}</b></div>
+                </div>
+            `).join("")}
+        </div>
+    `;
 }
 
 function renderPlatformOpsSummary(snapshot){
@@ -288,32 +464,177 @@ function renderKbStatusBadge(status){
     return `<span class="ops-badge ${meta.className}">${meta.label}</span>`;
 }
 
+function maskSecret(value){
+    if(!value) return "-";
+    const text = String(value);
+    if(text.length <= 8) return "********";
+    return `${text.slice(0, 4)}...${text.slice(-4)}`;
+}
+
+function shortPreview(value, maxLength=80){
+    if(value === null || value === undefined || value === "") return "-";
+    const text = typeof value === "string" ? value : JSON.stringify(value);
+    if(text.length <= maxLength) return text;
+    return `${text.slice(0, maxLength - 1)}...`;
+}
+
+function normalizedSearchText(values){
+    return values
+        .map(value => value === null || value === undefined ? "" : String(value).toLowerCase())
+        .join(" ");
+}
+
+function tenantMatchesFilter(tenant, filter){
+    if(!filter) return true;
+    return normalizedSearchText([
+        tenant.id,
+        tenant.code,
+        tenant.name,
+        tenant.status,
+        tenant.kbDir || tenant.kb_dir,
+        tenant.activeKbVersionId || tenant.active_kb_version_id
+    ]).includes(filter);
+}
+
+function botMatchesFilter(bot, filter){
+    if(!filter) return true;
+    return normalizedSearchText([
+        bot.id,
+        bot.name,
+        bot.tenantId || bot.tenant_id,
+        bot.channel,
+        bot.provider,
+        bot.mode,
+        bot.status,
+        bot.persona
+    ]).includes(filter);
+}
+
+function renderStatusBadge(status){
+    const normalized = (status || "").toUpperCase();
+    if(normalized === "ACTIVE") return '<span class="status-badge status-completed">ACTIVE</span>';
+    if(normalized === "INACTIVE") return '<span class="status-badge status-new">INACTIVE</span>';
+    if(normalized) return renderKbStatusBadge(normalized);
+    return "-";
+}
+
 async function evictPlatformRuntime(tenantId){
     const params = new URLSearchParams({ tenantId });
     return req("POST", `/api/ops/runtime/evict?${params.toString()}`, undefined, { tenantHeaders: false });
 }
 
 /* ---------------- Tabs ---------------- */
-function setTab(name){
-    document.querySelectorAll(".tab").forEach(b=>{
+function findPrimaryGroupForTab(tabName){
+    return Object.keys(PRIMARY_GROUPS).find(groupKey => PRIMARY_GROUPS[groupKey].includes(tabName)) || "dashboard";
+}
+
+function updateOverview(){
+    const selectedTenant = $("overviewSelectedTenant");
+    if(!selectedTenant) return;
+    const tenant = state.selectedTenant;
+    selectedTenant.innerText = tenant ? (tenant.name || tenant.code || tenant.id) : "No tenant selected";
+}
+
+function selectedTenantLabel(){
+    const tenant = state.selectedTenant;
+    if(!tenant) return "";
+    return tenant.name || tenant.code || tenant.id;
+}
+
+function renderSelectedTenantNotice(containerId){
+    const el = $(containerId);
+    if(!el) return;
+    const label = selectedTenantLabel();
+    el.classList.toggle("warning", !label);
+    el.innerHTML = label
+        ? `Using selected tenant: <b>${escapeHtml(label)}</b>`
+        : `No tenant selected. Go to Tenant Management &rarr; Tenants and click Select/Use tenant.`;
+}
+
+function renderSelectedTenantNotices(){
+    [
+        "membersTenantNotice",
+        "botsTenantNotice",
+        "bindingsTenantNotice",
+        "leadsTenantNotice",
+        "purchaseRequestsTenantNotice"
+    ].forEach(renderSelectedTenantNotice);
+    updateOverview();
+}
+
+function clearTenantScopedBotState(){
+    state.bots = [];
+    state.selectedBot = null;
+    state.editingBotId = null;
+    renderBotSelect();
+    renderChatbotEditSelect();
+    renderChatbotsTable();
+    populateBotForm(null);
+}
+
+function setPrimaryTab(groupKey, preferredSubTab){
+    const groupTabs = PRIMARY_GROUPS[groupKey] || PRIMARY_GROUPS.dashboard;
+    const target = preferredSubTab && groupTabs.includes(preferredSubTab)
+        ? preferredSubTab
+        : (groupTabs.includes(state.currentTab) ? state.currentTab : DEFAULT_SUB_TABS[groupKey]);
+
+    document.querySelectorAll(".primary-tab").forEach(b=>{
+        b.classList.toggle("active", b.dataset.group === groupKey);
+    });
+    document.querySelectorAll(".sub-tab").forEach(b=>{
+        const visible = b.dataset.group === groupKey;
+        b.classList.toggle("hidden", !visible);
+        b.classList.toggle("active", visible && b.dataset.tab === target);
+    });
+
+    if(target && state.currentTab !== target){
+        setTab(target, { syncPrimary: false });
+    }
+}
+
+function setTab(name, opts = {}){
+    state.currentTab = name;
+    renderSelectedTenantNotices();
+    if(name === "overview"){
+        updateOverview();
+    }
+
+    document.querySelectorAll(".sub-tab").forEach(b=>{
         b.classList.toggle("active", b.dataset.tab === name);
     });
     // ✅ add "leads"
-    ["tenants","onboarding","members","chatbots","bindings","monitor","leads","purchase-requests","stats"].forEach(t=>{
+    ALL_ADMIN_TABS.forEach(t=>{
         const el = $("tab-"+t);
         if(el) el.classList.toggle("hidden", t !== name);
     });
+
+    if(opts.syncPrimary !== false){
+        setPrimaryTab(findPrimaryGroupForTab(name), name);
+    }
 
     if(name === "onboarding"){
         loadOnboardingRequests().catch(()=>{});
     }
     // optional: auto load leads when open tab
     if(name === "leads"){
-        refreshLeads().catch(()=>{});
+        if(state.selectedTenant){
+            refreshLeads().catch(()=>{});
+        } else {
+            renderLeads([]);
+        }
+    }
+    if(name === "monitor" && $("systemStatusSummary") && !$("systemStatusSummary").innerHTML.trim()){
+        renderPanelState("systemStatusSummary", "Click Load platform ops to refresh status.", "empty");
     }
 }
-document.querySelectorAll(".tab").forEach(b=>{
+document.querySelectorAll(".primary-tab").forEach(b=>{
+    b.addEventListener("click", ()=> setPrimaryTab(b.dataset.group));
+});
+document.querySelectorAll(".sub-tab").forEach(b=>{
     b.addEventListener("click", ()=> setTab(b.dataset.tab));
+});
+document.querySelectorAll("[data-nav-tab]").forEach(b=>{
+    b.addEventListener("click", ()=> setTab(b.dataset.navTab));
 });
 
 /* ---------------- Onboarding requests ---------------- */
@@ -340,7 +661,7 @@ async function loadOnboardingRequests(){
     const status = $("onboardingStatusFilter")?.value || "";
     const query = status ? `?status=${encodeURIComponent(status)}` : "";
     const r = await req("GET", `/api/admin/onboarding-requests${query}`, undefined, { tenantHeaders:false });
-    $("onboardingOut").innerText = JSON.stringify(r, null, 2);
+    setJsonOutput("onboardingOut", r, true);
     if(!r.ok){
         $("onboardingMsg").innerText = r.status === 401
             ? "Phiên đăng nhập đã hết hạn. Đăng nhập lại rồi bấm Load requests."
@@ -411,7 +732,7 @@ async function updateOnboardingStatus(requestId, status){
         { status, adminNote: current?.adminNote || "" },
         { tenantHeaders:false }
     );
-    $("onboardingOut").innerText = JSON.stringify(r, null, 2);
+    setJsonOutput("onboardingOut", r, true);
     if(!r.ok){
         $("onboardingMsg").innerText = r.data?.message || `Update failed (${r.status})`;
         return;
@@ -468,7 +789,7 @@ async function provisionSelectedOnboardingRequest(){
         body,
         { tenantHeaders:false }
     );
-    $("onboardingOut").innerText = JSON.stringify(r, null, 2);
+    setJsonOutput("onboardingOut", r, true);
     if(!r.ok){
         $("onboardingProvisionMsg").innerText = r.data?.message || `Provision failed (${r.status})`;
         return;
@@ -537,9 +858,12 @@ function renderTenantSelect(selectId){
 }
 
 function applyTenantById(tenantId){
+    const previousTenantId = state.selectedTenant?.id || "";
     const t = state.tenants.find(x => x.id === tenantId);
     if(!t){
         state.selectedTenant = null;
+        clearTenantScopedBotState();
+        renderSelectedTenantNotices();
         $("selectedTenantName").innerText = "—";
         return;
     }
@@ -549,12 +873,138 @@ function applyTenantById(tenantId){
     $("apiKey").value = t.apiKey || "";
     $("tenantId").value = t.id;
 
-    $("selectedTenantName").innerText = t.name || t.id;
+    $("selectedTenantName").innerText = t.name || t.code || t.id;
+    if(previousTenantId && previousTenantId !== t.id){
+        clearTenantScopedBotState();
+    }
+    renderSelectedTenantNotices();
     saveCfg();
+    showMsg("tenantsMsg", `Da chon tenant ${t.name || t.code || t.id} cho cac tab tiep theo`, 2200);
 }
 
 function getSelectedTenantIdForMembers(){
-    return $("tenantSelectMembers")?.value || state.selectedTenant?.id || $("tenantId")?.value?.trim() || "";
+    return state.selectedTenant?.id || "";
+}
+
+function renderTenantsTable(){
+    const panel = $("tenantsTablePanel");
+    if(!panel) return;
+
+    const filter = ($("tenantFilter")?.value || "").trim().toLowerCase();
+    const rows = (Array.isArray(state.tenants) ? state.tenants : [])
+        .filter(tenant => tenantMatchesFilter(tenant, filter));
+
+    if(rows.length === 0){
+        panel.innerHTML = `
+            <table class="table" id="tenants-table">
+                <tbody>
+                    <tr><td><div class="panel-state empty">No tenants found.</div></td></tr>
+                </tbody>
+            </table>
+        `;
+        renderSelectedTenantNotices();
+        return;
+    }
+
+    panel.innerHTML = `
+        <table class="table" id="tenants-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>API key</th>
+                    <th>KB dir</th>
+                    <th>Active KB version</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows.map(tenant => {
+                    const activeKbVersionId = tenant.activeKbVersionId || tenant.active_kb_version_id;
+                    const createdAt = tenant.createdAt || tenant.created_at;
+                    return `
+                        <tr data-tenant-id="${escapeHtml(tenant.id)}">
+                            <td><b>${escapeHtml(tenant.code)}</b><div class="muted">${escapeHtml(tenant.id)}</div></td>
+                            <td>${escapeHtml(tenant.name)}</td>
+                            <td>${renderStatusBadge(tenant.status)}</td>
+                            <td>${escapeHtml(maskSecret(tenant.apiKey || tenant.api_key))}</td>
+                            <td class="table-preview" title="${escapeHtml(tenant.kbDir || tenant.kb_dir || "")}">${escapeHtml(tenant.kbDir || tenant.kb_dir)}</td>
+                            <td class="table-preview" title="${escapeHtml(activeKbVersionId || "")}">${escapeHtml(activeKbVersionId)}</td>
+                            <td>${escapeHtml(fmtDateTime(createdAt) || "-")}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="secondary" data-action="tenant-use">Select/Use tenant</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join("")}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderChatbotsTable(){
+    const panel = $("botsTablePanel");
+    if(!panel) return;
+
+    const filter = ($("botFilter")?.value || "").trim().toLowerCase();
+    const rows = (Array.isArray(state.bots) ? state.bots : [])
+        .filter(bot => botMatchesFilter(bot, filter));
+
+    if(rows.length === 0){
+        panel.innerHTML = `
+            <table class="table" id="chatbots-table">
+                <tbody>
+                    <tr><td><div class="panel-state empty">No chatbots for selected tenant.</div></td></tr>
+                </tbody>
+            </table>
+        `;
+        return;
+    }
+
+    panel.innerHTML = `
+        <table class="table" id="chatbots-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Tenant</th>
+                    <th>Channel</th>
+                    <th>Provider</th>
+                    <th>Mode</th>
+                    <th>Status</th>
+                    <th>Persona</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows.map(bot => {
+                    const tenantId = bot.tenantId || bot.tenant_id || state.selectedTenant?.id;
+                    return `
+                        <tr data-bot-id="${escapeHtml(bot.id)}">
+                            <td class="table-preview" title="${escapeHtml(bot.id)}">${escapeHtml(bot.id)}</td>
+                            <td><b>${escapeHtml(bot.name)}</b></td>
+                            <td>${escapeHtml(findTenantLabel(tenantId))}</td>
+                            <td>${escapeHtml(bot.channel)}</td>
+                            <td>${escapeHtml(bot.provider)}</td>
+                            <td>${escapeHtml(bot.mode)}</td>
+                            <td>${renderStatusBadge(bot.status || "ACTIVE")}</td>
+                            <td class="table-preview" title="${escapeHtml(shortPreview(bot.persona, 240))}">${escapeHtml(shortPreview(bot.persona))}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="secondary" data-action="bot-edit">Edit</button>
+                                    <button class="danger" data-action="bot-delete">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join("")}
+            </tbody>
+        </table>
+    `;
 }
 
 /* ---------------- Bot select helpers ---------------- */
@@ -635,6 +1085,10 @@ function botPayloadFromForm(){
         throw new Error("Thiáº¿u bot name hoáº·c channel");
     }
 
+    if(!provider){
+        throw new Error("Provider is required");
+    }
+
     // Provider is system-level for Claude, no per-chatbot config fields
     return {
         name,
@@ -668,7 +1122,7 @@ function populateBotForm(bot){
 
 /* ---------------- Helpers ---------------- */
 function getCurrentTenantId(){
-    return state.selectedTenant?.id || $("tenantId")?.value?.trim() || "";
+    return state.selectedTenant?.id || "";
 }
 
 async function loadPurchaseRequests(){
@@ -839,49 +1293,62 @@ $("createTenant").addEventListener("click", async ()=>{
     $("tenantsMsg").innerText = "";
     const code = $("tenantCode").value.trim();
     const name = $("tenantName").value.trim();
+    const apiKey = $("tenantApiKey")?.value?.trim();
+    const kbDir = $("tenantKbDir")?.value?.trim();
+    const status = $("tenantStatus")?.value?.trim();
     if(!code || !name){
         $("tenantsMsg").innerText = "Thiếu code hoặc name";
         return;
     }
 
     // Endpoint đúng theo code bạn gửi: /api/admin/tenants (WebConfig exclude)
-    const r = await req("POST", "/api/admin/tenants", { code, name }, { tenantHeaders:false });
-    $("tenantsOut").innerText = JSON.stringify(r, null, 2);
+    const r = await req("POST", "/api/admin/tenants", { code, name, apiKey, kbDir, status }, { tenantHeaders:false });
+    setJsonOutput("tenantsOut", r, true);
 
     // refresh list ngay để chọn tenant
     await loadTenants(true);
 });
 
 async function loadTenants(autoPickFirst=false){
+    $("tenantsMsg").innerText = "Loading tenants...";
+    renderTenantsTable();
     const r = await req("GET", "/api/admin/tenants", undefined, { tenantHeaders:false });
-    $("tenantsOut").innerText = JSON.stringify(r, null, 2);
+    setJsonOutput("tenantsOut", r, true);
 
     if(r.ok && Array.isArray(r.data)){
         state.tenants = r.data;
-        renderTenantSelect("tenantSelectMembers");
-        renderTenantSelect("tenantSelectBots");
-        renderTenantSelect("tenantSelectBindings");
+        renderTenantsTable();
 
         if(autoPickFirst && state.tenants.length){
             applyTenantById(state.tenants[0].id);
-            $("tenantSelectMembers").value = state.tenants[0].id;
-            $("tenantSelectBots").value = state.tenants[0].id;
-            $("tenantSelectBindings").value = state.tenants[0].id;
         }
+        $("tenantsMsg").innerText = `Loaded ${state.tenants.length} tenant(s)`;
+    } else {
+        state.tenants = [];
+        renderTenantsTable();
+        $("tenantsMsg").innerText = r.data?.message || `Load tenants failed (${r.status})`;
     }
 }
 $("loadTenants").addEventListener("click", ()=> loadTenants(false));
 $("clearTenantsOut").addEventListener("click", ()=> $("tenantsOut").innerText = "");
+$("tenantFilter")?.addEventListener("input", renderTenantsTable);
+$("tenantsTablePanel")?.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button");
+    if(!btn || btn.dataset.action !== "tenant-use") return;
+    const tenantId = btn.closest("tr")?.dataset?.tenantId;
+    if(!tenantId) return;
+    applyTenantById(tenantId);
+});
 
 /* ---------------- Chatbots ---------------- */
-$("useTenantBots").addEventListener("click", async ()=>{
-    const id = $("tenantSelectBots").value;
+$("useTenantBots")?.addEventListener("click", async ()=>{
+    const id = state.selectedTenant?.id || "";
     if(!id){ showMsg("botsMsg", "Chọn tenant trước"); return; }
     applyTenantById(id);
     showMsg("botsMsg", "Tenant applied");
 });
 
-$("createBot").addEventListener("click", async ()=>{
+$("createBot").addEventListener("click", async (event)=>{
     $("botsMsg").innerText = "";
 
     if(!state.selectedTenant){
@@ -889,10 +1356,11 @@ $("createBot").addEventListener("click", async ()=>{
         return;
     }
 
+    setButtonLoading(event.currentTarget, true, "Creating...");
     try{
         const payload = botPayloadFromForm();
         const r = await req("POST", "/api/chatbots", payload);
-        $("botsOut").innerText = JSON.stringify(r, null, 2);
+        setJsonOutput("botsOut", r, true);
 
         if(!r.ok){
             showMsg("botsMsg", r.data?.message || `Create failed (${r.status})`);
@@ -904,10 +1372,12 @@ $("createBot").addEventListener("click", async ()=>{
         showMsg("botsMsg", "Chatbot created");
     }catch(err){
         $("botsMsg").innerText = err.message;
+    }finally{
+        setButtonLoading(event.currentTarget, false);
     }
 });
 
-$("saveBot").addEventListener("click", async ()=>{
+$("saveBot").addEventListener("click", async (event)=>{
     $("botsMsg").innerText = "";
 
     if(!state.selectedTenant){
@@ -919,10 +1389,11 @@ $("saveBot").addEventListener("click", async ()=>{
         return;
     }
 
+    setButtonLoading(event.currentTarget, true, "Saving...");
     try{
         const payload = botPayloadFromForm();
         const r = await req("PUT", `/api/chatbots/${state.editingBotId}`, payload);
-        $("botsOut").innerText = JSON.stringify(r, null, 2);
+        setJsonOutput("botsOut", r, true);
 
         if(!r.ok){
             showMsg("botsMsg", r.data?.message || `Save failed (${r.status})`);
@@ -934,18 +1405,21 @@ $("saveBot").addEventListener("click", async ()=>{
         showMsg("botsMsg", "Chatbot saved");
     }catch(err){
         $("botsMsg").innerText = err.message;
+    }finally{
+        setButtonLoading(event.currentTarget, false);
     }
 });
 
-$("deleteBot").addEventListener("click", async ()=>{
+async function deleteBotById(botId, button=null){
     $("botsMsg").innerText = "";
 
     if(!state.selectedTenant){
+        clearTenantScopedBotState();
+        renderSelectedTenantNotices();
         $("botsMsg").innerText = "Chua chon tenant";
         return;
     }
 
-    const botId = state.editingBotId || $("chatbotSelectEdit").value;
     if(!botId){
         $("botsMsg").innerText = "Select a chatbot first";
         return;
@@ -957,47 +1431,74 @@ $("deleteBot").addEventListener("click", async ()=>{
         return;
     }
 
+    setButtonLoading(button, true, "Deleting...");
     try{
         const r = await req("DELETE", `/api/chatbots/${botId}`);
-        $("botsOut").innerText = JSON.stringify(r, null, 2);
+        setJsonOutput("botsOut", r, true);
 
         if(r.ok){
             populateBotForm(null);
             await loadBots(true);
             showMsg("botsMsg", "Chatbot deleted");
+        } else {
+            showMsg("botsMsg", r.data?.message || `Delete failed (${r.status})`);
         }
     }catch(err){
         $("botsMsg").innerText = err.message;
+    }finally{
+        setButtonLoading(button, false);
     }
+}
+
+$("deleteBot").addEventListener("click", async (event)=>{
+    const botId = state.editingBotId || $("chatbotSelectEdit").value;
+    await deleteBotById(botId, event.currentTarget);
 });
 
 async function loadBots(silent=false){
     $("botsMsg").innerText = "";
     if(!state.selectedTenant){
+        clearTenantScopedBotState();
+        renderSelectedTenantNotices();
         if(!silent) $("botsMsg").innerText = "Chưa chọn tenant (Use tenant)";
         return;
     }
 
-    const r = await req("GET", "/api/chatbots");
-    $("botsOut").innerText = JSON.stringify(r, null, 2);
+    state.bots = [];
+    if(!silent) $("botsMsg").innerText = "Loading chatbots...";
+    renderChatbotsTable();
+    let r;
+    try{
+        r = await req("GET", "/api/chatbots");
+        setJsonOutput("botsOut", r, true);
+    }catch(err){
+        state.bots = [];
+        renderChatbotsTable();
+        if(!silent) $("botsMsg").innerText = err.message || "Load chatbots failed";
+        return null;
+    }
 
     if(r.ok && Array.isArray(r.data)){
         state.bots = r.data;
+        if(!silent) $("botsMsg").innerText = `Loaded ${state.bots.length} chatbot(s)`;
     } else {
         state.bots = [];
+        if(!silent) $("botsMsg").innerText = r.data?.message || `Load chatbots failed (${r.status})`;
     }
 
     // Also refresh bot dropdown in Bindings
     renderBotSelect();
     renderChatbotEditSelect();
+    renderChatbotsTable();
 
     if(state.editingBotId){
         const editingBot = state.bots.find(x => x.id === state.editingBotId);
         populateBotForm(editingBot || null);
     }
+    return r;
 }
 
-$("loadBots").addEventListener("click", ()=> loadBots(false));
+$("loadBots").addEventListener("click", (event)=> withButtonLoading(event.currentTarget, "Loading...", ()=> loadBots(false)));
 $("clearBotsOut").addEventListener("click", ()=> $("botsOut").innerText = "");
 $("loadSelectedBot").addEventListener("click", ()=>{
     const botId = $("chatbotSelectEdit").value;
@@ -1016,10 +1517,231 @@ $("loadSelectedBot").addEventListener("click", ()=>{
     populateBotForm(bot);
     showMsg("botsMsg", "Chatbot loaded into form");
 });
+$("botFilter")?.addEventListener("input", renderChatbotsTable);
+$("botsTablePanel")?.addEventListener("click", async (e)=>{
+    const btn = e.target.closest("button");
+    if(!btn) return;
+    const botId = btn.closest("tr")?.dataset?.botId;
+    if(!botId) return;
+    const bot = state.bots.find(x => String(x.id) === String(botId));
+    if(!bot){
+        showMsg("botsMsg", "Load chatbots first");
+        return;
+    }
+    if(btn.dataset.action === "bot-edit"){
+        populateBotForm(bot);
+        showMsg("botsMsg", "Chatbot loaded into form");
+        return;
+    }
+    if(btn.dataset.action === "bot-delete"){
+        populateBotForm(bot);
+        await deleteBotById(botId, btn);
+    }
+});
+
+function findTenantLabel(tenantId){
+    const tenant = state.tenants.find(t => String(t.id) === String(tenantId));
+    if(!tenant) return displayValue(tenantId);
+    return `${tenant.name || tenant.code || tenant.id}`;
+}
+
+function findBotLabel(botId){
+    const bot = state.bots.find(b => String(b.id) === String(botId));
+    if(!bot) return displayValue(botId);
+    return `${bot.name || bot.id}${bot.channel ? " [" + bot.channel + "]" : ""}`;
+}
+
+function renderTokenState(binding){
+    if(binding?.token_preview){
+        return escapeHtml(binding.token_preview);
+    }
+    if(binding?.token_configured === true || binding?.tokenConfigured === true){
+        return "Configured";
+    }
+    return "Not configured";
+}
+
+function renderMessengerBindings(bindings){
+    const panel = $("messengerBindingsPanel");
+    if(!panel) return;
+
+    const rows = Array.isArray(bindings) ? bindings : [];
+    state.messengerBindings = rows;
+    panel.classList.remove("hidden");
+
+    if(rows.length === 0){
+        panel.innerHTML = `
+            <div><b>Messenger bindings</b></div>
+            <div class="panel-state empty">No Messenger bindings found for the selected tenant.</div>
+        `;
+        return;
+    }
+
+    panel.innerHTML = `
+        <div><b>Messenger bindings</b></div>
+        <div class="table-wrap">
+            <table class="table" id="messenger-bindings-table">
+                <thead>
+                    <tr>
+                        <th>Page ID</th>
+                        <th>Tenant</th>
+                        <th>Chatbot</th>
+                        <th>Status</th>
+                        <th>Token</th>
+                        <th>Preview</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.map(row => {
+                        const configured = row.token_configured ?? row.tokenConfigured;
+                        return `
+                            <tr data-binding-id="${escapeHtml(row.id)}" data-page-id="${escapeHtml(row.page_id || row.pageId)}">
+                                <td>${escapeHtml(row.page_id || row.pageId)}</td>
+                                <td>${escapeHtml(findTenantLabel(row.tenant_id || row.tenantId))}</td>
+                                <td>${escapeHtml(findBotLabel(row.chatbot_id || row.chatbotId))}</td>
+                                <td>${renderKbStatusBadge(row.status || "-")}</td>
+                                <td>${configured ? '<span class="status-badge status-completed">Configured</span>' : '<span class="status-badge status-new">Not configured</span>'}</td>
+                                <td>${renderTokenState(row)}</td>
+                                <td>${escapeHtml(fmtDateTime(row.created_at || row.createdAt) || "-")}</td>
+                                <td>
+                                    <div class="table-actions">
+                                        <button class="secondary" data-action="messenger-status">Check Status</button>
+                                        <button class="danger" data-action="messenger-delete">Delete/Deactivate</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+async function loadMessengerBindings(){
+    if(!state.selectedTenant){
+        showMsg("cfgMsg", "Chua chon tenant");
+        return null;
+    }
+    renderPanelState("messengerBindingsPanel", "Loading Messenger bindings...", "loading");
+    let r;
+    try{
+        r = await req("GET", "/api/messenger/bindings");
+    }catch(err){
+        renderPanelState("messengerBindingsPanel", err.message || "Load Messenger bindings failed", "error");
+        showMsg("cfgMsg", err.message || "Load Messenger bindings failed", 2200);
+        return null;
+    }
+    if(r.ok && Array.isArray(r.data)){
+        renderMessengerBindings(r.data);
+        setJsonOutput("bindingsOut", r, true);
+        showMsg("cfgMsg", `Loaded ${r.data.length} Messenger binding(s)`, 1800);
+    } else {
+        renderPanelState("messengerBindingsPanel", r.data?.message || `Load Messenger bindings failed (${r.status})`, "error");
+        setJsonOutput("bindingsOut", r, true);
+        showMsg("cfgMsg", r.data?.message || `Load Messenger bindings FAIL (${r.status})`, 2200);
+    }
+    return r;
+}
+
+async function checkMessengerBindingStatus(pageId){
+    if(!pageId){
+        showMsg("cfgMsg", "Missing page ID", 1800);
+        return;
+    }
+    renderPanelState("messengerBindingStatusPanel", "Checking Messenger binding status...", "loading");
+    let r;
+    try{
+        r = await req("GET", `/api/messenger/bindings/${encodeURIComponent(pageId)}/status`);
+    }catch(err){
+        renderPanelState("messengerBindingStatusPanel", err.message || "Check Messenger binding status failed", "error");
+        showMsg("cfgMsg", err.message || "Check Messenger binding status failed", 2200);
+        return;
+    }
+    if(r.ok){
+        renderBindingStatusPanel(r.data);
+        showMsg("cfgMsg", "Messenger binding status loaded", 1600);
+    } else {
+        renderBindingStatusPanel({ page_id: pageId, binding_active: false, reason: r.data?.message || `STATUS_FAIL_${r.status}` });
+        showMsg("cfgMsg", "Check Messenger binding status FAIL", 1800);
+    }
+}
+
+function renderBindingStatusPanel(status){
+    const panel = $("messengerBindingStatusPanel");
+    if(!panel) return;
+
+    const runtime = status?.runtime || {};
+    const desiredKb = status?.desired_kb || status?.desiredKb || {};
+    const active = status?.binding_active ?? status?.bindingActive;
+    const inSync = status?.runtime_in_sync ?? status?.runtimeInSync;
+    const externalMode = runtime.mode === "external";
+    const activeBadge = active
+        ? '<span class="ops-badge ops-badge-success">ACTIVE</span>'
+        : '<span class="ops-badge ops-badge-failed">INACTIVE</span>';
+    const syncBadge = inSync === true
+        ? '<span class="ops-badge ops-badge-success">IN SYNC</span>'
+        : (inSync === false ? '<span class="ops-badge ops-badge-progress">CHECK REQUIRED</span>' : '<span class="ops-badge ops-badge-neutral">UNKNOWN</span>');
+    const externalNote = externalMode
+        ? '<div class="inline-feedback">External runtime mode: Java cannot verify the actual KB_DIR used by the external process.</div>'
+        : "";
+
+    panel.classList.remove("hidden");
+    panel.innerHTML = `
+        <div><b>Messenger binding status</b></div>
+        <div class="ops-summary-copy">${activeBadge} ${syncBadge}</div>
+        ${active === false ? `<div class="inline-feedback error">Binding inactive: ${escapeHtml(status?.reason || "-")}</div>` : ""}
+        ${inSync === false ? `<div class="inline-feedback error">Runtime is not in sync with desired KB.</div>` : ""}
+        ${externalNote}
+        <div class="ops-stats-grid">
+            <div class="ops-stat-card"><div class="muted">Page ID</div><div><b>${escapeHtml(status?.page_id || status?.pageId)}</b></div></div>
+            <div class="ops-stat-card"><div class="muted">Tenant ID</div><div><b>${escapeHtml(status?.tenant_id || status?.tenantId)}</b></div></div>
+            <div class="ops-stat-card"><div class="muted">Chatbot ID</div><div><b>${escapeHtml(status?.chatbot_id || status?.chatbotId)}</b></div></div>
+            <div class="ops-stat-card"><div class="muted">Binding status</div><div><b>${escapeHtml(status?.binding_status || status?.bindingStatus)}</b></div></div>
+            <div class="ops-stat-card"><div class="muted">Token configured</div><div><b>${escapeHtml(boolLabel(status?.token_configured ?? status?.tokenConfigured))}</b></div></div>
+            <div class="ops-stat-card"><div class="muted">Token preview</div><div><b>${escapeHtml(status?.token_preview || status?.tokenPreview)}</b></div></div>
+            <div class="ops-stat-card"><div class="muted">Desired KB dir</div><div><b>${escapeHtml(desiredKb.kb_dir || desiredKb.kbDir)}</b></div></div>
+            <div class="ops-stat-card"><div class="muted">Desired source</div><div><b>${escapeHtml(desiredKb.source)}</b></div></div>
+            <div class="ops-stat-card"><div class="muted">Desired version</div><div><b>${escapeHtml(desiredKb.version_tag || desiredKb.versionTag)}</b></div></div>
+            <div class="ops-stat-card"><div class="muted">Runtime mode</div><div><b>${escapeHtml(runtime.mode)}</b></div></div>
+            <div class="ops-stat-card"><div class="muted">Runtime KB dir</div><div><b>${escapeHtml(runtime.kb_dir || runtime.kbDir)}</b></div></div>
+            <div class="ops-stat-card"><div class="muted">Runtime version</div><div><b>${escapeHtml(runtime.version_tag || runtime.versionTag)}</b></div></div>
+            <div class="ops-stat-card"><div class="muted">Process alive</div><div><b>${escapeHtml(boolLabel(runtime.process_alive ?? runtime.processAlive))}</b></div></div>
+            <div class="ops-stat-card"><div class="muted">Runtime in sync</div><div><b>${escapeHtml(boolLabel(inSync))}</b></div></div>
+        </div>
+    `;
+}
+
+async function deactivateMessengerBinding(bindingId, button=null){
+    if(!bindingId){
+        showMsg("cfgMsg", "Missing binding ID", 1800);
+        return;
+    }
+    if(!window.confirm("Delete/deactivate this Messenger binding?")){
+        return;
+    }
+    await withButtonLoading(button, "Deleting...", async ()=>{
+        try{
+        const r = await req("DELETE", `/api/messenger/bindings/${encodeURIComponent(bindingId)}`);
+        setJsonOutput("bindingsOut", r, true);
+        if(r.ok){
+            showMsg("cfgMsg", "Messenger binding deactivated", 1800);
+            await loadMessengerBindings();
+            $("messengerBindingStatusPanel")?.classList.add("hidden");
+        } else {
+            showMsg("cfgMsg", r.data?.message || `Delete/deactivate FAIL (${r.status})`, 2200);
+        }
+        }catch(err){
+            showMsg("cfgMsg", err.message || "Delete/deactivate FAIL", 2200);
+        }
+    });
+}
 
 /* ---------------- Bindings ---------------- */
-$("useTenantBindings").addEventListener("click", async ()=>{
-    const id = $("tenantSelectBindings").value;
+$("useTenantBindings")?.addEventListener("click", async ()=>{
+    const id = state.selectedTenant?.id || "";
     if(!id){ showMsg("cfgMsg", "Chọn tenant trước"); return; }
     applyTenantById(id);
     // load bots for this tenant so binding dropdown works
@@ -1055,7 +1777,7 @@ $("createTgBinding").addEventListener("click", async ()=>{
     const r = await req("POST", "/api/telegram/bindings", payload);
 
     // Always show binding result first
-    $("bindingsOut").innerText = JSON.stringify(r, null, 2);
+    setJsonOutput("bindingsOut", r, true);
 
     // Auto setWebhook if ngrok base URL is provided
     const publicBase = ($("tgPublicBase")?.value || "").trim().replace(/\/+$/,"");
@@ -1067,6 +1789,7 @@ $("createTgBinding").addEventListener("click", async ()=>{
     }
 
     if(!publicBase){
+        $("tgToken").value = "";
         showMsg("cfgMsg", "Binding OK. Nhập ngrok base URL để auto setWebhook.", 2500);
         return;
     }
@@ -1087,9 +1810,10 @@ $("createTgBinding").addEventListener("click", async ()=>{
         }
     };
 
-    $("bindingsOut").innerText = JSON.stringify(merged, null, 2);
+    setJsonOutput("bindingsOut", merged, true);
 
     if(w.ok){
+        $("tgToken").value = "";
         showMsg("cfgMsg", "Set Telegram webhook OK", 2500);
     } else {
         showMsg("cfgMsg", "Set Telegram webhook FAIL", 2500);
@@ -1099,10 +1823,10 @@ $("createTgBinding").addEventListener("click", async ()=>{
 $("loadTgBindings").addEventListener("click", async ()=>{
     if(!state.selectedTenant){ showMsg("cfgMsg", "Chưa chọn tenant"); return; }
     const r = await req("GET", "/api/telegram/bindings");
-    $("bindingsOut").innerText = JSON.stringify(r, null, 2);
+    setJsonOutput("bindingsOut", r, true);
 });
 
-$("createMsgBinding").addEventListener("click", async ()=>{
+$("createMsgBinding").addEventListener("click", async (event)=>{
     $("bindingsOut").innerText = "";
 
     if(!state.selectedTenant){ showMsg("cfgMsg", "Chưa chọn tenant"); return; }
@@ -1115,18 +1839,55 @@ $("createMsgBinding").addEventListener("click", async ()=>{
         return;
     }
 
-    const payload = { pageId, chatbotId: state.selectedBot.id, pageAccessToken };
-    const r = await req("POST", "/api/messenger/bindings", payload);
-    $("bindingsOut").innerText = JSON.stringify(r, null, 2);
+    setButtonLoading(event.currentTarget, true, "Creating...");
+    try{
+        const payload = { pageId, chatbotId: state.selectedBot.id, pageAccessToken };
+        const r = await req("POST", "/api/messenger/bindings", payload);
+        setJsonOutput("bindingsOut", r, true);
+        if(r.ok){
+            $("pageToken").value = "";
+            showMsg("cfgMsg", "Messenger binding created", 1800);
+            await loadMessengerBindings();
+        } else {
+            showMsg("cfgMsg", r.data?.message || `Create Messenger binding FAIL (${r.status})`, 2200);
+        }
+    }catch(err){
+        showMsg("cfgMsg", err.message || "Create Messenger binding FAIL", 2200);
+    }finally{
+        setButtonLoading(event.currentTarget, false);
+    }
 });
 
-$("loadMsgBindings").addEventListener("click", async ()=>{
+$("loadMsgBindings").addEventListener("click", async (event)=>{
     if(!state.selectedTenant){ showMsg("cfgMsg", "Chưa chọn tenant"); return; }
-    const r = await req("GET", "/api/messenger/bindings");
-    $("bindingsOut").innerText = JSON.stringify(r, null, 2);
+    await withButtonLoading(event.currentTarget, "Loading...", loadMessengerBindings);
 });
 
-$("clearBindingsOut").addEventListener("click", ()=> $("bindingsOut").innerText = "");
+$("messengerBindingsPanel")?.addEventListener("click", async (event)=>{
+    const btn = event.target.closest("button[data-action]");
+    if(!btn) return;
+    const row = btn.closest("tr");
+    const pageId = row?.dataset?.pageId || "";
+    const bindingId = row?.dataset?.bindingId || "";
+    if(btn.dataset.action === "messenger-status"){
+        await withButtonLoading(btn, "Checking...", ()=> checkMessengerBindingStatus(pageId));
+    }
+    if(btn.dataset.action === "messenger-delete"){
+        await deactivateMessengerBinding(bindingId, btn);
+    }
+});
+
+$("clearBindingsOut").addEventListener("click", ()=>{
+    $("bindingsOut").innerText = "";
+    if($("messengerBindingsPanel")){
+        $("messengerBindingsPanel").classList.add("hidden");
+        $("messengerBindingsPanel").innerHTML = "";
+    }
+    if($("messengerBindingStatusPanel")){
+        $("messengerBindingStatusPanel").classList.add("hidden");
+        $("messengerBindingStatusPanel").innerHTML = "";
+    }
+});
 
 /* =========================================================
    ✅ LEADS (5.3) — fetch + render + status update + drawer
@@ -1266,14 +2027,22 @@ function replaceElementWithClone(id){
 }
 
 async function loadTenants(autoPickFirst=false, preferredTenantId=""){
-    const r = await req("GET", "/api/admin/tenants", undefined, { tenantHeaders:false });
-    $("tenantsOut").innerText = JSON.stringify(r, null, 2);
+    $("tenantsMsg").innerText = "Loading tenants...";
+    renderTenantsTable();
+    let r;
+    try{
+        r = await req("GET", "/api/admin/tenants", undefined, { tenantHeaders:false });
+        setJsonOutput("tenantsOut", r, true);
+    }catch(err){
+        state.tenants = [];
+        renderTenantsTable();
+        $("tenantsMsg").innerText = err.message || "Load tenants failed";
+        return null;
+    }
 
     if(r.ok && Array.isArray(r.data)){
         state.tenants = r.data;
-        renderTenantSelect("tenantSelectMembers");
-        renderTenantSelect("tenantSelectBots");
-        renderTenantSelect("tenantSelectBindings");
+        renderTenantsTable();
 
         const tenantToSelect =
             (preferredTenantId && state.tenants.find(t => t.id === preferredTenantId))
@@ -1281,11 +2050,14 @@ async function loadTenants(autoPickFirst=false, preferredTenantId=""){
 
         if(tenantToSelect){
             applyTenantById(tenantToSelect.id);
-            $("tenantSelectMembers").value = tenantToSelect.id;
-            $("tenantSelectBots").value = tenantToSelect.id;
-            $("tenantSelectBindings").value = tenantToSelect.id;
         }
+        $("tenantsMsg").innerText = `Loaded ${state.tenants.length} tenant(s)`;
+    } else {
+        state.tenants = [];
+        renderTenantsTable();
+        $("tenantsMsg").innerText = r.data?.message || `Load tenants failed (${r.status})`;
     }
+    return r;
 }
 
 function wireTenantProvisioningUi(){
@@ -1293,7 +2065,7 @@ function wireTenantProvisioningUi(){
     const loadTenantsButton = replaceElementWithClone("loadTenants");
     const clearTenantsButton = replaceElementWithClone("clearTenantsOut");
 
-    createTenantButton?.addEventListener("click", async ()=>{
+    createTenantButton?.addEventListener("click", async (event)=>{
         $("tenantsMsg").innerText = "";
         const code = $("tenantCode").value.trim();
         const name = $("tenantName").value.trim();
@@ -1310,14 +2082,23 @@ function wireTenantProvisioningUi(){
         if(apiKey) body.apiKey = apiKey;
         if(kbDir) body.kbDir = kbDir;
 
-        const r = await req("POST", "/api/admin/tenants", body, { tenantHeaders:false });
-        $("tenantsOut").innerText = JSON.stringify(r, null, 2);
+        setButtonLoading(event.currentTarget, true, "Creating...");
+        let r;
+        try{
+            r = await req("POST", "/api/admin/tenants", body, { tenantHeaders:false });
+            setJsonOutput("tenantsOut", r, true);
+        }catch(err){
+            $("tenantsMsg").innerText = err.message || "Create tenant failed";
+            setButtonLoading(event.currentTarget, false);
+            return;
+        }
 
         if(r.ok && r.data?.id){
             $("tenantApiKey").value = "";
             $("tenantKbDir").value = "";
             $("tenantStatus").value = r.data.status || "ACTIVE";
             await loadTenants(false, r.data.id);
+            setButtonLoading(event.currentTarget, false);
             showMsg("tenantsMsg", `Created tenant ${r.data.code || code}`, 1800);
             return;
         }
@@ -1325,21 +2106,21 @@ function wireTenantProvisioningUi(){
         if(r.data?.message){
             $("tenantsMsg").innerText = r.data.message;
         }
+        setButtonLoading(event.currentTarget, false);
     });
 
-    loadTenantsButton?.addEventListener("click", ()=> loadTenants(false));
+    loadTenantsButton?.addEventListener("click", (event)=> withButtonLoading(event.currentTarget, "Loading...", ()=> loadTenants(false)));
     clearTenantsButton?.addEventListener("click", ()=> $("tenantsOut").innerText = "");
 }
 
 function wireMemberManagementUi(){
     $("useTenantMembers")?.addEventListener("click", async ()=>{
-        const tenantId = $("tenantSelectMembers")?.value || "";
+        const tenantId = state.selectedTenant?.id || "";
         if(!tenantId){
             $("membersMsg").innerText = "Select a tenant first";
             return;
         }
         applyTenantById(tenantId);
-        $("tenantSelectMembers").value = tenantId;
         $("membersMsg").innerText = "Tenant applied";
         await loadMembersForSelectedTenant();
     });
@@ -1362,9 +2143,17 @@ function wireMemberManagementUi(){
             $("membersMsg").innerText = "Missing email or password";
             return;
         }
+        if(!body.email.includes("@")){
+            $("membersMsg").innerText = "Email must contain @";
+            return;
+        }
+        if(!body.role){
+            $("membersMsg").innerText = "Role is required";
+            return;
+        }
 
         const r = await req("POST", `/api/admin/tenant-members?tenantId=${encodeURIComponent(tenantId)}`, body, { tenantHeaders:false });
-        $("membersOut").innerText = JSON.stringify(r, null, 2);
+        setJsonOutput("membersOut", r, true);
         if(r.ok){
             $("memberPassword").value = "";
             showMsg("membersMsg", `Created member ${body.email}`, 1800);
@@ -1384,6 +2173,14 @@ function wireMemberManagementUi(){
     $("clearMembersOut")?.addEventListener("click", ()=> $("membersOut").innerText = "");
 }
 
+function wireRawOutputToggles(){
+    wireRawOutputToggle("toggleTenantsOut", "tenantsOut");
+    wireRawOutputToggle("toggleOnboardingOut", "onboardingOut");
+    wireRawOutputToggle("toggleMembersOut", "membersOut");
+    wireRawOutputToggle("toggleBotsOut", "botsOut");
+    wireRawOutputToggle("toggleBindingsOut", "bindingsOut");
+}
+
 async function loadMembersForSelectedTenant(){
     const tenantId = getSelectedTenantIdForMembers();
     if(!tenantId){
@@ -1393,7 +2190,7 @@ async function loadMembersForSelectedTenant(){
     }
 
     const r = await req("GET", `/api/admin/tenant-members?tenantId=${encodeURIComponent(tenantId)}`, undefined, { tenantHeaders:false });
-    $("membersOut").innerText = JSON.stringify(r, null, 2);
+    setJsonOutput("membersOut", r, true);
     if(r.ok){
         showMsg("membersMsg", `Loaded ${(Array.isArray(r.data) ? r.data.length : 0)} member(s)`, 1600);
         return;
@@ -1409,6 +2206,7 @@ $("toggleDevDebug")?.addEventListener("click", ()=>{
     panel.classList.toggle("hidden");
 });
 loadCfg();
+wireRawOutputToggles();
 wireTenantProvisioningUi();
 wireMemberManagementUi();
 
@@ -1417,19 +2215,22 @@ $("loadRuntime").addEventListener("click", async ()=>{
     $("runtimeOut").innerText = "";
 
     // Nếu bạn làm Hướng A/B (exclude runtime) => KHÔNG cần tenant headers
-    const [platformRes, benchmarkRes] = await Promise.all([
+    const [systemStatusRes, platformRes, benchmarkRes] = await Promise.all([
+        req("GET", "/api/admin/system-status", undefined, { tenantHeaders: false }),
         req("GET", "/api/ops/platform", undefined, { tenantHeaders: false }),
         req("GET", "/api/ops/benchmark-summary", undefined, { tenantHeaders: false })
     ]);
+    renderSystemStatusSummary(systemStatusRes);
     renderPlatformOpsSummary(platformRes.ok ? platformRes.data : null);
     renderBenchmarkSummary(benchmarkRes.ok ? benchmarkRes.data : null);
-    $("runtimeOut").innerText = JSON.stringify({
+    setJsonOutput("runtimeOut", {
+        systemStatus: systemStatusRes,
         platform: platformRes,
         benchmark: benchmarkRes
-    }, null, 2);
-    $("runtimeMsg").innerText = (platformRes.ok && benchmarkRes.ok)
+    }, true);
+    $("runtimeMsg").innerText = (systemStatusRes.ok && platformRes.ok && benchmarkRes.ok)
         ? "Platform ops and benchmark summary loaded"
-        : `FAIL (platform=${platformRes.status}, benchmark=${benchmarkRes.status})`;
+        : `FAIL (system=${systemStatusRes.status}, platform=${platformRes.status}, benchmark=${benchmarkRes.status})`;
 });
 
 $("clearRuntimeOut").addEventListener("click", ()=>{
@@ -1438,6 +2239,10 @@ $("clearRuntimeOut").addEventListener("click", ()=>{
     if($("runtimeSummary")){
         $("runtimeSummary").classList.add("hidden");
         $("runtimeSummary").innerHTML = "";
+    }
+    if($("systemStatusSummary")){
+        $("systemStatusSummary").classList.add("hidden");
+        $("systemStatusSummary").innerHTML = "";
     }
     if($("benchmarkSummary")){
         $("benchmarkSummary").classList.add("hidden");
@@ -1454,17 +2259,92 @@ $("evictRuntime")?.addEventListener("click", async ()=>{
 
     $("runtimeMsg").innerText = "Evicting runtime...";
     const r = await evictPlatformRuntime(tenantId);
-    $("runtimeOut").innerText = JSON.stringify(r, null, 2);
+    setJsonOutput("runtimeOut", r, true);
     $("runtimeMsg").innerText = r.ok ? "Runtime evicted" : (r.data?.message || `FAIL (${r.status})`);
     if(r.ok){
-        const [refreshed, benchmarkRes] = await Promise.all([
+        const [systemStatusRes, refreshed, benchmarkRes] = await Promise.all([
+            req("GET", "/api/admin/system-status", undefined, { tenantHeaders: false }),
             req("GET", "/api/ops/platform", undefined, { tenantHeaders: false }),
             req("GET", "/api/ops/benchmark-summary", undefined, { tenantHeaders: false })
         ]);
+        renderSystemStatusSummary(systemStatusRes);
         renderPlatformOpsSummary(refreshed.ok ? refreshed.data : null);
         renderBenchmarkSummary(benchmarkRes.ok ? benchmarkRes.data : null);
     }
 });
+
+function wireMonitoringActions(){
+    const loadRuntimeButton = replaceElementWithClone("loadRuntime");
+    const evictRuntimeButton = replaceElementWithClone("evictRuntime");
+
+    loadRuntimeButton?.addEventListener("click", async (event)=>{
+        $("runtimeMsg").innerText = "";
+        $("runtimeOut").innerText = "";
+        renderPanelState("systemStatusSummary", "Loading system status...", "loading");
+        renderPanelState("runtimeSummary", "Loading platform ops...", "loading");
+
+        await withButtonLoading(event.currentTarget, "Loading...", async ()=>{
+            try{
+                const [systemStatusRes, platformRes, benchmarkRes] = await Promise.all([
+                    req("GET", "/api/admin/system-status", undefined, { tenantHeaders: false }),
+                    req("GET", "/api/ops/platform", undefined, { tenantHeaders: false }),
+                    req("GET", "/api/ops/benchmark-summary", undefined, { tenantHeaders: false })
+                ]);
+                renderSystemStatusSummary(systemStatusRes);
+                renderPlatformOpsSummary(platformRes.ok ? platformRes.data : null);
+                renderBenchmarkSummary(benchmarkRes.ok ? benchmarkRes.data : null);
+                setJsonOutput("runtimeOut", {
+                    systemStatus: systemStatusRes,
+                    platform: platformRes,
+                    benchmark: benchmarkRes
+                }, true);
+                $("runtimeMsg").innerText = (systemStatusRes.ok && platformRes.ok && benchmarkRes.ok)
+                    ? "Platform ops and benchmark summary loaded"
+                    : `FAIL (system=${systemStatusRes.status}, platform=${platformRes.status}, benchmark=${benchmarkRes.status})`;
+            }catch(err){
+                renderPanelState("systemStatusSummary", err.message || "Load system status failed", "error");
+                renderPlatformOpsSummary(null);
+                $("runtimeMsg").innerText = err.message || "Load platform ops failed";
+            }
+        });
+    });
+
+    evictRuntimeButton?.addEventListener("click", async (event)=>{
+        const tenantId = $("runtimeEvictTenantId")?.value?.trim();
+        if(!tenantId){
+            $("runtimeMsg").innerText = "Enter a tenant UUID";
+            return;
+        }
+        if(!window.confirm(`Evict runtime for tenant ${tenantId}?`)){
+            return;
+        }
+
+        await withButtonLoading(event.currentTarget, "Evicting...", async ()=>{
+            $("runtimeMsg").innerText = "Evicting runtime...";
+            try{
+                const r = await evictPlatformRuntime(tenantId);
+                setJsonOutput("runtimeOut", r, true);
+                $("runtimeMsg").innerText = r.ok ? "Runtime evicted" : (r.data?.message || `FAIL (${r.status})`);
+                if(r.ok){
+                    renderPanelState("systemStatusSummary", "Refreshing status...", "loading");
+                    renderPanelState("runtimeSummary", "Refreshing platform ops...", "loading");
+                    const [systemStatusRes, refreshed, benchmarkRes] = await Promise.all([
+                        req("GET", "/api/admin/system-status", undefined, { tenantHeaders: false }),
+                        req("GET", "/api/ops/platform", undefined, { tenantHeaders: false }),
+                        req("GET", "/api/ops/benchmark-summary", undefined, { tenantHeaders: false })
+                    ]);
+                    renderSystemStatusSummary(systemStatusRes);
+                    renderPlatformOpsSummary(refreshed.ok ? refreshed.data : null);
+                    renderBenchmarkSummary(benchmarkRes.ok ? benchmarkRes.data : null);
+                }
+            }catch(err){
+                $("runtimeMsg").innerText = err.message || "Evict runtime failed";
+            }
+        });
+    });
+}
+
+wireMonitoringActions();
 
 async function loadStats(days){
     const ov = await req("GET", `/admin/api/stats/overview?days=${days}`, undefined, { tenantHeaders:false });
@@ -1487,7 +2367,7 @@ $("loadStats30") && ($("loadStats30").onclick = ()=> loadStats(30).catch(e=>aler
 async function bootstrapAdminUi(){
     try {
         await loadCurrentPrincipal();
-        setTab("tenants");
+        setPrimaryTab("dashboard", "overview");
         await loadTenants(false);
         // Initialize provider field visibility
         toggleApiConfigFields();

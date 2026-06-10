@@ -218,7 +218,7 @@ class RetrievalServiceTests(unittest.TestCase):
         hits = search_hits(kb, "warranty", k=2, tenant_id="tenant-a")
 
         self.assertEqual(hits, [])
-        self.assertEqual(format_context(hits), "")
+        self.assertEqual(format_context(hits), "Không tìm thấy sản phẩm phù hợp trong KB.")
         self.assertEqual(top_similar_items(hits), [])
 
     def test_build_kb_trims_product_footer_and_support_boilerplate(self):
@@ -433,7 +433,11 @@ class RetrievalServiceTests(unittest.TestCase):
         self.assertEqual(hits[0].doc_id, "legacy-1")
         self.assertEqual(hits[0].chunk_id, "legacy-1")
         self.assertEqual(hits[0].tenant_id, "tenant-a")
-        self.assertEqual(format_context(hits), "- Legacy Sofa (kb://legacy-1): legacy normalized content")
+        context = format_context(hits)
+        self.assertIn("[D1]", context)
+        self.assertIn("Tiêu đề: Legacy Sofa", context)
+        self.assertIn("Link nguồn: kb://legacy-1", context)
+        self.assertIn("Nội dung: legacy normalized content", context)
         self.assertEqual(top_similar_items(hits), [("Legacy Sofa", "kb://legacy-1")])
 
     def test_should_allow_retrieval_preserves_early_discovery_gate(self):

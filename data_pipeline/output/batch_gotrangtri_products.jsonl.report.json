@@ -1,0 +1,92 @@
+{
+  "run_id": "20260529T183841Z-gotrangtri-ac17bcbb",
+  "source_name": "gotrangtri",
+  "tenant_id": "demo-tenant",
+  "generated_at": "2026-05-29T18:38:41.757738+00:00",
+  "output_path": "data_pipeline/output/batch_gotrangtri_products.jsonl",
+  "counts": {
+    "fetched_count": 16,
+    "extracted_count": 16,
+    "failed_count": 0,
+    "skipped_count": 0,
+    "quality_high_count": 16,
+    "quality_medium_count": 0,
+    "quality_low_count": 0
+  },
+  "field_coverage": {
+    "tenant_id": 16,
+    "product_name": 16,
+    "price": 16,
+    "category": 16,
+    "material": 16,
+    "color": 8,
+    "dimensions": 12,
+    "brand": 16,
+    "image_urls": 16,
+    "sku": 16,
+    "availability": 16
+  },
+  "category_distribution": {
+    "Bàn trà": 3,
+    "Sofa": 3,
+    "Ghế": 1,
+    "Bàn ăn": 3,
+    "Giường": 2,
+    "Kệ": 3,
+    "Tủ": 1
+  },
+  "extractor_distribution": {
+    "json_ld": 16
+  },
+  "data_quality_distribution": {
+    "high": 16
+  },
+  "errors": [],
+  "sample_products": [
+    {
+      "product_name": "Bàn sofa, bàn trà gỗ tự nhiên GHS-4494",
+      "price": 5900000.0,
+      "category": "Bàn trà",
+      "material": "Gỗ sồi tự nhiên kết hợp venner sồi",
+      "dimensions": "1200 x 600 x 435mm",
+      "data_quality": "high",
+      "source_url": "https://gotrangtri.vn/shop/ban-sofa-ban-tra-go-tu-nhien-ghs-4494"
+    },
+    {
+      "product_name": "Bàn trà tròn phong cách tối giản GHS-41815",
+      "price": 3700000.0,
+      "category": "Bàn trà",
+      "material": "Gỗ tự nhiên",
+      "dimensions": null,
+      "data_quality": "high",
+      "source_url": "https://gotrangtri.vn/shop/ban-tra-tron-phong-cach-toi-gian-ghs-41815"
+    },
+    {
+      "product_name": "Bàn trà hiện đại phong cách tối giản GHS-41643",
+      "price": 5300000.0,
+      "category": "Bàn trà",
+      "material": "Gỗ công nghiệp",
+      "dimensions": "1200x600x400mm",
+      "data_quality": "high",
+      "source_url": "https://gotrangtri.vn/shop/ban-tra-hien-dai-phong-cach-toi-gian-ghs-41643"
+    },
+    {
+      "product_name": "Sofa văng da, Sofa phong cách Bắc Âu GHS-854",
+      "price": 9500000.0,
+      "category": "Sofa",
+      "material": "Khung Gỗ tự nhiên, mút mềm K43 , Lò xo lưới, Da nhập khẩu",
+      "dimensions": "(D)1900 x (R)800 x (C)800 (có bản vẽ bên dưới)",
+      "data_quality": "high",
+      "source_url": "https://gotrangtri.vn/shop/sofa-vang-da-sofa-phong-cach-bac-au-ghs-854"
+    },
+    {
+      "product_name": "Bộ sofa Gỗ sồi tự nhiên, nệm Nỉ GHS-898",
+      "price": 50500000.0,
+      "category": "Sofa",
+      "material": "Khung gỗ sồi tự nhiên, mút mềm K43 , Lò xo lưới, Nỉ cao cấp",
+      "dimensions": "gồm 4 món, 3 ghế + 1 bàn Sofa văng dài: (D)2100 x (R)850 x (C)880mm Sofa văng ngắn: (D)1500 x (R)850 x (C)880mm Sofa đơn",
+      "data_quality": "high",
+      "source_url": "https://gotrangtri.vn/shop/bo-sofa-go-soi-tu-nhien-nem-ni-ghs-898"
+    }
+  ]
+}

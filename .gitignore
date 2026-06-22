@@ -59,3 +59,6 @@ target/
 id_rsa*
 *.p12
 *.jks
+
+#kb
+chatbot/kb/

@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/combo-phong-khach-moho-vline-mau-tu-nhien",
+  "final_url": "https://moho.com.vn/products/combo-phong-khach-moho-vline-mau-tu-nhien",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:43:37.336579+00:00",
+  "content_hash": "ab3183d39c5587550aa7bd89313a79854ce0a1f8ef50e747e996248c8611da38",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:43:37 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "346427",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"6a762dd98f5e4cbdbdb51fad54fbdd8d\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:43:37 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1224",
+    "X-RequestId": "6c2f89fe414f2f729e28f8acf47e3b71",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_combo-phong-khach-moho-vline-mau-tu-nhien-ab3183d39c55.html"
+}

@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-armchair-thu-gian-kem-don-moho-olly",
+  "final_url": "https://moho.com.vn/products/ghe-armchair-thu-gian-kem-don-moho-olly",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:00:48.655175+00:00",
+  "content_hash": "bd47b8675e0e7b6e5865dcbce823749ce064fdad93a287d27bbdf07c110808e5",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:00:48 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "354663",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"ed6b090cea564fc0bf04eb3576e0f2eb\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:00:48 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1251",
+    "X-RequestId": "5ceacb1b46783c1728fb5edf518c990e",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-armchair-thu-gian-kem-don-moho-olly-bd47b8675e0e.html"
+}

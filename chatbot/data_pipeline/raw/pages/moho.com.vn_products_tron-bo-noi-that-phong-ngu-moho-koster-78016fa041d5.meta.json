@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tron-bo-noi-that-phong-ngu-moho-koster",
+  "final_url": "https://moho.com.vn/products/tron-bo-noi-that-phong-ngu-moho-koster",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:31:41.003333+00:00",
+  "content_hash": "78016fa041d5f88d482868c04b647ed0798f260885fc400cb3612704ef45e6fc",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:31:40 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "345192",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"d9c84d107185467f97db0a4b27250172\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:31:40 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1297",
+    "X-RequestId": "71bd9c5fbe7f9fa1852d6f81b4f4103c",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tron-bo-noi-that-phong-ngu-moho-koster-78016fa041d5.html"
+}

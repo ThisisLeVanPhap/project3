@@ -1,0 +1,12 @@
+﻿{
+    "tenant_id":  "10000000-0000-4000-8000-000000000102",
+    "desired":  {
+                    "kb_dir":  "/opt/app/chatbot/kb/datasets/gotrangtri-20260610/dataset-20260620191737-gotrangtri-20260610",
+                    "source":  "ACTIVE_VERSION",
+                    "version_id":  "728ecddd-4516-4122-9504-03e0abe3d763",
+                    "version_tag":  "dataset-20260620192717-artifact-767a5866",
+                    "fallback_reason":  null
+                },
+    "running":  null,
+    "in_sync":  false
+}

@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/combo-giuong-tu-vline-vienna",
+  "final_url": "https://moho.com.vn/products/combo-giuong-tu-vline-vienna",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:27:31.845884+00:00",
+  "content_hash": "dbe86489acc8769f6391d3529a7691b6a733eb059906b7a77075f406ceb4048f",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:27:31 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "368774",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"47e85e75e60645059cb7ac87c8c5a733\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:27:31 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1403",
+    "X-RequestId": "ce5b4af9cd605d3a648cae5cbbd97d94",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_combo-giuong-tu-vline-vienna-dbe86489acc8.html"
+}

@@ -3,9 +3,13 @@ import unicodedata
 from typing import Any, Dict, List
 
 try:
+    from .product_filters import parse_price_constraint, parse_product_categories
     from .sales_flow import extract_slots as extract_sales_flow_slots
+    from .sales_nlu import classify_sales_nlu
 except ImportError:  # pragma: no cover - direct script imports
+    from app.product_filters import parse_price_constraint, parse_product_categories
     from app.sales_flow import extract_slots as extract_sales_flow_slots
+    from app.sales_nlu import classify_sales_nlu
 
 
 PHONE_RE = re.compile(r"(?<!\d)(0[35789](?:[\s.\-]?\d){8}|\+?84(?:[\s.\-]?\d){9})(?!\d)")
@@ -109,7 +113,8 @@ def detect_intents(text: str) -> List[str]:
     intents: List[str] = []
     if OUT_OF_SCOPE_RE.search(raw) or OUT_OF_SCOPE_RE.search(folded):
         return ["out_of_scope"]
-    if CANCEL_RE.search(raw) or re.search(r"\b(thoi|khong mua nua|huy|de sau|cancel)\b", folded):
+    is_topic_change = re.search(r"\b(thoi\s+)?(doi|chuyen)\s+sang\b", folded) is not None
+    if not is_topic_change and (CANCEL_RE.search(raw) or re.search(r"\b(thoi|khong mua nua|huy|de sau|cancel)\b", folded)):
         intents.append("cancel")
     if HANDOFF_RE.search(raw) or re.search(r"\b(gap nhan vien|tu van vien|goi toi|lien he toi|nhan vien|human|agent|staff)\b", folded):
         intents.append("handoff_request")
@@ -156,14 +161,19 @@ def extract_sales_slots(message: str) -> Dict[str, Any]:
     raw = repair_mojibake(message or "")
     folded = fold_text(raw)
     intents = detect_intents(raw)
+    nlu = classify_sales_nlu(raw)
     slots: Dict[str, Any] = {
         "intents": intents,
         "intent": classify_primary_intent(intents),
+        "nlu_intent": nlu.intent,
+        "nlu_confidence": nlu.confidence,
+        "nlu_source": nlu.source,
         "confirmation_intent": detect_confirmation_intent(raw),
         "has_ship_or_stock_question": bool(SHIP_RE.search(raw) or SHIP_RE.search(folded)),
         "has_product_reference": has_product_reference(raw),
         "is_product_reference_question": is_product_reference_question(raw),
     }
+    slots.update({k: v for k, v in nlu.entities.items() if v not in (None, "")})
 
     phone = extract_phone(raw)
     if phone:
@@ -177,17 +187,34 @@ def extract_sales_slots(message: str) -> Dict[str, Any]:
     location = extract_location(raw)
     if location:
         slots["location"] = location
+        slots["delivery_area"] = location
         slots["address"] = raw.strip()
 
     budget = BUDGET_RE.search(raw) or BUDGET_RE.search(folded)
     if budget:
         slots["budget"] = " ".join(part for part in budget.groups() if part).strip()
 
+    categories = parse_product_categories(raw)
+    if categories:
+        slots["product_category"] = categories[0]
+        slots.setdefault("product_type", categories[0])
+
+    price = parse_price_constraint(raw)
+    if price.min_price is not None:
+        slots["price_min"] = price.min_price
+    if price.max_price is not None:
+        slots["price_max"] = price.max_price
+    if price.target_price is not None:
+        slots["price_target"] = price.target_price
+
     try:
         base_slots = extract_sales_flow_slots(raw)
     except Exception:
         base_slots = {}
-    for key in ("budget_text", "budget_usd", "style", "color", "material", "space", "product_type"):
+    for key in (
+        "budget_text", "budget_usd", "style", "color", "material", "space", "product_type", "size",
+        "room", "constraints", "pets", "kids", "children", "back_pain", "health_need", "easy_clean", "objection_type",
+    ):
         if key in base_slots and key not in slots:
             slots[key] = base_slots[key]
     if "budget_text" in slots and "budget" not in slots:

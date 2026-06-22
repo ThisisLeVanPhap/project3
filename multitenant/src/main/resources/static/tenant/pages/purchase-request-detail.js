@@ -25,8 +25,6 @@
     }
 
     function openPurchaseRequestDetail(pr) {
-        var tenantId = localStorage.getItem('tenant_id') || '';
-
         var html = '<div class="pr-tabs">' +
             '<div class="tab-nav">' +
             '<button class="tab-btn active" data-tab="details">Details</button>' +
@@ -95,13 +93,7 @@
             addBtn.addEventListener('click', function() {
                 var text = body.querySelector('#pr-note-text').value.trim();
                 if (!text) return;
-                window.api.post('/tenant/api/purchase-requests/' + pr.id + '/note?tid=' + encodeURIComponent(tenantId), { text: text })
-                    .then(function() {
-                        window.showToast('Note added', 'success');
-                        body.querySelector('#pr-note-text').value = '';
-                        loadNotes(pr.id, body);
-                    })
-                    .catch(function(err) { window.showToast('Failed: ' + err.message, 'error'); });
+                window.showToast('Purchase request notes are not available in this phase', 'warning');
             });
         }
 
@@ -119,7 +111,7 @@
         var claimBtn = body.querySelector('#btn-pr-claim');
         if (claimBtn) {
             claimBtn.addEventListener('click', function() {
-                window.api.post('/tenant/api/purchase-requests/' + pr.id + '/claim?tid=' + encodeURIComponent(tenantId), {})
+                window.api.put('/api/purchase-requests/' + pr.id + '/claim', {})
                     .then(function() {
                         window.showToast('Claimed successfully', 'success');
                         window.closeDrawer();
@@ -132,7 +124,7 @@
         var contactedBtn = body.querySelector('#btn-pr-contacted');
         if (contactedBtn) {
             contactedBtn.addEventListener('click', function() {
-                window.api.post('/tenant/api/purchase-requests/' + pr.id + '/status?tid=' + encodeURIComponent(tenantId) + '&status=CONTACTED')
+                window.api.put('/api/purchase-requests/' + pr.id + '/status', { status: 'CONTACTED' })
                     .then(function() {
                         window.showToast('Marked CONTACTED', 'success');
                         window.closeDrawer();
@@ -145,7 +137,7 @@
         var completedBtn = body.querySelector('#btn-pr-completed');
         if (completedBtn) {
             completedBtn.addEventListener('click', function() {
-                window.api.post('/tenant/api/purchase-requests/' + pr.id + '/status?tid=' + encodeURIComponent(tenantId) + '&status=COMPLETED')
+                window.api.put('/api/purchase-requests/' + pr.id + '/status', { status: 'COMPLETED' })
                     .then(function() {
                         window.showToast('Marked COMPLETED', 'success');
                         window.closeDrawer();
@@ -157,7 +149,6 @@
     }
 
     function openEditBuyerInfoForm(pr, body) {
-        var tenantId = localStorage.getItem('tenant_id') || '';
         var pane = body.querySelector('[data-pane="details"]');
         if (!pane) return;
 
@@ -204,40 +195,9 @@
     }
 
     function loadNotes(prId, body) {
-        var tenantId = localStorage.getItem('tenant_id') || '';
         var listEl = body.querySelector('#pr-notes-list');
         if (!listEl) return;
-        window.api.get('/tenant/api/purchase-requests/' + prId + '/notes?tid=' + encodeURIComponent(tenantId))
-            .then(function(notes) {
-                if (!notes || !notes.length) {
-                    listEl.innerHTML = '<p class="muted">No notes yet.</p>';
-                    return;
-                }
-                function relativeTime(d) {
-                    if (!d) return '-';
-                    var diff = Date.now() - new Date(d).getTime();
-                    var mins = Math.floor(diff / 60000);
-                    if (mins < 1) return 'now';
-                    if (mins < 60) return mins + 'm';
-                    var hours = Math.floor(mins / 60);
-                    if (hours < 24) return hours + 'h';
-                    var days = Math.floor(hours / 24);
-                    if (days < 7) return days + 'd';
-                    return Math.floor(days / 7) + 'w';
-                }
-                listEl.innerHTML = notes.map(function(n) {
-                    return '<div class="note-item">' +
-                        '<div class="note-header">' +
-                        '<span class="note-author">' + escapeHtml(n.author || 'Unknown') + '</span>' +
-                        '<span class="note-time">' + relativeTime(n.createdAt) + '</span>' +
-                        '</div>' +
-                        '<div class="note-text">' + escapeHtml(n.text || '') + '</div>' +
-                        '</div>';
-                }).join('');
-            })
-            .catch(function() {
-                listEl.innerHTML = '<p class="muted">Failed to load notes.</p>';
-            });
+        listEl.innerHTML = '<p class="muted">Purchase request notes are not available in this phase.</p>';
     }
 
     window.openPurchaseRequestDetail = openPurchaseRequestDetail;

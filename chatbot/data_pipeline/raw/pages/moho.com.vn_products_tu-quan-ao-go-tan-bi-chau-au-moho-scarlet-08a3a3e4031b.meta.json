@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-quan-ao-go-tan-bi-chau-au-moho-scarlet",
+  "final_url": "https://moho.com.vn/products/tu-quan-ao-go-tan-bi-chau-au-moho-scarlet",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:01:39.836153+00:00",
+  "content_hash": "08a3a3e4031b6aa66d23a3157d2a92a8c25567d3084edf8ba7d8c47b57b65a20",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:01:39 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "333124",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"933b33792678441d86373d2c0dbbfcb6\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:01:39 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1348",
+    "X-RequestId": "cea446468e4d40258e3d4ab40964237b",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-quan-ao-go-tan-bi-chau-au-moho-scarlet-08a3a3e4031b.html"
+}

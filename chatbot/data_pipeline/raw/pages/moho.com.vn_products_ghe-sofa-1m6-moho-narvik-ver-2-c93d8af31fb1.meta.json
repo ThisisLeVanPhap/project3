@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-sofa-1m6-moho-narvik-ver-2",
+  "final_url": "https://moho.com.vn/products/ghe-sofa-1m6-moho-narvik-ver-2",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:27:07.019215+00:00",
+  "content_hash": "c93d8af31fb1ab3c95e527c214bb9ce34513caf9452bde4863fcea12b25be730",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:27:06 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "325214",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"d1ebfb2ba32747de9a867d41f9c38987\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:27:06 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1108",
+    "X-RequestId": "76b0ee270f5a32f184b27edb8a62a5a4",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-sofa-1m6-moho-narvik-ver-2-c93d8af31fb1.html"
+}

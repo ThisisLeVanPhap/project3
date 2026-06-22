@@ -3,6 +3,7 @@ package com.app.modelserver;
 import com.app.bots.ChatbotInstance;
 import com.app.kb.ResolvedTenantKbDirectory;
 import com.app.kb.TenantKbDirectoryResolver;
+import com.app.kb.TenantKbDirectorySource;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.annotation.PreDestroy;
@@ -13,6 +14,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.File;
 import java.net.ServerSocket;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -30,6 +32,13 @@ public class LlmInstanceManager {
     public static final String RUNTIME_SPAWNED_PROCESS = "spawned_process";
     public static final String OBSERVABILITY_EXTERNAL_BASE_URL = "EXTERNAL_BASE_URL";
     public static final String OBSERVABILITY_JAVA_SPAWNED = "JAVA_SPAWNED";
+
+    private static final Duration EXTERNAL_HEALTH_TIMEOUT = Duration.ofSeconds(2);
+    private static final String NOTE_EXTERNAL_UNAVAILABLE = "Java does not own external Python process";
+    private static final String NOTE_EXTERNAL_HEALTH_FAILED = "Java could not read external runtime /healthz";
+    private static final String HEALTH_SOURCE_EXTERNAL = "EXTERNAL_HEALTHZ";
+    private static final String VERSION_SEGMENT = "versions";
+    private static final String PATH_SEPARATOR_REGEX = "[\\\\/]";
 
     private final LlmProperties props;
     private final TenantKbDirectoryResolver tenantKbDirectoryResolver;
@@ -76,10 +85,18 @@ public class LlmInstanceManager {
             @JsonProperty("started_at")
             @JsonFormat(shape = JsonFormat.Shape.STRING)
             Instant startedAt,
+            @JsonProperty("last_used_at")
+            @JsonFormat(shape = JsonFormat.Shape.STRING)
+            Instant lastUsedAt,
             @JsonProperty("process_alive")
             Boolean processAlive,
             Long pid,
-            String note
+            String note,
+            Boolean ready,
+            @JsonProperty("kb_loaded")
+            Boolean kbLoaded,
+            @JsonProperty("retrieval_mode")
+            String retrievalMode
     ) {}
 
     public record RuntimeKbStatusSnapshot(
@@ -100,6 +117,25 @@ public class LlmInstanceManager {
             long pid
     ) {}
 
+    private record ExternalHealthSnapshot(
+            String kbDir,
+            String versionTag,
+            Boolean ready,
+            Boolean kbLoaded,
+            String retrievalMode,
+            String note
+    ) {}
+
+    private record HealthzResponse(
+            Boolean ready,
+            @JsonProperty("kb_dir")
+            String kbDir,
+            @JsonProperty("kb_loaded")
+            Boolean kbLoaded,
+            @JsonProperty("retrieval_mode")
+            String retrievalMode
+    ) {}
+
     private final Map<UUID, Running> runningByTenant = new ConcurrentHashMap<>();
     private final Map<UUID, Process> processByTenant = new ConcurrentHashMap<>();
     private final Map<UUID, RuntimeKbMetadata> runtimeKbByTenant = new ConcurrentHashMap<>();
@@ -114,8 +150,9 @@ public class LlmInstanceManager {
     }
 
     public Session getOrStartSession(UUID tenantId, ChatbotInstance botCfg) {
+        ResolvedTenantKbDirectory resolvedKbDirectory = resolveKbDirectoryForTenant(tenantId);
         String externalBaseUrl = normalizedExternalBaseUrl();
-        if (!externalBaseUrl.isBlank()) {
+        if (shouldUseExternalRuntime(resolvedKbDirectory, externalBaseUrl)) {
             log.info(
                     "LLM runtime selected mode={} tenant={} baseUrl={} healthPath={}",
                     RUNTIME_EXTERNAL_HTTP,
@@ -140,7 +177,8 @@ public class LlmInstanceManager {
         }
 
         Running current = runningByTenant.get(tenantId);
-        if (current != null && isHealthy(current.baseUrl())) {
+        RuntimeKbMetadata currentRuntime = runtimeKbByTenant.get(tenantId);
+        if (current != null && currentRuntime != null && matchesResolvedKb(currentRuntime, resolvedKbDirectory) && isHealthy(current.baseUrl())) {
             runningByTenant.put(tenantId, new Running(current.baseUrl(), current.pid(), Instant.now()));
             log.info(
                     "LLM runtime selected mode={} tenant={} baseUrl={} pid={} reused=true",
@@ -163,7 +201,8 @@ public class LlmInstanceManager {
 
         try {
             Running existing = runningByTenant.get(tenantId);
-            if (existing != null && isHealthy(existing.baseUrl())) {
+            RuntimeKbMetadata existingRuntime = runtimeKbByTenant.get(tenantId);
+            if (existing != null && existingRuntime != null && matchesResolvedKb(existingRuntime, resolvedKbDirectory) && isHealthy(existing.baseUrl())) {
                 runningByTenant.put(tenantId, new Running(existing.baseUrl(), existing.pid(), Instant.now()));
                 log.info(
                         "LLM runtime selected mode={} tenant={} baseUrl={} pid={} reused=true warmupWaited={}",
@@ -179,14 +218,17 @@ public class LlmInstanceManager {
             runtimeKbByTenant.remove(tenantId);
 
             log.info(
-                    "LLM runtime selected mode={} tenant={} pythonBin={} modelServerDir={}",
+                    "LLM runtime selected mode={} tenant={} pythonBin={} modelServerDir={} kbDir={} source={} versionTag={}",
                     RUNTIME_SPAWNED_PROCESS,
                     tenantId,
                     props.getPythonBin(),
-                    props.getModelServerDir()
+                    props.getModelServerDir(),
+                    resolvedKbDirectory.kbDir(),
+                    resolvedKbDirectory.source(),
+                    resolvedKbDirectory.versionTag()
             );
 
-            Running spawned = spawn(tenantId, warmupWaited);
+            Running spawned = spawn(tenantId, warmupWaited, resolvedKbDirectory);
             runningByTenant.put(tenantId, spawned);
             return new Session(spawned.baseUrl(), true, warmupWaited, RUNTIME_SPAWNED_PROCESS);
         } finally {
@@ -226,7 +268,7 @@ public class LlmInstanceManager {
         }
     }
 
-    private Running spawn(UUID tenantId, boolean warmupWaited) {
+    private Running spawn(UUID tenantId, boolean warmupWaited, ResolvedTenantKbDirectory resolvedKbDirectory) {
         if (props.getPythonBin() == null || props.getPythonBin().isBlank()) {
             throw spawnConfigException(
                     tenantId,
@@ -276,8 +318,6 @@ public class LlmInstanceManager {
 
             pb.directory(dir);
             pb.redirectErrorStream(true);
-
-            ResolvedTenantKbDirectory resolvedKbDirectory = resolveKbDirectoryForTenant(tenantId);
             pb.environment().put("KB_DIR", resolvedKbDirectory.kbDir());
             log.info(
                     "Tenant {} KB_DIR={} source={} versionTag={}",
@@ -421,49 +461,137 @@ public class LlmInstanceManager {
                 resolved.fallbackReason()
         );
 
-        if (!normalizedExternalBaseUrl().isBlank()) {
+        RuntimeKbMetadata running = runtimeKbByTenant.get(tenantId);
+        if (running != null) {
+            Process process = processByTenant.get(tenantId);
+            boolean processAlive = process != null && process.isAlive();
+            Running runningRecord = runningByTenant.get(tenantId);
+            Instant lastUsedAt = runningRecord != null ? runningRecord.lastUsedAt() : null;
+            RuntimeKbRunningSnapshot runningSnapshot = new RuntimeKbRunningSnapshot(
+                    OBSERVABILITY_JAVA_SPAWNED,
+                    running.kbDir(),
+                    running.source(),
+                    running.versionId(),
+                    running.versionTag(),
+                    running.startedAt(),
+                    lastUsedAt,
+                    processAlive,
+                    running.pid(),
+                    null,
+                    null,
+                    null,
+                    null
+            );
             return new RuntimeKbStatusSnapshot(
                     tenantId,
                     desired,
-                    new RuntimeKbRunningSnapshot(
-                            OBSERVABILITY_EXTERNAL_BASE_URL,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            "Java does not own external Python process"
-                    ),
-                    null
+                    runningSnapshot,
+                    isRuntimeKbInSync(desired, runningSnapshot)
             );
         }
 
-        RuntimeKbMetadata running = runtimeKbByTenant.get(tenantId);
-        if (running == null) {
-            return new RuntimeKbStatusSnapshot(tenantId, desired, null, false);
+        String externalBaseUrl = normalizedExternalBaseUrl();
+        if (shouldUseExternalRuntime(resolved, externalBaseUrl)) {
+            ExternalHealthSnapshot external = fetchExternalHealth(externalBaseUrl);
+            RuntimeKbRunningSnapshot runningSnapshot = new RuntimeKbRunningSnapshot(
+                    OBSERVABILITY_EXTERNAL_BASE_URL,
+                    external.kbDir(),
+                    HEALTH_SOURCE_EXTERNAL,
+                    null,
+                    external.versionTag(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    external.note(),
+                    external.ready(),
+                    external.kbLoaded(),
+                    external.retrievalMode()
+            );
+            return new RuntimeKbStatusSnapshot(
+                    tenantId,
+                    desired,
+                    runningSnapshot,
+                    external.kbDir() == null ? null : isRuntimeKbInSync(desired, runningSnapshot)
+            );
         }
 
-        Process process = processByTenant.get(tenantId);
-        boolean processAlive = process != null && process.isAlive();
-        RuntimeKbRunningSnapshot runningSnapshot = new RuntimeKbRunningSnapshot(
-                OBSERVABILITY_JAVA_SPAWNED,
-                running.kbDir(),
-                running.source(),
-                running.versionId(),
-                running.versionTag(),
-                running.startedAt(),
-                processAlive,
-                running.pid(),
-                null
-        );
-        return new RuntimeKbStatusSnapshot(
-                tenantId,
-                desired,
-                runningSnapshot,
-                isRuntimeKbInSync(desired, runningSnapshot)
-        );
+        return new RuntimeKbStatusSnapshot(tenantId, desired, null, false);
+    }
+
+    private boolean shouldUseExternalRuntime(ResolvedTenantKbDirectory resolvedKbDirectory, String externalBaseUrl) {
+        if (externalBaseUrl == null || externalBaseUrl.isBlank()) {
+            return false;
+        }
+        return !isTenantSpecificKb(resolvedKbDirectory);
+    }
+
+    private boolean isTenantSpecificKb(ResolvedTenantKbDirectory resolvedKbDirectory) {
+        if (resolvedKbDirectory == null) {
+            return false;
+        }
+        if (resolvedKbDirectory.kbDir() == null || resolvedKbDirectory.kbDir().isBlank()) {
+            return false;
+        }
+        return resolvedKbDirectory.versionId() != null
+                || resolvedKbDirectory.versionTag() != null
+                || resolvedKbDirectory.source() == TenantKbDirectorySource.ACTIVE_VERSION;
+    }
+
+    private boolean matchesResolvedKb(RuntimeKbMetadata runtime, ResolvedTenantKbDirectory resolvedKbDirectory) {
+        return java.util.Objects.equals(runtime.kbDir(), resolvedKbDirectory.kbDir())
+                && java.util.Objects.equals(runtime.source(), resolvedKbDirectory.source().name())
+                && java.util.Objects.equals(runtime.versionId(), resolvedKbDirectory.versionId())
+                && java.util.Objects.equals(runtime.versionTag(), resolvedKbDirectory.versionTag());
+    }
+
+    private ExternalHealthSnapshot fetchExternalHealth(String baseUrl) {
+        try {
+            HealthzResponse response = http.get()
+                    .uri(baseUrl + props.getHealthPath())
+                    .retrieve()
+                    .bodyToMono(HealthzResponse.class)
+                    .block(EXTERNAL_HEALTH_TIMEOUT);
+            if (response == null) {
+                return new ExternalHealthSnapshot(null, null, null, null, null, NOTE_EXTERNAL_HEALTH_FAILED);
+            }
+            return new ExternalHealthSnapshot(
+                    response.kbDir(),
+                    inferVersionTagFromKbDir(response.kbDir()),
+                    response.ready(),
+                    response.kbLoaded(),
+                    response.retrievalMode(),
+                    NOTE_EXTERNAL_UNAVAILABLE
+            );
+        } catch (Exception ignored) {
+            return new ExternalHealthSnapshot(null, null, null, null, null, NOTE_EXTERNAL_HEALTH_FAILED);
+        }
+    }
+
+    String inferVersionTagFromKbDir(String kbDir) {
+        if (kbDir == null || kbDir.isBlank()) {
+            return null;
+        }
+        try {
+            Path path = Path.of(kbDir);
+            int count = path.getNameCount();
+            for (int i = 0; i < count - 1; i++) {
+                if (VERSION_SEGMENT.equals(path.getName(i).toString())) {
+                    String candidate = path.getName(i + 1).toString();
+                    return candidate.isBlank() ? null : candidate;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        String[] parts = kbDir.split(PATH_SEPARATOR_REGEX);
+        for (int i = 0; i < parts.length - 1; i++) {
+            if (VERSION_SEGMENT.equals(parts[i])) {
+                String candidate = parts[i + 1];
+                return candidate.isBlank() ? null : candidate;
+            }
+        }
+        return null;
     }
 
     private boolean isRuntimeKbInSync(RuntimeKbDesiredSnapshot desired, RuntimeKbRunningSnapshot running) {

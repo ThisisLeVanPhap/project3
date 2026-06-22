@@ -1,7 +1,9 @@
 package com.app.leads;
 
 import com.app.auth.SessionPrincipalAccessor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -25,6 +27,15 @@ public class TenantLeadController {
         );
     }
 
+    @GetMapping("/{id}")
+    public Lead detail(@PathVariable Long id,
+                       @RequestParam("tid") String tenantId) {
+        principalAccessor.requireTenantOperator();
+        String currentTenantId = principalAccessor.requireTenantIdMatching(tenantId);
+        return leadRepo.findByIdAndTenantId(id, currentTenantId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lead not found"));
+    }
+
     @PostMapping("/{id}/status")
     public Lead updateStatus(@PathVariable Long id,
                              @RequestParam("status") String status,
@@ -32,10 +43,8 @@ public class TenantLeadController {
         principalAccessor.requireTenantOperator();
         String currentTenantId = principalAccessor.requireTenantIdMatching(tenantId);
 
-        Lead l = leadRepo.findById(id).orElseThrow();
-        if (!currentTenantId.equals(l.getTenantId())) {
-            throw new RuntimeException("Access denied");
-        }
+        Lead l = leadRepo.findByIdAndTenantId(id, currentTenantId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lead not found"));
 
         l.setStatus(status);
         return leadRepo.save(l);

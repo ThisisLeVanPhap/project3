@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-giay-tu-trang-tri-go-moho-vienna-201",
+  "final_url": "https://moho.com.vn/products/tu-giay-tu-trang-tri-go-moho-vienna-201",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:27:25.657729+00:00",
+  "content_hash": "4f8bc040ed69426ad9dca1d72349692768428286315b6644fe6bef312f0c470a",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:27:25 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "387345",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"e1360a4125b24642a004c8586cfdde47\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:27:25 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1408",
+    "X-RequestId": "e493efe4f2ca39dd2704c040a0200e45",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-giay-tu-trang-tri-go-moho-vienna-201-4f8bc040ed69.html"
+}

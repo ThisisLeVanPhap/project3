@@ -7,10 +7,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(
-        name = "purchase_requests",
-        uniqueConstraints = @UniqueConstraint(name = "uq_purchase_request_tenant_conversation", columnNames = {"tenant_id", "conversation_id"})
-)
+@Table(name = "purchase_requests")
 public class PurchaseRequest {
 
     @Id

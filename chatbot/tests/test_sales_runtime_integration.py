@@ -188,6 +188,41 @@ class SalesRuntimeIntegrationTests(unittest.TestCase):
         self.assertEqual(payload["debug"]["selected_products"][0]["sku"], "REM-P2")
         self.assertEqual(payload["debug"]["purchase_request_status"], "needs_contact")
 
+    def test_discover_purchase_intent_asks_for_missing_context(self):
+        response = self._turn("sales-discover-sofa", "Tôi muốn mua sofa", sales_mode="active")
+
+        payload = response.json()
+        self.assertEqual(payload["model"], "sales-template")
+        self.assertEqual(payload["debug"]["sales_action_taken"], "ask_discovery")
+        self.assertIn("room_or_space", payload["debug"]["missing_slots"])
+        self.assertFalse(payload.get("trigger_purchase_request"))
+        self.assertIn("phòng", payload["reply"].lower())
+
+    def test_handle_objection_gets_controlled_reply(self):
+        response = self._turn("sales-objection-price", "Mẫu này đắt quá", sales_mode="active")
+
+        payload = response.json()
+        self.assertEqual(payload["model"], "sales-template")
+        self.assertEqual(payload["debug"]["sales_action_taken"], "handle_objection")
+        self.assertEqual(payload["debug"]["objection_type"], "too_expensive")
+        self.assertIn("ngân sách", payload["reply"].lower())
+
+    def test_suggest_with_context_stays_rag_grounded(self):
+        response = self._turn("sales-suggest-rag", "Tôi cần rèm cho phòng khách ngân sách dưới 1 triệu", sales_mode="active")
+
+        payload = response.json()
+        self.assertEqual(payload["model"], "product-template")
+        self.assertGreaterEqual(payload["debug"]["retrieval_count"], 1)
+        self.assertEqual(payload["debug"]["sales_action_taken"], "none")
+        self.assertIn("Rèm cuốn", payload["reply"])
+
+    def test_market_price_mode_never_handoff_even_with_purchase_text(self):
+        response = self._turn("sales-market-guard", "Tôi muốn mua sofa, số tôi 0987654321", sales_mode="active", answer_mode="llm")
+        payload = response.json()
+
+        self.assertNotEqual(payload["debug"].get("sales_action_taken"), "ask_confirmation")
+        self.assertFalse(payload.get("trigger_purchase_request"))
+
     def test_active_purchase_needs_contact(self):
         conversation_id = "sales-needs-contact"
         self._turn(conversation_id, "Có rèm nào dưới 1 triệu không?", sales_mode="active")

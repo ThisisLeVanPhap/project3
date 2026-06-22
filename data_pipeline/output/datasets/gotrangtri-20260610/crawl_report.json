@@ -1,236 +1,90 @@
 {
-  "row_count": 16,
-  "coverage": {
-    "product_name": 16,
-    "price": 16,
-    "category": 16,
-    "material": 16,
-    "color": 8,
-    "dimensions": 12,
-    "brand": 16,
-    "sku": 16,
-    "availability": 16,
-    "image_urls": 16,
-    "tenant_id": 16
+  "report_type": "dataset_quality_audit",
+  "dataset_id": "gotrangtri-20260610",
+  "source_name": "gotrangtri",
+  "generated_from": "catalog.jsonl",
+  "row_count": 6070,
+  "rag_row_count": 6070,
+  "field_coverage": {
+    "tenant_id": 6070,
+    "product_name": 6070,
+    "price": 6018,
+    "category": 5004,
+    "material": 3939,
+    "color": 2989,
+    "dimensions": 4636,
+    "brand": 6070,
+    "image_urls": 6070,
+    "sku": 5974,
+    "availability": 6070,
+    "source_url": 6070
   },
-  "extractors": {
-    "json_ld": 16
+  "category_distribution": {
+    "Rèm": 22,
+    "Đèn": 101,
+    "Kệ": 1528,
+    "Thảm": 250,
+    "Sofa": 248,
+    "Bàn ăn": 124,
+    "Tủ": 1511,
+    "Ghế": 87,
+    "Tranh": 272,
+    "Đồ trang trí": 122,
+    "Gương": 9,
+    "Giường": 534,
+    "Bàn trà": 196
   },
-  "quality": {
-    "high": 16
+  "data_quality_distribution": {
+    "high": 5996,
+    "medium": 74
   },
-  "duplicates": [],
-  "issues": [
+  "quality_checks": {
+    "price_parseable_count": 6018,
+    "gotrangtri_url_count": 6070,
+    "mojibake_product_name_count": 0,
+    "mojibake_rag_title_count": 0,
+    "mojibake_rag_text_count": 2
+  },
+  "sample_products": [
     {
-      "index": 7,
-      "field": "color",
-      "issue": "too_long",
-      "product_name": "Ghế bệt tựa lưng thiết kế thông minh GHC-758",
-      "value_preview": "nâu, tím, đen Thời gian nhận hàng : trong vòng 7 ngày (Lưu ý: Khách hàng có thể đến mua hàng trực tiếp tại cửa hàng hoặc yêu cầu nhân viên check mẫu mã sản phẩm trước khi mua hàng)"
-    },
-    {
-      "index": 14,
-      "field": "material",
-      "issue": "too_long",
-      "product_name": "Kệ tivi phòng khách gia đình gỗ công nghiệp GHS-3359",
-      "value_preview": "Gỗ MDF lõi xanh chống ẩm phủ Melamine màu kết hợp vân gỗ tự nhiên, chân sắt phun sơn tĩnh điện . Lý do vì sao chúng tôi lại sản xuất hàng bằng gỗ lõi xanh chống ẩm thay vì gỗ mdf t"
-    }
-  ],
-  "raw_meta_total": 16,
-  "raw_html_total": 16,
-  "raw_meta_missing_required": [],
-  "products": [
-    {
-      "product_name": "Bàn sofa, bàn trà gỗ tự nhiên GHS-4494",
-      "price": 5900000.0,
-      "category": "Bàn trà",
-      "material": "Gỗ sồi tự nhiên kết hợp venner sồi",
-      "color": "màu gỗ sồi tự nhiên",
-      "dimensions": "1200 x 600 x 435mm",
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
-    },
-    {
-      "product_name": "Bàn trà tròn phong cách tối giản GHS-41815",
-      "price": 3700000.0,
-      "category": "Bàn trà",
-      "material": "go tu nhien",
-      "color": null,
+      "product_name": "Rèm nhà tắm nhập khẩu GHO-613",
+      "price": 900000.0,
+      "category": "Rèm",
+      "material": null,
       "dimensions": null,
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
+      "source_url": "https://gotrangtri.vn/shop/rem-nha-tam-nhap-khau-gho-613"
     },
     {
-      "product_name": "Bàn trà hiện đại phong cách tối giản GHS-41643",
-      "price": 5300000.0,
-      "category": "Bàn trà",
-      "material": "go cong nghiep",
-      "color": null,
-      "dimensions": "1200x600x400mm",
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
+      "product_name": "Rèm sáo gỗ nhập khẩu cao cấp GHO-610",
+      "price": 700000.0,
+      "category": "Rèm",
+      "material": null,
+      "dimensions": "Mành sáo gỗ phải đo kích thước vừa với khuôn cửa vì thế hãy liên hệ với bên bán rèm để họ đo kích thước, khảo sát cửa và",
+      "source_url": "https://gotrangtri.vn/shop/rem-sao-go-cao-cap-gho-610"
     },
     {
-      "product_name": "Sofa văng da, Sofa phong cách Bắc Âu GHS-854",
-      "price": 9500000.0,
-      "category": "Bàn trà",
-      "material": "Khung Gỗ tự nhiên, mút mềm K43 , Lò xo lưới, Da nhập khẩu",
-      "color": "120 màu sắc tùy chọn tại cửa hàng",
-      "dimensions": "(D)1900 x (R)800 x (C)800 (có bản vẽ bên dưới)",
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
-    },
-    {
-      "product_name": "Bộ sofa Gỗ sồi tự nhiên, nệm Nỉ GHS-898",
-      "price": 50500000.0,
-      "category": "Bàn trà",
-      "material": "Khung gỗ sồi tự nhiên, mút mềm K43 , Lò xo lưới, Nỉ cao cấp",
-      "color": "Gỗ sồi để nguyên màu phủ S8 (chất lượng cao) hoặc bấm màu tùy lựa, Nỉ gồm 120 màu tại cửa hàng",
-      "dimensions": "gồm 4 món, 3 ghế + 1 bàn Sofa văng dài: (D)2100 x (R)850 x (C)880mm Sofa văng ngắn: (D)1500 x (R)850 x (C)880mm Sofa đơn: (D)910 x (R)850 x (C)880mm (có bản vẽ bên dưới) Bàn trà: (D)1200 x (R)600 x (C)400mm",
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
-    },
-    {
-      "product_name": "Ghế sofa phòng khách hiện đại giá rẻ GHS-8233",
-      "price": 22500000.0,
-      "category": "Bàn trà",
-      "material": "go tu nhien",
-      "color": null,
+      "product_name": "Rèm cửa giá rẻ chất lượng cao GHO-609",
+      "price": 500000.0,
+      "category": "Rèm",
+      "material": null,
       "dimensions": null,
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
+      "source_url": "https://gotrangtri.vn/shop/rem-cua-gia-re-chat-luong-cao-gho-609"
     },
     {
-      "product_name": "Ghế bệt tựa lưng thiết kế thông minh GHC-758",
-      "price": 2300000.0,
-      "category": "Bàn trà",
-      "material": "đệm mút cao cấp",
-      "color": "nâu, tím, đen Thời gian nhận hàng : trong vòng 7 ngày (Lưu ý: Khách hàng có thể đến mua hàng trực tiếp tại cửa hàng hoặc yêu cầu nhân viên check mẫu mã sản phẩm trước khi mua hàng) Những ưu điểm nổi trội của ghế bệt tựa lưng thiết kế thông minh GHC-758 Ghế bệt tựa lưng có thiết kế mang phong cách hiện đại, đường nét tinh tế Sản phẩm được làm từ chất liệu đệm mút cao cấp êm ái, khả năng chịu lực cao Ghế do Go Home phân phối đạt chất lượng vượt trội Sản phẩm tiện dụng phù hợp với nhiều không gian sống gia đình Ghế bệt tựa lưng thích hợp sử dụng cho nhiều không gian sinh hoạt khác nhau. Thiết kế đầy ấn tượng của mẫu ghế bệt tựa lưng Những khớp gập thông minh có khả năng chịu lực tốt với trọng tải có thể đến 100kg cho phép người dùng có thể ngồi thư giãn ở nhiều tư thế khác nhau. Ngoài ra, ghế bệt tựa lưng còn được bổ sung thêm 1 lớp bông bên dưới nên khi ngồi người dùng luôn cảm thấy thoải mái, dễ chịu. Sản phẩm thích hợp với nhiều mục đích sử dụng khác nhau như ghế ngồi thư giãn đọc sách, xem tivi hay ngồi làm việc. Khung ghế chắc chắn có thể chịu được trọng lượng lên đến 100kg. Chất lượng đầy ấn tượng của sản phẩm Không chỉ mang đến người dùng cảm giác thoải mái khi sử dụng và có một mức giá bán hợp lý, ghế bệt tựa lưng còn khiến khách hàng yêu thích bởi chất lượng hoản hảo. Được làm từ đệm mút cao cấp không bị xẹp sau thời gian dài sử dụng. Ngoài ra, bạn cũng có thể tháo rời vỏ ghế dễ dàng để làm sạch. Ghế bệt tựa lưng có 3 gam màu khác nhau để khách hàng tùy ý lựa chọn. Tag liên quan : ghế bệt tựa lưng cho người già, ghế bệt tựa lưng phòng khách, ghế bệt tựa lưng tại nhà, ghế bệt tựa lưng đẹp, ghế bệt tựa lưng thiết kế đẹp, ghế bệt cao cấp . Xem thêm các mẫu Ghế tựa Đánh Giá Trung Bình /5 ( nhận xét) 5 NAN% 4 NAN% 3 NAN% 2 NAN% 1 NAN% Hãy là người đầu tiên nhận xét “Ghế bệt tựa lưng thiết kế thông minh GHC-758” Hủy Gửi nhận xét của bạn 1. Đánh giá của bạn về ản phẩm này: Xếp hạng… Rất tốt Tốt Trung bình Không tệ Rất tệ 2. Tiêu đề của nhận xét: 3. Viết nhận xét của bạn vào bên dưới: Thêm hình sản phẩm nếu có (tối đa 5 hình): Chọn hình Gửi nhận xét Δ Hãy điền thông tin để hoàn tất Nhận xét của bạn ảnh hưởng tới thứ hạng xuất hiện sản phẩm trên trang gotrangtri.vn Hoàn tất Chưa có đánh giá nào. Sản phẩm đã xem Những đánh giá tốt về sản phẩm, chất lượng, dịch vụ Là động lực để chúng tôi phát triển hơn mỗi ngày × Cửa hàng tại Hà Nội & HCM Xưởng sản xuất tại Hà Nội & HCM Nhân viên phục vụ khách hàng Đơn hàng hoàn thành mỗi tháng Tại Hà Nội Cửa hàng: 137 Hoàng Quốc Việt, Cầu Giấy, Hà Nội Xưởng 1(tiếp khách 8~17h): KCN Phú Minh, Bắc Từ Liêm, Hà Nội Tại Hồ Chí Minh Cửa hàng: 522 Cộng Hòa, Phường 13, Q. Tân Bình, HCM Xưởng 3(tiếp khách 8~17h): 49B Bình Chiểu, Thủ Đức, HCM Xưởng 2(tiếp khách 8~17h): 135A Thạnh Xuân 52, Q12, HCM Tại Đà Nẵng Xưởng sản xuất: Khánh An 11, Hoà Khánh Nam, Liên Chiểu MAY ĐO NỘI THẤT Chúng tôi khơi nguồn cảm hứng sáng tạo từ những bộ sưu tập nội thất với hơn 7000+ sản phẩm đầy đủ màu sắc, sống động. Hiểu rằng mỗi không gian sống cần giải pháp riêng, vì vậy chúng tôi mang đến dịch vụ tùy chỉnh kích thước, màu sắc theo yêu cầu để phù hợp với mỗi gia đình. Bằng sự linh hoạt trong thiết kế, Gỗ Trang Trí trao đến bạn chiếc “chìa khóa vạn năng” để mở ra không gian sống, làm việc theo đam mê và sáng tạo của riêng mình. BÁO CHÍ Giới thiệu Vinh danh báo chí Tiêu chuẩn chất lượng Quy định giao hàng Câu hỏi thường gặp Hướng dẫn mua hàng Quy định thanh toán Cộng tác viên Bảo mật thông tin Đổi trả, bảo hành Tủ quần áo Giá sách Giường ngủ Bàn làm việc Bàn lễ tân Tủ bếp Kênh gotrangtri.vn một thành viên thuộc Công ty cổ phần SUNVINA Việt Nam Giấy phép kinh doanh số: 0107728779 do Sở Kế hoạch và Đầu tư Thành phố Hà Nội cấp ngày 20/02/2017 …… 0899-189-455 - Bán hàng 0942-246-655 - Khiếu nại",
-      "dimensions": "130 x 55 x 10cm",
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
-    },
-    {
-      "product_name": "Bàn ăn tròn, bộ bàn ăn 4 ghế GHS-4345",
-      "price": 6200000.0,
-      "category": "Bàn trà",
-      "material": "gỗ công nghiệp MDF veneer sồi",
-      "color": "Tùy lựa tại cửa hàng có thể bấm màu hạt dẻ, xoan đào …",
-      "dimensions": "(Đường kính ) 800 x cao 750mm",
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
-    },
-    {
-      "product_name": "Bàn ghế ăn gỗ tự nhiên phong cách hiện đại GHS-4364",
-      "price": 17900000.0,
-      "category": "Bàn trà",
-      "material": "Gỗ sồi tự nhiên",
-      "color": "Sơn bấm màu mặt bàn để lộ tom gỗ, các chi tiết khác sơn bệt màu",
-      "dimensions": "Bàn ăn: (D) 1300 x (R) 800 x (C) 740mm Ghế ngồi : (D) 460 x (R) 400 x (C) 1000mm",
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
-    },
-    {
-      "product_name": "Bộ bàn ăn hiện đại mặt đá nhân tạo GHS-4314 (gỗ sồi tự nhiên)",
-      "price": 21300000.0,
-      "category": "Bàn trà",
-      "material": "Gỗ sồi tự nhiên phun bệt màu bắn bóng kết hợp mặt đá nhân tạo",
-      "color": "Sơn màu tùy chọn hoặc phun PU để nguyên màu vân gỗ sồi Sản phẩm",
-      "dimensions": "(D)1350 x (R)800 x (C)755mm",
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
-    },
-    {
-      "product_name": "Giường tầng gỗ công nghiệp MDF được yêu thích nhất GHS-9244",
-      "price": 29600000.0,
-      "category": "Bàn trà",
-      "material": "go cong nghiep",
-      "color": null,
-      "dimensions": "2455x1050x1915mm",
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
-    },
-    {
-      "product_name": "Giường cho bé yêu đẹp và an toàn GHS-9333",
-      "price": 12700000.0,
-      "category": "Bàn trà",
-      "material": "go tu nhien",
-      "color": null,
+      "product_name": "Rèm cuốn tranh cao cấp GHO-607",
+      "price": 700000.0,
+      "category": "Rèm",
+      "material": null,
       "dimensions": null,
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
+      "source_url": "https://gotrangtri.vn/shop/rem-cuon-tranh-cao-cap-gho-607"
     },
     {
-      "product_name": "Kệ tivi đứng thiết kế sang trọng, hiện đại GHS-3617",
-      "price": 4800000.0,
-      "category": "Bàn trà",
-      "material": "go cong nghiep",
-      "color": null,
+      "product_name": "Rèm cửa văn phòng cao cấp GHO-606",
+      "price": 500000.0,
+      "category": "Rèm",
+      "material": null,
       "dimensions": null,
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
-    },
-    {
-      "product_name": "Kệ tivi phòng khách gia đình gỗ công nghiệp GHS-3359",
-      "price": 4600000.0,
-      "category": "Bàn trà",
-      "material": "Gỗ MDF lõi xanh chống ẩm phủ Melamine màu kết hợp vân gỗ tự nhiên, chân sắt phun sơn tĩnh điện . Lý do vì sao chúng tôi lại sản xuất hàng bằng gỗ lõi xanh chống ẩm thay vì gỗ mdf thường xem tại đây: Gỗ MDF là gì? Phân biệt gỗ MDF lõi xanh chống ẩm và gỗ MDF thường",
-      "color": "khách hàng tùy ý lựa chọn trong 12 màu sắc, kiểu vân gỗ có tại cửa hàng",
-      "dimensions": "2000 x 350 x 405mm",
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
-    },
-    {
-      "product_name": "Kệ để sách 4 tầng đa năng kiểu đứng GHS-2571",
-      "price": 2500000.0,
-      "category": "Bàn trà",
-      "material": "go cong nghiep",
-      "color": null,
-      "dimensions": "66x24x102cm",
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
-    },
-    {
-      "product_name": "Tủ để quần áo cho bé kiểu dáng độc đáo GHS-52234",
-      "price": 4100000.0,
-      "category": "Bàn trà",
-      "material": "go tu nhien",
-      "color": null,
-      "dimensions": "700x450x1400mm",
-      "extractor": "json_ld",
-      "enriched": true,
-      "data_quality": "high",
-      "missing_fields": []
+      "source_url": "https://gotrangtri.vn/shop/rem-cua-van-phong-cao-cap-gho-606"
     }
   ]
 }

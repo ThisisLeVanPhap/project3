@@ -56,8 +56,12 @@ class TenantKbRuntimeStatusControllerTest {
                                 versionId,
                                 "v20260609120000",
                                 Instant.parse("2026-06-09T12:00:00Z"),
+                                Instant.parse("2026-06-09T12:05:00Z"),
                                 true,
                                 1234L,
+                                null,
+                                null,
+                                null,
                                 null
                         ),
                         true
@@ -143,7 +147,11 @@ class TenantKbRuntimeStatusControllerTest {
                                 null,
                                 null,
                                 null,
-                                "Java does not own external Python process"
+                                null,
+                                "Java does not own external Python process",
+                                null,
+                                null,
+                                null
                         ),
                         null
                 )

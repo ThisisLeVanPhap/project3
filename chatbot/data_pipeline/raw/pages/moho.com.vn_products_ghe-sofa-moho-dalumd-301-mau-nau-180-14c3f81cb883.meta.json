@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-sofa-moho-dalumd-301-mau-nau-180",
+  "final_url": "https://moho.com.vn/products/ghe-sofa-moho-dalumd-301-mau-nau-180",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:05:10.552142+00:00",
+  "content_hash": "14c3f81cb8837b678fcc682e863b2011d982b702e89fbc1fb56cfb0a29a5cfae",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:05:10 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "329346",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"509178f14c624398983409bacbfeea1c\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:05:10 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1164",
+    "X-RequestId": "e94047742a255de85c59c18e433c80de",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-sofa-moho-dalumd-301-mau-nau-180-14c3f81cb883.html"
+}

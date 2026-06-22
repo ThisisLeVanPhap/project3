@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/bo-noi-that-phong-khach-moho-dalumd",
+  "final_url": "https://moho.com.vn/products/bo-noi-that-phong-khach-moho-dalumd",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:01:08.372884+00:00",
+  "content_hash": "ae870819a7e5648a4568080a9128905ef6f335d5ab4de41370127791dc6815ba",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:01:08 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "322966",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"605d7ce50c944f30ae2bf68b0173e13d\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:01:08 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1141",
+    "X-RequestId": "cbd0f3e92a9f8c5c02d410cb2557606c",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_bo-noi-that-phong-khach-moho-dalumd-ae870819a7e5.html"
+}

@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,6 +51,8 @@ class ChatControllerConfirmMessageTest {
     private LeadRepository leadRepo;
     @Mock
     private PurchaseRequestService purchaseRequestService;
+    @Mock
+    private ConversationResetService conversationResetService;
 
     @InjectMocks
     private ChatController chatController;
@@ -137,6 +140,111 @@ class ChatControllerConfirmMessageTest {
         verify(leadService, never()).createLeadFromConversation(anyString(), anyString(), anyString(), anyString(), anyString());
         verify(purchaseRequestService, never()).findOrCreateFromLead(any());
         verify(leadRepo, never()).save(any());
+    }
+
+    @Test
+    void resetCommandResetsCurrentConversationWithoutCallingPythonOrSavingMessage() {
+        Fixture fixture = Fixture.create();
+        TenantContext.set(fixture.tenantId.toString());
+        when(convRepo.findById(fixture.conversationId)).thenReturn(Optional.of(fixture.conversation));
+
+        Map<String, Object> out = chatController.send(Map.of(
+                "conversationId", fixture.conversationId.toString(),
+                "message", " /reset ",
+                "userExternalId", fixture.userExternalId
+        ));
+
+        assertEquals("Đã reset hội thoại hiện tại.", out.get("reply"));
+        assertEquals(0, out.get("latencyMs"));
+        assertEquals("system", out.get("model"));
+        verify(conversationResetService).reset(
+                org.mockito.ArgumentMatchers.eq(fixture.tenantId),
+                argThat(request -> request.conversationId().equals(fixture.conversationId.toString())
+                        && request.shouldDeleteMessages()
+                        && request.shouldResetBusinessFlags())
+        );
+        verify(msgRepo, never()).save(any());
+        verify(pythonChatClient, never()).chat(anyString(), anyString(), any(), any(), anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.anyBoolean(), org.mockito.ArgumentMatchers.anyBoolean());
+    }
+
+    @Test
+    void resetTestCommandResetsBusinessFlagsWithoutCallingPythonOrSavingMessage() {
+        Fixture fixture = Fixture.create();
+        TenantContext.set(fixture.tenantId.toString());
+        when(convRepo.findById(fixture.conversationId)).thenReturn(Optional.of(fixture.conversation));
+
+        Map<String, Object> out = chatController.send(Map.of(
+                "conversationId", fixture.conversationId.toString(),
+                "message", "/reset-test",
+                "userExternalId", fixture.userExternalId
+        ));
+
+        assertEquals("Đã reset hội thoại hiện tại.", out.get("reply"));
+        assertEquals(0, out.get("latencyMs"));
+        assertEquals("system", out.get("model"));
+        verify(conversationResetService).reset(
+                org.mockito.ArgumentMatchers.eq(fixture.tenantId),
+                argThat(request -> request.conversationId().equals(fixture.conversationId.toString())
+                        && request.shouldDeleteMessages()
+                        && request.shouldResetBusinessFlags())
+        );
+        verify(msgRepo, never()).save(any());
+        verify(pythonChatClient, never()).chat(anyString(), anyString(), any(), any(), anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.anyBoolean(), org.mockito.ArgumentMatchers.anyBoolean());
+        verify(purchaseRequestService, never()).findOrCreateFromLead(any());
+    }
+
+    @Test
+    void newCommandCreatesFreshConversationWithoutCallingPythonOrSavingMessage() {
+        Fixture fixture = Fixture.create();
+        TenantContext.set(fixture.tenantId.toString());
+        UUID newConversationId = UUID.randomUUID();
+        when(convRepo.findById(fixture.conversationId)).thenReturn(Optional.of(fixture.conversation));
+        when(conversationResetService.startNewConsultationSession(
+                fixture.tenantId,
+                fixture.chatbotId,
+                "web",
+                fixture.userExternalId,
+                fixture.conversationId,
+                null
+        )).thenReturn(new NewConsultationSessionResponse(fixture.tenantId.toString(), newConversationId.toString(), 1, 2, 1, 0, 0));
+
+        Map<String, Object> out = chatController.send(Map.of(
+                "conversationId", fixture.conversationId.toString(),
+                "message", "/new",
+                "userExternalId", fixture.userExternalId
+        ));
+
+        assertEquals("Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.", out.get("reply"));
+        assertEquals(newConversationId.toString(), out.get("newConversationId"));
+        verify(msgRepo, never()).save(any());
+        verify(pythonChatClient, never()).chat(anyString(), anyString(), any(), any(), anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.anyBoolean(), org.mockito.ArgumentMatchers.anyBoolean());
+    }
+
+    @Test
+    void resetAllCommandAliasesNewConversationFlow() {
+        Fixture fixture = Fixture.create();
+        TenantContext.set(fixture.tenantId.toString());
+        UUID newConversationId = UUID.randomUUID();
+        when(convRepo.findById(fixture.conversationId)).thenReturn(Optional.of(fixture.conversation));
+        when(conversationResetService.startNewConsultationSession(
+                fixture.tenantId,
+                fixture.chatbotId,
+                "web",
+                fixture.userExternalId,
+                fixture.conversationId,
+                null
+        )).thenReturn(new NewConsultationSessionResponse(fixture.tenantId.toString(), newConversationId.toString(), 1, 2, 1, 0, 0));
+
+        Map<String, Object> out = chatController.send(Map.of(
+                "conversationId", fixture.conversationId.toString(),
+                "message", "/reset-all",
+                "userExternalId", fixture.userExternalId
+        ));
+
+        assertEquals("Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.", out.get("reply"));
+        assertEquals(newConversationId.toString(), out.get("newConversationId"));
+        verify(msgRepo, never()).save(any());
+        verify(pythonChatClient, never()).chat(anyString(), anyString(), any(), any(), anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.anyBoolean(), org.mockito.ArgumentMatchers.anyBoolean());
     }
 
     private void mockBaseConversation(Fixture fixture) {

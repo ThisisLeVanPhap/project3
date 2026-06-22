@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-quan-ao-go-moho-monza-4-canh-1m6",
+  "final_url": "https://moho.com.vn/products/tu-quan-ao-go-moho-monza-4-canh-1m6",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:05:13.823163+00:00",
+  "content_hash": "df9dd5bcd2330b488d4bb27ca7a927d684ed74011594803f0b11f0efd842ce59",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:05:13 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "365235",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"1553afada0fa43988c7fed99acae6481\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:05:13 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1319",
+    "X-RequestId": "565f279f81df75944c863105dad22b93",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-quan-ao-go-moho-monza-4-canh-1m6-df9dd5bcd233.html"
+}

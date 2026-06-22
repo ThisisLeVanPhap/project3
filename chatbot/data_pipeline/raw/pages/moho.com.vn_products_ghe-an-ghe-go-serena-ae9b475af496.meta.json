@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-an-ghe-go-serena",
+  "final_url": "https://moho.com.vn/products/ghe-an-ghe-go-serena",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:41:51.144508+00:00",
+  "content_hash": "ae9b475af49607c9f7cc331a6012ce3e4b7bf2b8874ba0f0bb7c706cc05df569",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:41:50 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "357303",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"ca3909e373064768b9d12f1139b88fc3\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:41:50 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1659",
+    "X-RequestId": "40a14c88c18ed0d9e30d438ef72db5b4",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-an-ghe-go-serena-ae9b475af496.html"
+}

@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/bo-ban-an-4-ghe-go-moho-milan-901-1m25",
+  "final_url": "https://moho.com.vn/products/bo-ban-an-4-ghe-go-moho-milan-901-1m25",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:34:49.831845+00:00",
+  "content_hash": "7509b7c6214ea108ed19fdcb3b644739630b76eef15128266683c60262075f4f",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:34:49 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "421605",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"8960e1ac3fe34692a86351f63477bd5d\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:34:49 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1594",
+    "X-RequestId": "534a5970151b7e82000d8c2d8904d696",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_bo-ban-an-4-ghe-go-moho-milan-901-1m25-7509b7c6214e.html"
+}

@@ -30,7 +30,7 @@ def build_purchase_request_draft(state: SalesConversationState, message: str) ->
         contact["email"] = slots["email"]
 
     handoff_required = state.handoff_required or "handoff_request" in intents
-    location = slots.get("location") or state.slots.get("location")
+    location = slots.get("location") or slots.get("delivery_area") or state.slots.get("location") or state.slots.get("delivery_area")
     address = slots.get("address") or state.slots.get("address")
 
     if "cancel" in intents:

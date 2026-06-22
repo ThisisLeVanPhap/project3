@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/set-ban-sofa-ban-tra-ban-cafe-go-kline",
+  "final_url": "https://moho.com.vn/products/set-ban-sofa-ban-tra-ban-cafe-go-kline",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:03:15.369165+00:00",
+  "content_hash": "3eeb3be5495d90abf246e4e9b3b64f6b487deed2bdd517d8d14bc3bdaa821f8e",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:03:15 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "332148",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"8d5bcab928524d1ab31a8c7d41ebb311\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:03:15 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1156",
+    "X-RequestId": "6b564150a1be0c3cddc56adec4db2a03",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_set-ban-sofa-ban-tra-ban-cafe-go-kline-3eeb3be5495d.html"
+}

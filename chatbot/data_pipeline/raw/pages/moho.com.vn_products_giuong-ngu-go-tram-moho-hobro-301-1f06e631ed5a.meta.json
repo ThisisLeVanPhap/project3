@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/giuong-ngu-go-tram-moho-hobro-301",
+  "final_url": "https://moho.com.vn/products/giuong-ngu-go-tram-moho-hobro-301",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:27:08.285353+00:00",
+  "content_hash": "1f06e631ed5af565821ef674123ee0c80bf2bac65048926653bd0f51fcf5e607",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:27:07 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "337324",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"d5bacc0b22f146c587c1aaef5137e627\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:27:07 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1203",
+    "X-RequestId": "baedd82b8b9426790b74722b6bd3486e",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_giuong-ngu-go-tram-moho-hobro-301-1f06e631ed5a.html"
+}

@@ -4,8 +4,12 @@ import com.app.bots.ChatbotInstance;
 import com.app.bots.ChatbotInstanceRepository;
 import com.app.chat.ChannelConversationService;
 import com.app.chat.Conversation;
+import com.app.chat.ConversationResetRequest;
+import com.app.chat.ConversationResetService;
 import com.app.chat.Message;
 import com.app.chat.MessageRepository;
+import com.app.chat.NewConsultationSessionResponse;
+import com.app.customers.CustomerIdentityService;
 import com.app.feedback.Feedback;
 import com.app.feedback.FeedbackRepository;
 import com.app.leads.Lead;
@@ -61,6 +65,8 @@ public class MessengerWebhookController {
     private final LeadService leadService;
     private final PurchaseRequestService purchaseRequestService;
     private final FeedbackRepository feedbackRepo;
+    private final CustomerIdentityService customerIdentityService;
+    private final ConversationResetService conversationResetService;
 
     private final Set<String> processedMids = ConcurrentHashMap.newKeySet();
     private final ExecutorService workerPool = Executors.newFixedThreadPool(8);
@@ -137,12 +143,17 @@ public class MessengerWebhookController {
                     }
 
                     String senderKey = channelConversationService.buildMessengerSenderKey(pageId, psid);
+                    resolveCustomerIdentity(binding.getTenantId(), senderKey);
                     Conversation conv = channelConversationService.findOrCreateActiveConversation(
                             binding.getTenantId(),
                             binding.getChatbotId(),
                             "messenger",
                             senderKey
                     );
+
+                    if (handleResetCommand(binding, conv, psid, text)) {
+                        continue;
+                    }
 
                     ChatbotInstance bot = botRepo.findById(conv.getChatbotId())
                             .orElseThrow(() -> new IllegalStateException("Bot not found: " + conv.getChatbotId()));
@@ -198,6 +209,46 @@ public class MessengerWebhookController {
         }
     }
 
+    private boolean handleResetCommand(MessengerPageBinding binding, Conversation conv, String psid, String text) {
+        String command = text == null ? "" : text.trim().toLowerCase(Locale.ROOT);
+        if (!command.equals("/reset") && !command.equals("/reset-test") && !command.equals("/new") && !command.equals("/reset-all")) {
+            return false;
+        }
+
+        String reply;
+        if (command.equals("/new") || command.equals("/reset-all")) {
+            NewConsultationSessionResponse ignored = conversationResetService.startNewConsultationSession(
+                    binding.getTenantId(),
+                    conv.getChatbotId(),
+                    "messenger",
+                    conv.getUserExternalId(),
+                    conv.getId(),
+                    conv.getUnifiedCustomerId()
+            );
+            reply = "Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.";
+        } else {
+            conversationResetService.reset(
+                    binding.getTenantId(),
+                    new ConversationResetRequest(
+                            conv.getId().toString(),
+                            null,
+                            null,
+                            null,
+                            true,
+                            true
+                    )
+            );
+            reply = "Đã reset hội thoại hiện tại.";
+        }
+        sendService.sendText(
+                binding.getPageId(),
+                psid,
+                reply,
+                binding.getPageAccessToken()
+        );
+        return true;
+    }
+
     private void persistUserMessage(MessengerPageBinding binding, Conversation conv, String text) {
         Message mUser = new Message();
         mUser.setId(UUID.randomUUID());
@@ -206,6 +257,24 @@ public class MessengerWebhookController {
         mUser.setRole("user");
         mUser.setContent(text);
         msgRepo.save(mUser);
+    }
+
+    private void resolveCustomerIdentity(UUID tenantId, String senderKey) {
+        if (customerIdentityService == null) {
+            return;
+        }
+        try {
+            customerIdentityService.resolveOrCreateIdentity(
+                    tenantId,
+                    "messenger",
+                    senderKey,
+                    null,
+                    null,
+                    null
+            );
+        } catch (RuntimeException ex) {
+            log.debug("Skip messenger customer identity resolution tenant={} senderKey={}", tenantId, senderKey, ex);
+        }
     }
 
     private void persistFeedback(MessengerPageBinding binding, Conversation conv, int rating) {

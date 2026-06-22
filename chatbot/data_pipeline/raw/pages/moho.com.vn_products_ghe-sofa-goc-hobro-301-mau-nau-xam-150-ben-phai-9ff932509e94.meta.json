@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-sofa-goc-hobro-301-mau-nau-xam-150-ben-phai",
+  "final_url": "https://moho.com.vn/products/ghe-sofa-goc-hobro-301-mau-nau-xam-150-ben-phai",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:46:13.989399+00:00",
+  "content_hash": "9ff932509e94177ad7b571c331f51ce7c2848a8d01940d6b5bf43f1c92693ae5",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:46:13 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "321321",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"77966f57b3c54018b8570d266f73868b\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:46:13 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1220",
+    "X-RequestId": "20d1dbbc50cd79dd19c389f1f4c32046",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-sofa-goc-hobro-301-mau-nau-xam-150-ben-phai-9ff932509e94.html"
+}

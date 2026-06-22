@@ -1,0 +1,21 @@
+{
+  "surface": "admin Tenant Management API used by UI",
+  "tenant": {
+    "id": "10000000-0000-4000-8000-000000000102",
+    "code": "datn_demo_moho",
+    "name": "DEMO - MOHO Demo",
+    "apiKey": "DEMO_TENANT_TOKEN_MOHO_NOT_SECRET",
+    "kbDir": "/opt/app/chatbot/kb/datn_demo_moho",
+    "status": "ACTIVE",
+    "active_kb_version_id": "bf9e9c73-ba70-47fd-b5fe-061da7030eda",
+    "active_kb_version_tag": "dataset-20260620193509-artifact-767a5866",
+    "active_kb_dir": "/opt/app/chatbot/kb/datasets/gotrangtri-20260610/dataset-20260620191737-gotrangtri-20260610"
+  },
+  "checks": {
+    "tenant_present": true,
+    "active_kb_version_present": true,
+    "active_kb_dir_points_to_dataset_artifact": true,
+    "fallback_kb_dir_legacy": true,
+    "unbind_action_endpoint": "POST /api/admin/product-datasets/kb-bindings/unbind"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/combo-co-ban-phong-ngu-moho-dalumd",
+  "final_url": "https://moho.com.vn/products/combo-co-ban-phong-ngu-moho-dalumd",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:45:07.126359+00:00",
+  "content_hash": "2c2fc139a60f4e5829af8cf9cd069e767f951b6caf34293bc079c37a0be563a4",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:45:06 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "359169",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"00b7589066054f469e9bc7b9c4c57b47\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:45:06 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1236",
+    "X-RequestId": "7eb2870038c24609f7f87c2a24250419",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_combo-co-ban-phong-ngu-moho-dalumd-2c2fc139a60f.html"
+}

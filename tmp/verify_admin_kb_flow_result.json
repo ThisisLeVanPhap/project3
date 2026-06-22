@@ -1,0 +1,97 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/login/admin",
+    "status": 200,
+    "body": "{\"ok\":true,\"message\":\"OK\",\"userId\":\"platform-admin\",\"role\":\"PLATFORM_ADMIN\",\"tenantId\":null,\"displayName\":\"Platform Admin\",\"email\":\"admin\"}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/me",
+    "status": 200,
+    "body": "{\"userId\":\"platform-admin\",\"role\":\"PLATFORM_ADMIN\",\"tenantId\":null,\"displayName\":\"Platform Admin\",\"email\":\"admin\"}"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/api/stats/overview?days=1",
+    "status": 200,
+    "body": "{\"totalConversations\":1,\"totalLeads\":0,\"leadConversionRate\":0.0,\"shippedRate\":0.0,\"feedbackPositiveRate\":0.0,\"leadStatusBreakdown\":{}}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/tenants",
+    "status": 200,
+    "body": "{'id': '6c2cf829-5ff7-4df0-b5ec-aacb94da7c6b', 'code': 'datn_demo_moho', 'name': 'DATN Demo MOHO', 'apiKey': 'deddee4d9995452e87017fff42f9f8c4', 'kbDir': 'F:\\\\20251\\\\prj3\\\\chatbot\\\\kb\\\\datn_demo_moho', 'status': 'ACTIVE'}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/kb/source-urls",
+    "status": 200,
+    "body": "{\"tenantId\":\"6c2cf829-5ff7-4df0-b5ec-aacb94da7c6b\",\"urls\":[\"https://gotrangtri.vn/shop/ban-sofa-ghs-1/\"]}",
+    "header_variant": "tenant-id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/kb/source-urls/config",
+    "status": 200,
+    "body": "{\"tenantId\":\"6c2cf829-5ff7-4df0-b5ec-aacb94da7c6b\",\"source\":{\"mode\":\"PRODUCT_URL_LIST\",\"sourceUrl\":\"https://example.com/sitemap.xml\",\"sitemapUrl\":\"https://example.com/sitemap.xml\",\"provider\":\"example.com\",\"urls\":[\"https://gotrangtri.vn/shop/ban-sofa-ghs-1/\"],\"updatedAt\":\"2026-06-14T17:15:01.26972020"
+  },
+  {
+    "method": "POST",
+    "path": "/api/kb/source-urls",
+    "status": 200,
+    "body": "{\"tenantId\":\"6c2cf829-5ff7-4df0-b5ec-aacb94da7c6b\",\"urls\":[\"https://gotrangtri.vn/shop/ban-sofa-ghs-1/\"]}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/kb/rebuild",
+    "status": 200,
+    "body": "{\"success\":true,\"message\":\"KB rebuilt successfully. The next tenant chat request will start with the updated KB.\",\"rebuiltAt\":\"2026-06-14T17:15:46.823965600Z\",\"lastRebuildStartedAt\":\"2026-06-14T17:15:37.687303900Z\",\"lastRebuildFinishedAt\":\"2026-06-14T17:15:46.823965600Z\",\"lastRebuildStatus\":\"SUCCESS"
+  },
+  {
+    "method": "GET",
+    "path": "/api/kb/versions",
+    "status": 200,
+    "body": "[{\"id\":\"601d4fe5-ac99-4061-8c2f-bab4e66d4e41\",\"tenant_id\":\"6c2cf829-5ff7-4df0-b5ec-aacb94da7c6b\",\"version_tag\":\"v20260614171537\",\"kb_dir\":\"F:\\\\20251\\\\prj3\\\\chatbot\\\\kb\\\\datn_demo_moho\\\\versions\\\\v20260614171537\",\"source_type\":\"PRODUCT_DATASET\",\"dataset_id\":\"datn_demo_moho-v20260614171537\",\"status\":\""
+  },
+  {
+    "method": "POST",
+    "path": "/api/kb/versions/601d4fe5-ac99-4061-8c2f-bab4e66d4e41/publish",
+    "status": 200,
+    "body": "{\"id\":\"601d4fe5-ac99-4061-8c2f-bab4e66d4e41\",\"tenant_id\":\"6c2cf829-5ff7-4df0-b5ec-aacb94da7c6b\",\"version_tag\":\"v20260614171537\",\"kb_dir\":\"F:\\\\20251\\\\prj3\\\\chatbot\\\\kb\\\\datn_demo_moho\\\\versions\\\\v20260614171537\",\"source_type\":\"PRODUCT_DATASET\",\"dataset_id\":\"datn_demo_moho-v20260614171537\",\"status\":\"R"
+  },
+  {
+    "method": "GET",
+    "path": "/api/kb/runtime-status",
+    "status": 200,
+    "body": "{\"tenant_id\":\"6c2cf829-5ff7-4df0-b5ec-aacb94da7c6b\",\"desired\":{\"kb_dir\":\"F:\\\\20251\\\\prj3\\\\chatbot\\\\kb\\\\datn_demo_moho\\\\versions\\\\v20260614171537\",\"source\":\"ACTIVE_VERSION\",\"version_id\":\"601d4fe5-ac99-4061-8c2f-bab4e66d4e41\",\"version_tag\":\"v20260614171537\",\"fallback_reason\":null},\"running\":{\"mode\":\"E",
+    "phase": "before_chat"
+  },
+  {
+    "method": "GET",
+    "path": "/api/chatbots",
+    "status": 200,
+    "body": "[{\"tenantId\":\"6c2cf829-5ff7-4df0-b5ec-aacb94da7c6b\",\"id\":\"ef66fb22-a513-405a-9a68-c01870e4a060\",\"name\":\"DATN Demo Product Advisor\",\"channel\":\"WEB\",\"persona\":{\"role\":\"furniture product advisor\"},\"status\":\"ACTIVE\",\"baseModel\":null,\"adapterPath\":null,\"tokenizerPath\":null,\"systemPrompt\":null,\"maxNewToke"
+  },
+  {
+    "method": "POST",
+    "path": "/api/chat/start",
+    "status": 200,
+    "body": "{\"conversationId\":\"add2f16a-4c68-43b7-9739-940d75e1c2c1\"}",
+    "chatbotId": "ef66fb22-a513-405a-9a68-c01870e4a060"
+  },
+  {
+    "method": "POST",
+    "path": "/api/chat/send",
+    "status": 200,
+    "body": "{\"reply\":\"Ch\u00e0o b\u1ea1n, m\u00ecnh l\u00e0 tr\u1ee3 l\u00fd t\u01b0 v\u1ea5n n\u1ed9i th\u1ea5t. B\u1ea1n \u0111ang c\u1ea7n t\u00ecm s\u1ea3n ph\u1ea9m n\u00e0o: sofa, b\u00e0n \u0103n, gi\u01b0\u1eddng, t\u1ee7 hay m\u00f3n kh\u00e1c?\",\"latencyMs\":0,\"model\":\"rule\",\"adapter\":\"\",\"llmBaseUrl\":\"http://localhost:8000\"}",
+    "conversationId": "add2f16a-4c68-43b7-9739-940d75e1c2c1"
+  },
+  {
+    "method": "GET",
+    "path": "/api/kb/runtime-status",
+    "status": 200,
+    "body": "{\"tenant_id\":\"6c2cf829-5ff7-4df0-b5ec-aacb94da7c6b\",\"desired\":{\"kb_dir\":\"F:\\\\20251\\\\prj3\\\\chatbot\\\\kb\\\\datn_demo_moho\\\\versions\\\\v20260614171537\",\"source\":\"ACTIVE_VERSION\",\"version_id\":\"601d4fe5-ac99-4061-8c2f-bab4e66d4e41\",\"version_tag\":\"v20260614171537\",\"fallback_reason\":null},\"running\":{\"mode\":\"E",
+    "phase": "after_chat"
+  }
+]

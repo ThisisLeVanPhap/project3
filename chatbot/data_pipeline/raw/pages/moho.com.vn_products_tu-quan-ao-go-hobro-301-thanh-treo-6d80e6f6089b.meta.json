@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-quan-ao-go-hobro-301-thanh-treo",
+  "final_url": "https://moho.com.vn/products/tu-quan-ao-go-hobro-301-thanh-treo",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:48:55.078143+00:00",
+  "content_hash": "6d80e6f6089ba2c3a3a19ed7f65a9451f1f594921e19dc8db7e169b43d1d5519",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:48:54 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "331532",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"c68b623c4cba483aa6884bf423f35545\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:48:54 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82977",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1257",
+    "X-RequestId": "7c9df3226530b4ed7d0de8f3a9599083",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-quan-ao-go-hobro-301-thanh-treo-6d80e6f6089b.html"
+}

@@ -1,0 +1,36 @@
+{
+  "verify_method": "cross-channel identity + CRM activity read-only runtime verify",
+  "base_url": "http://localhost:8080",
+  "tenant": {
+    "id": "6c2cf829-5ff7-4df0-b5ec-aacb94da7c6b",
+    "code": "datn_demo_moho"
+  },
+  "auth": {
+    "login": "admin",
+    "ok": true
+  },
+  "customers": {
+    "count": 0,
+    "selected_unified_customer_id": null,
+    "selected_display_name": null,
+    "selected_phone": null,
+    "selected_email": null
+  },
+  "detail": {
+    "present": false,
+    "identities_count": 0
+  },
+  "crm_activity": {
+    "present": false,
+    "conversations_count": 0,
+    "leads_count": 0,
+    "purchase_requests_count": 0
+  },
+  "status": "no_data",
+  "skip_reason": "no unified customers exist yet for this tenant; seed via Messenger/Telegram webhooks with matching phone/email to populate",
+  "evidence_files": {
+    "customers": "tmp\\verify_cross_channel_identity_customers.json",
+    "detail": null,
+    "activity": null
+  }
+}

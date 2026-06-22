@@ -1,0 +1,486 @@
+{
+  "report_type": "dataset_quality_audit_after_fix",
+  "dataset_id": "gotrangtri-20260610",
+  "row_count": 6070,
+  "rag_row_count": 6070,
+  "coverage": {
+    "price": 6018,
+    "material": 3939,
+    "dimensions": 4636
+  },
+  "mojibake": {
+    "product_name": 0,
+    "rag_title": 0,
+    "rag_text": 2
+  },
+  "category_distribution": {
+    "Rèm": 22,
+    "Đèn": 101,
+    "Kệ": 1528,
+    "Thảm": 250,
+    "Sofa": 248,
+    "Bàn ăn": 124,
+    "Tủ": 1511,
+    "Ghế": 87,
+    "Tranh": 272,
+    "Đồ trang trí": 122,
+    "Gương": 9,
+    "Giường": 534,
+    "Bàn trà": 196
+  },
+  "suspect_category_count": 73,
+  "suspect_category_sample": [
+    {
+      "line": 475,
+      "title": "Đồng hồ để bàn trang trí hình ô tô GHX-7004",
+      "category": "Đồ trang trí",
+      "expected_hint": [
+        "Bàn trà"
+      ],
+      "url": "https://gotrangtri.vn/shop/dong-ho-de-ban-trang-tri-hinh-o-to-ghx-7004"
+    },
+    {
+      "line": 596,
+      "title": "Thảm thiết kế",
+      "category": "Kệ",
+      "expected_hint": [
+        "Thảm"
+      ],
+      "url": "https://gotrangtri.vn/shop/tham-thiet-ke"
+    },
+    {
+      "line": 1269,
+      "title": "Tủ để đồ 5 tầng thiết kế nhỏ gọn, tiện lợi GHS-3637",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-de-do-5-tang-ghs-3637"
+    },
+    {
+      "line": 1357,
+      "title": "Bàn trang trí gian thờ, tiền sảnh, hành lang đẹp GHS-41927",
+      "category": "Đồ trang trí",
+      "expected_hint": [
+        "Bàn trà"
+      ],
+      "url": "https://gotrangtri.vn/shop/ban-trang-tri-gian-tho-tien-sanh-hanh-lang-dep-ghs-41927"
+    },
+    {
+      "line": 1414,
+      "title": "Bàn trang trí phòng khách mềm mại nhẹ nhàng GHS-41939",
+      "category": "Đồ trang trí",
+      "expected_hint": [
+        "Bàn trà"
+      ],
+      "url": "https://gotrangtri.vn/shop/ban-trang-tri-phong-khach-mem-mai-nhe-nhang-ghs-41939"
+    },
+    {
+      "line": 1438,
+      "title": "Bàn trang trí phòng thờ gia đình đẹp đơn giản GHS-41936",
+      "category": "Đồ trang trí",
+      "expected_hint": [
+        "Bàn trà"
+      ],
+      "url": "https://gotrangtri.vn/shop/ban-trang-tri-phong-tho-gia-dinh-dep-don-gian-ghs-41936"
+    },
+    {
+      "line": 2597,
+      "title": "Giá sách nhỏ gọn dùng trang trí GHS-2237",
+      "category": "Đồ trang trí",
+      "expected_hint": [
+        "Kệ"
+      ],
+      "url": "https://gotrangtri.vn/shop/gia-sach-nho-gon-dung-trang-tri-ghs-2237"
+    },
+    {
+      "line": 2598,
+      "title": "Giá sách trang trí nhỏ gọn bằng gỗ GHS-2201",
+      "category": "Đồ trang trí",
+      "expected_hint": [
+        "Kệ"
+      ],
+      "url": "https://gotrangtri.vn/shop/gia-sach-trang-tri-nho-gon-bang-go-ghs-2201"
+    },
+    {
+      "line": 2835,
+      "title": "Tủ trắng để đồ thiết kế tối giản, hiện đại GHS-3638",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-trang-de-do-ghs-3638"
+    },
+    {
+      "line": 2851,
+      "title": "Tủ lửng trang trí đa năng, thiết kế thanh lịch GHS-3633",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-lung-trang-tri-ghs-3633"
+    },
+    {
+      "line": 2889,
+      "title": "Tủ trang trí thấp thiết kế hiện đại, độc đáo GHS-52528",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-trang-tri-thap-ghs-52528"
+    },
+    {
+      "line": 2910,
+      "title": "Tủ trang trí gỗ công nghiệp thiết kế hiện đại GHS-52522",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-trang-tri-go-cong-nghiep-ghs-52522"
+    },
+    {
+      "line": 2927,
+      "title": "Tủ để đồ mini thiết kế hiện đại, sang trọng GHS-52516",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-de-do-mini-ghs-52516"
+    },
+    {
+      "line": 2943,
+      "title": "Mẫu tủ nhỏ để đồ thiết kế đơn giản, hiện đại GHS-52513",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-nho-de-do-ghs-52513"
+    },
+    {
+      "line": 2952,
+      "title": "Tủ để đồ bằng gỗ đa năng, thiết kế hiện đại GHS-52509",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-de-do-bang-go-ghs-52509"
+    },
+    {
+      "line": 2965,
+      "title": "Mẫu tủ để đồ đẹp, thiết kế hiện đại GHS-3626",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-de-do-dep-ghs-3626"
+    },
+    {
+      "line": 2967,
+      "title": "Tủ gỗ để đồ thiết kế hiện đại, tiện nghi GHS-52507",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-go-de-do-ghs-52507"
+    },
+    {
+      "line": 2986,
+      "title": "Tủ kính đựng bát đĩa thiết kế hiện đại GHS-52535",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-kinh-dung-bat-dia-ghs-52535"
+    },
+    {
+      "line": 3024,
+      "title": "Tủ bát đũa thiết kế hiện đại, sang trọng GHS-52539",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-bat-dua-ghs-52539"
+    },
+    {
+      "line": 3044,
+      "title": "Tủ đựng nồi chảo thiết kế đơn giản, tiện lợi GHS-52544",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-dung-noi-chao-ghs-52544"
+    },
+    {
+      "line": 3050,
+      "title": "Tủ bếp đẹp bằng gỗ thiết kế đơn giản, sang trọng GHS-52575",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-bep-dep-bang-go-ghs-52575"
+    },
+    {
+      "line": 3064,
+      "title": "Tủ búp phê cao cấp, thiết kế hiện đại GHS-52546",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-bup-phe-ghs-52546"
+    },
+    {
+      "line": 3068,
+      "title": "Mẫu tủ bếp đơn giản, thiết kế hiện đại GHS-52537",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/mau-tu-bep-don-gian-ghs-52537"
+    },
+    {
+      "line": 3070,
+      "title": "Mẫu tủ để đồ hiện đại, thiết kế đa năng GHS-52520",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/mau-tu-de-do-hien-dai-ghs-52520"
+    },
+    {
+      "line": 3071,
+      "title": "Mẫu tủ búp phê đẹp, thiết kế đa năng GHS-52547",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/mau-tu-bup-phe-dep-ghs-52547"
+    },
+    {
+      "line": 3075,
+      "title": "Tủ bát mini để đồ đa năng thiết kế sang trọng GHS-52592",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-bat-mini-ghs-52592"
+    },
+    {
+      "line": 3103,
+      "title": "Tủ chạn bát thiết kế nhỏ gọn, để đồ đa năng GHS-52573",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-chan-bat-ghs-52573"
+    },
+    {
+      "line": 3120,
+      "title": "Tủ để bát đũa thiết kế sang trọng, để đồ đa năng GHS-52542",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-de-bat-dua-ghs-52542"
+    },
+    {
+      "line": 3605,
+      "title": "Tủ thờ thiết kế",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-tho-thiet-ke"
+    },
+    {
+      "line": 3753,
+      "title": "Tủ để giày đa năng thiết kế hiện đại GHS-52582",
+      "category": "Kệ",
+      "expected_hint": [
+        "Tủ"
+      ],
+      "url": "https://gotrangtri.vn/shop/tu-de-giay-da-nang-ghs-52582"
+    }
+  ],
+  "random_category_sample": [
+    {
+      "line": 5552,
+      "title": "Mẫu giá sách bằng gỗ đẹp mắt GHS-2648",
+      "category": null,
+      "url": "https://gotrangtri.vn/shop/gia-sach-bang-go-dep-ghs-2648"
+    },
+    {
+      "line": 5666,
+      "title": "Giường ngủ bọc nệm gỗ sồi hiện đại GHS-9430",
+      "category": "Giường",
+      "url": "https://gotrangtri.vn/shop/giuong-ngu-boc-nem-go-soi-hien-dai-ghs-9430"
+    },
+    {
+      "line": 5545,
+      "title": "Tủ gỗ để giày kiểu dáng thanh lịch GHS-51813",
+      "category": "Tủ",
+      "url": "https://gotrangtri.vn/shop/tu-go-de-giay-dep-kie-dang-thanh-lich-ghs-51813"
+    },
+    {
+      "line": 1534,
+      "title": "Giường Gỗ sồi, Giường Gỗ tự nhiên GHS-950",
+      "category": "Giường",
+      "url": "https://gotrangtri.vn/shop/giuong-go-soi-giuong-go-tu-nhien-ghs-950"
+    },
+    {
+      "line": 408,
+      "title": "Bình nước ngộ nghĩnh 600ml có quai đeo GHX-624",
+      "category": "Đồ trang trí",
+      "url": "https://gotrangtri.vn/shop/binh-nuoc-ngo-nghinh-600ml-co-quai-deo-ghx-624"
+    },
+    {
+      "line": 5461,
+      "title": "Mẫu tủ quần áo cho bé đẹp hiện đại GHS-52227",
+      "category": "Tủ",
+      "url": "https://gotrangtri.vn/shop/mau-tu-quan-ao-cho-be-dep-hien-dai-ghs-52227"
+    },
+    {
+      "line": 5153,
+      "title": "Bàn làm việc hiện đại thiết kế sang trọng tiện nghi GHS-4882",
+      "category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/ban-lam-viec-hien-dai-thiet-ke-sang-trong-tien-nghi-ghs-4882"
+    },
+    {
+      "line": 4583,
+      "title": "Giường ngủ hiện đại bằng gỗ sồi GHS-9188",
+      "category": "Giường",
+      "url": "https://gotrangtri.vn/shop/giuong-ngu-hien-dai-bang-go-soi-ghs-9188"
+    },
+    {
+      "line": 1701,
+      "title": "Bàn trà gỗ công nghiệp phòng khách gia đình GHS-4858",
+      "category": "Bàn trà",
+      "url": "https://gotrangtri.vn/shop/ban-tra-go-cong-nghiep-phong-khach-gia-dinh-ghs-4858"
+    },
+    {
+      "line": 1024,
+      "title": "Mô hình tàu thuyền chở hàng CUTTY SARK GHS-692",
+      "category": null,
+      "url": "https://gotrangtri.vn/shop/mo-hinh-tau-thuyen-cho-hang-cutty-sark-ghs-692"
+    },
+    {
+      "line": 2229,
+      "title": "Sofa hiện đại giá rẻ phòng khách GHS-8228",
+      "category": "Sofa",
+      "url": "https://gotrangtri.vn/shop/sofa-hien-dai-8228"
+    },
+    {
+      "line": 5381,
+      "title": "Tủ quần áo cửa lùa thiết kế cổ điển GHS-51800",
+      "category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/tu-quan-ao-cua-lua-thiet-ke-co-dien-ghs-51800"
+    },
+    {
+      "line": 4776,
+      "title": "Tủ quần áo Nordic thiết kế thanh lịch GHS-51805",
+      "category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/tu-quan-ao-nordic-thiet-ke-thanh-lich-ghs-51805"
+    },
+    {
+      "line": 4593,
+      "title": "Giường ngủ gia đình hiện đại bằng gỗ công nghiệp GHS-9164",
+      "category": "Giường",
+      "url": "https://gotrangtri.vn/shop/giuong-ngu-gia-dinh-hien-dai-bang-go-cong-nghiep-ghs-9164"
+    },
+    {
+      "line": 1500,
+      "title": "Tủ quần áo gỗ MDF thiết kế thông minh GHS-51080",
+      "category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/tu-quan-ao-go-mdf-thiet-ke-thong-minh-ghs-51080"
+    },
+    {
+      "line": 3892,
+      "title": "Kệ tivi gia đình bằng gỗ thiết kế thông minh GHS-3478",
+      "category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/ke-tivi-gia-dinh-bang-go-thiet-ke-thong-minh-ghs-3478"
+    },
+    {
+      "line": 6059,
+      "title": "Tủ Buffet Kiểu Nhật GHS-55179 Hiện Đại Đẹp",
+      "category": "Tủ",
+      "url": "https://gotrangtri.vn/shop/tu-buffet-kieu-nhat-ghs-55179-hien-dai-dep"
+    },
+    {
+      "line": 5954,
+      "title": "Bàn quầy lễ tân đẹp kiểu dáng nhỏ gọn GHS-41319",
+      "category": null,
+      "url": "https://gotrangtri.vn/shop/ban-quay-le-tan-dep-kieu-dang-nho-gon-ghs-41319"
+    },
+    {
+      "line": 5331,
+      "title": "Tủ decor mini thiết kế hiện đại, tinh tế GHS-3644",
+      "category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/tu-decor-mini-ghs-3644"
+    },
+    {
+      "line": 3336,
+      "title": "Giường ngủ của bé Hello Kitty cao 1m4 GHB-265",
+      "category": "Giường",
+      "url": "https://gotrangtri.vn/shop/giuong-ngu-cua-be-hello-kitty-cao-1m4-ghb-265"
+    },
+    {
+      "line": 1774,
+      "title": "Bàn trang điểm hiện đại gỗ sồi GHS-4464",
+      "category": null,
+      "url": "https://gotrangtri.vn/shop/ban-trang-diem-hien-dai-go-soi-ghs-4464"
+    },
+    {
+      "line": 3988,
+      "title": "Bàn học hiện đại cho học sinh bằng gỗ GHS-4743",
+      "category": null,
+      "url": "https://gotrangtri.vn/shop/ban-hoc-hien-dai-cho-hoc-sinh-bang-go-ghs-4743"
+    },
+    {
+      "line": 4407,
+      "title": "Tủ gỗ đựng quần áo thiết kế đẹp GHS-51093",
+      "category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/tu-go-dung-quan-ao-thiet-ke-dep-ghs-51093"
+    },
+    {
+      "line": 2980,
+      "title": "Tủ chạn hiện đại để đồ nhà bếp đa năng GHS-52591",
+      "category": "Tủ",
+      "url": "https://gotrangtri.vn/shop/tu-chan-ghs-52591"
+    },
+    {
+      "line": 3280,
+      "title": "Kệ trưng bày sản phẩm đẹp gỗ MDF cao cấp GHS-52471",
+      "category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/ke-trung-bay-san-pham-dep-go-mdf-cao-cap-ghs-52471"
+    },
+    {
+      "line": 86,
+      "title": "Thảm trải sàn gia đình bằng lông xù GHO-T07",
+      "category": "Thảm",
+      "url": "https://gotrangtri.vn/shop/tham-trai-san-gia-dinh-bang-long-xu-gho-t07"
+    },
+    {
+      "line": 3004,
+      "title": "Tủ bếp hiện đại nhỏ gọn cho gia đình GHS-5504",
+      "category": "Tủ",
+      "url": "https://gotrangtri.vn/shop/tu-bep-hien-dai-nho-gon-cho-gia-dinh-ghs-5504"
+    },
+    {
+      "line": 1223,
+      "title": "Kệ gỗ treo tường, Kệ gỗ hoa văn GH-64",
+      "category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/ke-go-treo-tuong-ke-go-hoa-van-gh-64"
+    },
+    {
+      "line": 4211,
+      "title": "Tủ kệ gỗ công nghiệp hiện đại đa năng GHS-52093",
+      "category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/tu-ke-go-cong-nghiep-hien-dai-da-nang-ghs-52093"
+    },
+    {
+      "line": 4812,
+      "title": "Bàn trà gỗ phòng khách gia đình tiện dụng GHS-4687",
+      "category": "Bàn trà",
+      "url": "https://gotrangtri.vn/shop/ban-tra-go-phong-khach-gia-dinh-tien-dung-ghs-4687"
+    }
+  ]
+}

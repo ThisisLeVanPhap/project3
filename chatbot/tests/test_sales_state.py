@@ -2,7 +2,15 @@ import unittest
 
 from app.purchase_request import build_purchase_request_draft
 from app.sales_slots import extract_sales_slots, score_lead
-from app.sales_state import SalesConversationState, apply_message_to_state, resolve_product_reference, update_recommended_products
+from app.sales_state import (
+    SalesConversationState,
+    apply_message_to_state,
+    consultation_missing_slots,
+    known_consultation_slots,
+    next_best_action,
+    resolve_product_reference,
+    update_recommended_products,
+)
 
 
 PRODUCTS = [
@@ -67,6 +75,34 @@ class SalesStateTests(unittest.TestCase):
 
         self.assertEqual(result["slots"]["intent"], "product_inquiry")
         self.assertEqual(state.lead_status, "cold")
+
+    def test_consultation_stage_missing_slots_and_next_action(self):
+        state = SalesConversationState(tenant_id="tenant-a", conversation_id="conv-discover")
+        result = apply_message_to_state(state, "Tôi muốn mua sofa")
+
+        self.assertEqual(state.current_stage, "confirm")
+        self.assertIn("room_or_space", consultation_missing_slots(state))
+        self.assertIn("budget", consultation_missing_slots(state))
+        self.assertEqual(result["next_best_action"], "ask_discovery_question")
+        self.assertEqual(next_best_action(state, result["slots"]), "ask_discovery_question")
+
+    def test_consultation_known_slots_include_constraints(self):
+        state = SalesConversationState(tenant_id="tenant-a", conversation_id="conv-known")
+        apply_message_to_state(state, "Sofa phòng khách, nhà có mèo, cần dễ vệ sinh")
+
+        known = known_consultation_slots(state)
+        self.assertEqual(known["room"], "phòng khách")
+        self.assertTrue(known["pets"])
+        self.assertTrue(known["easy_clean"])
+        self.assertIn("constraints", known)
+
+    def test_objection_moves_to_handle_objection_stage(self):
+        state = self.make_state()
+        result = apply_message_to_state(state, "Mẫu này đắt quá")
+
+        self.assertEqual(state.current_stage, "handle_objection")
+        self.assertEqual(result["next_best_action"], "handle_objection")
+        self.assertEqual(state.slots["objection_type"], "too_expensive")
 
 
 if __name__ == "__main__":

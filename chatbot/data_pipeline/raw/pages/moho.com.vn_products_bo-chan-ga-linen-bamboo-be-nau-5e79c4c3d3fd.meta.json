@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/bo-chan-ga-linen-bamboo-be-nau",
+  "final_url": "https://moho.com.vn/products/bo-chan-ga-linen-bamboo-be-nau",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:34:53.245635+00:00",
+  "content_hash": "5e79c4c3d3fd369142700b7eae14a6bfad3c34fe48b617832b2c6a56c5b4c7e8",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:34:52 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "285770",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"e6d977c7e7d544879d706ba05851ba2b\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:34:52 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "730",
+    "X-RequestId": "f98e0ae14ba13f84aaad664f994119b6",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_bo-chan-ga-linen-bamboo-be-nau-5e79c4c3d3fd.html"
+}

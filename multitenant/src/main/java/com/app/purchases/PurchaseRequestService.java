@@ -2,11 +2,15 @@ package com.app.purchases;
 
 import com.app.auth.TenantMember;
 import com.app.auth.TenantMemberRepository;
+import com.app.chat.Conversation;
+import com.app.chat.ConversationRepository;
+import com.app.customers.CustomerIdentityService;
 import com.app.leads.Lead;
 import com.app.modelserver.PythonChatFallbacks;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -50,17 +54,35 @@ public class PurchaseRequestService {
     private static final List<String> ADDRESS_KEYS = List.of("shipping_address", "delivery_address", "address");
     private static final List<String> NOTES_KEYS = List.of("notes", "note", "customer_note");
     private static final List<String> PRODUCT_KEYS = List.of("requested_product_ref", "product_ref", "product_name", "product_code", "sku", "item");
+    private static final List<String> OPEN_STATUSES = List.of(
+            PurchaseRequestStatus.NEW.name(),
+            PurchaseRequestStatus.CONTACTED.name()
+    );
 
     private final PurchaseRequestRepository purchaseRequestRepo;
     private final TenantMemberRepository tenantMemberRepository;
+    private final CustomerIdentityService customerIdentityService;
+    private final ConversationRepository conversationRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public PurchaseRequestService(
             PurchaseRequestRepository purchaseRequestRepo,
             TenantMemberRepository tenantMemberRepository
     ) {
+        this(purchaseRequestRepo, tenantMemberRepository, null, null);
+    }
+
+    @Autowired
+    public PurchaseRequestService(
+            PurchaseRequestRepository purchaseRequestRepo,
+            TenantMemberRepository tenantMemberRepository,
+            CustomerIdentityService customerIdentityService,
+            ConversationRepository conversationRepository
+    ) {
         this.purchaseRequestRepo = purchaseRequestRepo;
         this.tenantMemberRepository = tenantMemberRepository;
+        this.customerIdentityService = customerIdentityService;
+        this.conversationRepository = conversationRepository;
     }
 
     public List<PurchaseRequest> findRecentByTenant(String tenantId) {
@@ -72,6 +94,10 @@ public class PurchaseRequestService {
                 tenantId,
                 PurchaseRequestStatus.normalize(status)
         );
+    }
+
+    public PurchaseRequest findByTenantAndId(String tenantId, Long purchaseRequestId) {
+        return requirePurchaseRequest(tenantId, purchaseRequestId);
     }
 
     public PurchaseRequest updateStatus(String tenantId, Long purchaseRequestId, String status) {
@@ -190,9 +216,13 @@ public class PurchaseRequestService {
 
         String conversationId = required(request.conversationId(), "conversation_id is required");
         Optional<PurchaseRequest> existingByConversation =
-                purchaseRequestRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(tenantId, conversationId);
+                purchaseRequestRepo.findTop1ByTenantIdAndConversationIdAndStatusInOrderByCreatedAtDesc(
+                        tenantId,
+                        conversationId,
+                        OPEN_STATUSES
+                );
         if (existingByConversation.isPresent()) {
-            throw new ResponseStatusException(CONFLICT, "conversation_id already has a purchase request");
+            throw new ResponseStatusException(CONFLICT, "conversation_id already has an open purchase request");
         }
 
         PurchaseRequest created = new PurchaseRequest();
@@ -214,6 +244,7 @@ public class PurchaseRequestService {
         created.setStatus(PurchaseRequestStatus.NEW.name());
 
         PurchaseRequest saved = purchaseRequestRepo.save(created);
+        linkCustomerIdentityIfPossible(saved, saved.getCustomerName());
         log.info(
                 "Created chatbot purchase request id={} tenant={} handoffId={} idempotencyKey={}",
                 saved.getId(),
@@ -238,7 +269,11 @@ public class PurchaseRequestService {
 
     public PurchaseRequest findOrCreateFromLead(Lead lead) {
         Optional<PurchaseRequest> existingOpt =
-                purchaseRequestRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(lead.getTenantId(), lead.getConversationId());
+                purchaseRequestRepo.findTop1ByTenantIdAndConversationIdAndStatusInOrderByCreatedAtDesc(
+                        lead.getTenantId(),
+                        lead.getConversationId(),
+                        OPEN_STATUSES
+                );
 
         ExtractedPurchaseData extracted = extractFromLead(lead);
 
@@ -247,8 +282,11 @@ public class PurchaseRequestService {
             boolean changed = mergeInto(existing, lead, extracted);
             if (changed) {
                 log.info("Updated purchase request id={} tenant={} conversationId={}", existing.getId(), existing.getTenantId(), existing.getConversationId());
-                return purchaseRequestRepo.save(existing);
+                PurchaseRequest saved = purchaseRequestRepo.save(existing);
+                linkCustomerIdentityIfPossible(saved, saved.getCustomerName());
+                return saved;
             }
+            linkCustomerIdentityIfPossible(existing, existing.getCustomerName());
             return existing;
         }
 
@@ -269,8 +307,48 @@ public class PurchaseRequestService {
         created.setStatus(PurchaseRequestStatus.NEW.name());
 
         PurchaseRequest saved = purchaseRequestRepo.save(created);
+        linkCustomerIdentityIfPossible(saved, saved.getCustomerName());
         log.info("Created purchase request id={} tenant={} conversationId={}", saved.getId(), saved.getTenantId(), saved.getConversationId());
         return saved;
+    }
+
+    private void linkCustomerIdentityIfPossible(PurchaseRequest purchaseRequest, String displayName) {
+        if (customerIdentityService == null || conversationRepository == null || purchaseRequest == null) {
+            return;
+        }
+        if (normalize(purchaseRequest.getPhone()).isBlank() && normalize(purchaseRequest.getEmail()).isBlank()) {
+            return;
+        }
+        UUID tenantUuid;
+        UUID conversationUuid;
+        try {
+            tenantUuid = UUID.fromString(purchaseRequest.getTenantId());
+            conversationUuid = UUID.fromString(purchaseRequest.getConversationId());
+        } catch (RuntimeException ex) {
+            log.debug(
+                    "Skip customer identity link because tenant/conversation is not UUID tenant={} conversationId={}",
+                    purchaseRequest.getTenantId(),
+                    purchaseRequest.getConversationId()
+            );
+            return;
+        }
+
+        Optional<Conversation> conversation = conversationRepository.findById(conversationUuid);
+        if (conversation.isEmpty() || !tenantUuid.equals(conversation.get().getTenantId())) {
+            return;
+        }
+        String externalUserId = normalize(conversation.get().getUserExternalId());
+        if (externalUserId.isBlank()) {
+            return;
+        }
+        customerIdentityService.resolveOrCreateIdentity(
+                tenantUuid,
+                purchaseRequest.getChannel(),
+                externalUserId,
+                displayName,
+                purchaseRequest.getPhone(),
+                purchaseRequest.getEmail()
+        );
     }
 
     private ExtractedPurchaseData extractFromLead(Lead lead) {

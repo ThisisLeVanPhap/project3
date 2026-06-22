@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/giuong-ngu-1m6-boc-nem-scarlet",
+  "final_url": "https://moho.com.vn/products/giuong-ngu-1m6-boc-nem-scarlet",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:26:13.402017+00:00",
+  "content_hash": "d01454e09e8fc06156740123d7b98cc3b4f5a4011c6b802cd2a7ce41596d7f92",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:26:13 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "330214",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"8b6381e2228444d5a66a72c1d596dc59\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:26:13 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1153",
+    "X-RequestId": "758b79b410c1df483f75cd1f9c52b9c4",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_giuong-ngu-1m6-boc-nem-scarlet-d01454e09e8f.html"
+}

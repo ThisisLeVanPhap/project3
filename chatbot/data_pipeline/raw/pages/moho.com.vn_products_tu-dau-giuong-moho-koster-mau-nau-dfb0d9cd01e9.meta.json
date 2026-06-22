@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-dau-giuong-moho-koster-mau-nau",
+  "final_url": "https://moho.com.vn/products/tu-dau-giuong-moho-koster-mau-nau",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:46:57.609776+00:00",
+  "content_hash": "dfb0d9cd01e91fd24953517a4bc2503f188d5ad05d91f81ed6eddcbf1fa2b7c6",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:46:57 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "319825",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"f5b417ee27c14624b4459f3176bd727b\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:46:57 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1154",
+    "X-RequestId": "36144793b57ff8e88e2653ddda276e0b",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-dau-giuong-moho-koster-mau-nau-dfb0d9cd01e9.html"
+}

@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ban-an-narvik",
+  "final_url": "https://moho.com.vn/products/ban-an-narvik",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:44:24.212096+00:00",
+  "content_hash": "1768626faa0079dcc05290293e6013fabd6f24ed1afce483893be53dfbf8d559",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:44:23 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "336274",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"f6e1a0ac9e0b4910bbd101f91052def0\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:44:23 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1233",
+    "X-RequestId": "38f655277c8ada87d14ef56d55d70c8c",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ban-an-narvik-1768626faa00.html"
+}

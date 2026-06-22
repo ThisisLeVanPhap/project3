@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-dau-giuong-go-moho-grenaa-201",
+  "final_url": "https://moho.com.vn/products/tu-dau-giuong-go-moho-grenaa-201",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:25:43.797895+00:00",
+  "content_hash": "adb5d4d12f52294dccd74c5a377cd48a72c396c9e46bb77853e53d7615e0ac51",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:25:43 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "320097",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"07006ec448c64fb396e741e6aff85b99\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:25:43 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1167",
+    "X-RequestId": "3003503f10eda3c81192fcbc7ecc0679",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-dau-giuong-go-moho-grenaa-201-adb5d4d12f52.html"
+}

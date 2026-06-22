@@ -41,6 +41,7 @@ public class ChatController {
     private final LeadService leadService;
     private final PurchaseRequestService purchaseRequestService;
     private final LeadRepository leadRepo;
+    private final ConversationResetService conversationResetService;
 
     @GetMapping("/conversations")
     public List<Map<String, Object>> listConversations(
@@ -210,6 +211,11 @@ public class ChatController {
 
         Conversation conv = requireConversationOwnership(tenantId, convId, req.get("userExternalId"));
 
+        Map<String, Object> resetCommandResponse = handleResetCommand(tenantId, convId, userMsg);
+        if (resetCommandResponse != null) {
+            return resetCommandResponse;
+        }
+
         ChatbotInstance bot = botRepo.findById(conv.getChatbotId())
                 .orElseThrow(() -> new IllegalArgumentException("Chatbot not found"));
 
@@ -370,6 +376,47 @@ public class ChatController {
         out.put("adapter", resp.adapter() == null ? "" : resp.adapter());
         out.put("llmBaseUrl", baseUrl == null ? "" : baseUrl);
 
+        return out;
+    }
+
+    private Map<String, Object> handleResetCommand(UUID tenantId, UUID conversationId, String message) {
+        String command = message == null ? "" : message.trim().toLowerCase(Locale.ROOT);
+        if (!command.equals("/reset") && !command.equals("/reset-test") && !command.equals("/new") && !command.equals("/reset-all")) {
+            return null;
+        }
+
+        Conversation conversation = convRepo.findById(conversationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found"));
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (command.equals("/new") || command.equals("/reset-all")) {
+            NewConsultationSessionResponse response = conversationResetService.startNewConsultationSession(
+                    tenantId,
+                    conversation.getChatbotId(),
+                    "web",
+                    conversation.getUserExternalId(),
+                    conversationId,
+                    conversation.getUnifiedCustomerId()
+            );
+            out.put("reply", "Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.");
+            out.put("newConversationId", response.newConversationId());
+        } else {
+            conversationResetService.reset(
+                    tenantId,
+                    new ConversationResetRequest(
+                            conversationId.toString(),
+                            null,
+                            null,
+                            null,
+                            true,
+                            true
+                    )
+            );
+            out.put("reply", "Đã reset hội thoại hiện tại.");
+        }
+        out.put("latencyMs", 0);
+        out.put("model", "system");
+        out.put("adapter", "");
+        out.put("llmBaseUrl", "");
         return out;
     }
 

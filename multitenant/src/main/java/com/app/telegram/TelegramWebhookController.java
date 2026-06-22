@@ -4,8 +4,12 @@ import com.app.bots.ChatbotInstance;
 import com.app.bots.ChatbotInstanceRepository;
 import com.app.chat.ChannelConversationService;
 import com.app.chat.Conversation;
+import com.app.chat.ConversationResetRequest;
+import com.app.chat.ConversationResetService;
 import com.app.chat.Message;
 import com.app.chat.MessageRepository;
+import com.app.chat.NewConsultationSessionResponse;
+import com.app.customers.CustomerIdentityService;
 import com.app.leads.Lead;
 import com.app.leads.LeadRepository;
 import com.app.leads.LeadService;
@@ -51,6 +55,8 @@ public class TelegramWebhookController {
 
     // ✅ NEW: feedback repo
     private final FeedbackRepository feedbackRepo;
+    private final CustomerIdentityService customerIdentityService;
+    private final ConversationResetService conversationResetService;
 
     private final Set<Long> processedUpdateIds = ConcurrentHashMap.newKeySet();
     private final ExecutorService workerPool = Executors.newFixedThreadPool(8);
@@ -90,12 +96,17 @@ public class TelegramWebhookController {
             String chatId = String.valueOf(chat.get("id"));
 
             String senderKey = channelConversationService.buildTelegramSenderKey(chatId);
+            resolveCustomerIdentity(binding.getTenantId(), senderKey, chat, msg);
             Conversation conv = channelConversationService.findOrCreateActiveConversation(
                     binding.getTenantId(),
                     binding.getChatbotId(),
                     "telegram",
                     senderKey
             );
+
+            if (handleResetCommand(binding, conv, chatId, text)) {
+                return;
+            }
 
             ChatbotInstance bot = botRepo.findById(conv.getChatbotId())
                     .orElseThrow(() -> new IllegalStateException("Bot not found: " + conv.getChatbotId()));
@@ -255,6 +266,80 @@ public class TelegramWebhookController {
         } finally {
             if (prevTenant == null) TenantContext.clear();
             else TenantContext.set(prevTenant);
+        }
+    }
+
+    private boolean handleResetCommand(TelegramBotBinding binding, Conversation conv, String chatId, String text) {
+        String command = text == null ? "" : text.trim().toLowerCase(Locale.ROOT);
+        if (!command.equals("/reset") && !command.equals("/reset-test") && !command.equals("/new") && !command.equals("/reset-all")) {
+            return false;
+        }
+
+        String reply;
+        if (command.equals("/new") || command.equals("/reset-all")) {
+            NewConsultationSessionResponse ignored = conversationResetService.startNewConsultationSession(
+                    binding.getTenantId(),
+                    conv.getChatbotId(),
+                    "telegram",
+                    conv.getUserExternalId(),
+                    conv.getId(),
+                    conv.getUnifiedCustomerId()
+            );
+            reply = "Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.";
+        } else {
+            conversationResetService.reset(
+                    binding.getTenantId(),
+                    new ConversationResetRequest(
+                            conv.getId().toString(),
+                            null,
+                            null,
+                            null,
+                            true,
+                            true
+                    )
+            );
+            reply = "Đã reset hội thoại hiện tại.";
+        }
+        sendService.sendText(
+                binding.getBotToken(),
+                chatId,
+                reply
+        );
+        return true;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void resolveCustomerIdentity(UUID tenantId, String senderKey, Map<String, Object> chat, Map<String, Object> msg) {
+        if (customerIdentityService == null) {
+            return;
+        }
+        String displayName = null;
+        Object fromRaw = msg.get("from");
+        if (fromRaw instanceof Map<?, ?> from) {
+            Object firstName = from.get("first_name");
+            Object lastName = from.get("last_name");
+            String first = firstName == null ? "" : String.valueOf(firstName).trim();
+            String last = lastName == null ? "" : String.valueOf(lastName).trim();
+            String combined = (first + " " + last).trim();
+            displayName = combined.isBlank() ? null : combined;
+        }
+        if (displayName == null && chat != null) {
+            Object title = chat.get("title");
+            if (title != null && !String.valueOf(title).isBlank()) {
+                displayName = String.valueOf(title).trim();
+            }
+        }
+        try {
+            customerIdentityService.resolveOrCreateIdentity(
+                    tenantId,
+                    "telegram",
+                    senderKey,
+                    displayName,
+                    null,
+                    null
+            );
+        } catch (RuntimeException ex) {
+            log.debug("Skip telegram customer identity resolution tenant={} senderKey={}", tenantId, senderKey, ex);
         }
     }
 }

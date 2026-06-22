@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/nem-foam-moho-sleep-balance",
+  "final_url": "https://moho.com.vn/products/nem-foam-moho-sleep-balance",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:40:42.654974+00:00",
+  "content_hash": "cdba3c2357b34f725213411a4d01c4cae8b40ce5e8782393c685c3a49c8b13ee",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:40:42 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "325156",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"a71c4a9fc8ad4ea8925d1b405cb7c87c\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:40:42 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1197",
+    "X-RequestId": "e78cf2473d8cd362c7bdf95fb857ab3b",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_nem-foam-moho-sleep-balance-cdba3c2357b3.html"
+}

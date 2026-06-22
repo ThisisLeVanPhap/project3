@@ -1,0 +1,13 @@
+﻿{
+    "id":  "6fa7dcee-7266-4951-b2cb-a0f7e50f750b",
+    "tenant_id":  "10000000-0000-4000-8000-000000000102",
+    "artifact_id":  "767a5866-ff31-4ae6-a33f-45601395512e",
+    "dataset_id":  "gotrangtri-20260610",
+    "active":  false,
+    "update_policy":  "AUTO_USE_LATEST",
+    "active_kb_version_id":  "728ecddd-4516-4122-9504-03e0abe3d763",
+    "bound_at":  "2026-06-20T19:27:17.999789Z",
+    "unbound_at":  "2026-06-20T19:32:49.927677502Z",
+    "created_at":  "2026-06-20T19:27:18.074635Z",
+    "updated_at":  "2026-06-20T19:32:49.927677502Z"
+}

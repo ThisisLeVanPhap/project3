@@ -4,6 +4,7 @@ import com.app.auth.AppPrincipal;
 import com.app.auth.AppRole;
 import com.app.auth.SessionPrincipalAccessor;
 import com.app.common.ApiExceptionHandler;
+import com.app.kb.TenantKbVersionRepository;
 import com.app.tenants.Tenant;
 import com.app.tenants.TenantProvisioningService;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -32,6 +34,9 @@ class TenantAdminControllerTest {
 
     @Mock
     private TenantProvisioningService tenantProvisioningService;
+
+    @Mock
+    private TenantKbVersionRepository tenantKbVersionRepository;
 
     @Mock
     private SessionPrincipalAccessor principalAccessor;
@@ -50,7 +55,7 @@ class TenantAdminControllerTest {
         );
         when(tenantProvisioningService.list()).thenReturn(List.of(tenant));
 
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(new TenantAdminController(tenantProvisioningService, principalAccessor))
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new TenantAdminController(tenantProvisioningService, tenantKbVersionRepository, principalAccessor))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .build();
 
@@ -84,7 +89,7 @@ class TenantAdminControllerTest {
         );
         when(tenantProvisioningService.create(request)).thenReturn(tenant);
 
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(new TenantAdminController(tenantProvisioningService, principalAccessor))
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new TenantAdminController(tenantProvisioningService, tenantKbVersionRepository, principalAccessor))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .build();
 
@@ -109,11 +114,28 @@ class TenantAdminControllerTest {
     }
 
     @Test
+    void allowsPlatformAdminToDeleteTenant() throws Exception {
+        UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
+        when(principalAccessor.requirePlatformAdmin()).thenReturn(
+                new AppPrincipal("platform-admin", AppRole.PLATFORM_ADMIN, null, "Platform Admin", "admin")
+        );
+
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new TenantAdminController(tenantProvisioningService, tenantKbVersionRepository, principalAccessor))
+                .setControllerAdvice(new ApiExceptionHandler())
+                .build();
+
+        mvc.perform(delete("/api/admin/tenants/{tenantId}", tenantId))
+                .andExpect(status().isOk());
+
+        verify(tenantProvisioningService).delete(tenantId);
+    }
+
+    @Test
     void deniesTenantAdminOnPlatformTenantManagementEndpoint() throws Exception {
         doThrow(new ResponseStatusException(FORBIDDEN, "Insufficient role"))
                 .when(principalAccessor).requirePlatformAdmin();
 
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(new TenantAdminController(tenantProvisioningService, principalAccessor))
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new TenantAdminController(tenantProvisioningService, tenantKbVersionRepository, principalAccessor))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .build();
 

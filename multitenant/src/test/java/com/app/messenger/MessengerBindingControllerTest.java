@@ -180,8 +180,12 @@ class MessengerBindingControllerTest {
                 desired.versionId(),
                 "v1",
                 java.time.Instant.parse("2026-06-09T00:00:00Z"),
+                java.time.Instant.parse("2026-06-09T00:05:00Z"),
                 true,
                 123L,
+                null,
+                null,
+                null,
                 null
         );
 

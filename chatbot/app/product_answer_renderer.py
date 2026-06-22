@@ -13,7 +13,7 @@ NO_CONTEXT_FALLBACK = "Mình chưa tìm thấy sản phẩm phù hợp trong d�
 PRODUCT_KEYWORDS = (
     "sofa", "rèm", "rem", "kệ", "ke", "bàn", "ban", "ghế", "ghe",
     "thảm", "tham", "đèn", "den", "tủ", "tu", "giường", "giuong",
-    "tranh", "gương", "guong",
+    "tranh", "gương", "guong", "wardrobe", "cabinet",
 )
 POLICY_KEYWORDS = (
     "bảo hành", "bao hanh", "vận chuyển", "van chuyen", "ship",
@@ -80,6 +80,19 @@ def _attribute_line(product: Dict[str, Any]) -> str:
     return "; ".join(attrs)
 
 
+def _reason_line(product: Dict[str, Any], query: str) -> str:
+    reasons = []
+    category = _field(product, "category")
+    material = _field(product, "material")
+    if category:
+        reasons.append(f"khop nhom {category}")
+    if material and material.lower() in _norm(query):
+        reasons.append(f"khop chat lieu {material}")
+    if not reasons:
+        reasons.append("khop voi ket qua tim kiem trong KB")
+    return ", ".join(reasons)
+
+
 def _product_title(product: Dict[str, Any]) -> str:
     name = _field(product, "product_name") or "Sản phẩm trong dữ liệu hiện có"
     pid = _field(product, "pid")
@@ -99,10 +112,13 @@ def render_listing_answer(query: str, products: Sequence[Dict[str, Any]], max_pr
         category = _field(product, "category")
         attrs = _attribute_line(product)
         source_url = _field(product, "source_url")
+        reason = _reason_line(product, query)
         if price:
             lines.append(f"   - Giá: {price}")
         if category:
             lines.append(f"   - Danh mục: {category}")
+        if reason:
+            lines.append(f"   - Phu hop vi: {reason}")
         if attrs:
             lines.append(f"   - Thuộc tính chính: {attrs}")
         if source_url:
@@ -110,6 +126,7 @@ def render_listing_answer(query: str, products: Sequence[Dict[str, Any]], max_pr
     lines.extend([
         "",
         "Lưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
+        "Ban muon minh loc tiep theo khoang gia, kich thuoc hay chat lieu khong?",
     ])
     return "\n".join(lines)
 

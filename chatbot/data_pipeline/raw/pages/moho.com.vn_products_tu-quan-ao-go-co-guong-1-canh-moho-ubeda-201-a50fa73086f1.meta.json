@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-quan-ao-go-co-guong-1-canh-moho-ubeda-201",
+  "final_url": "https://moho.com.vn/products/tu-quan-ao-go-co-guong-1-canh-moho-ubeda-201",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:32:04.571585+00:00",
+  "content_hash": "a50fa73086f1165be10fa933ef68e8a3dddcafb837a935ff868b53c9785bb89c",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:32:04 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "315558",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"ba3688910d644a21801bce514a9e712d\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:32:04 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1296",
+    "X-RequestId": "5fdfe03bdf250ff5903b5bbe56f165f3",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-quan-ao-go-co-guong-1-canh-moho-ubeda-201-a50fa73086f1.html"
+}

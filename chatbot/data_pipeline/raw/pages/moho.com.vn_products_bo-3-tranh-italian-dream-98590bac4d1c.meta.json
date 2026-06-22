@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/bo-3-tranh-italian-dream",
+  "final_url": "https://moho.com.vn/products/bo-3-tranh-italian-dream",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:34:56.411816+00:00",
+  "content_hash": "98590bac4d1c965ebf8e6202dcc448db890af0e36b8dc727cda18b88f63072f2",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:34:56 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "287354",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"147da4a2e3a64f0289af6b2c4d990766\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:34:56 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "730",
+    "X-RequestId": "f027dcf3f0d531431273ec07d723805f",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_bo-3-tranh-italian-dream-98590bac4d1c.html"
+}

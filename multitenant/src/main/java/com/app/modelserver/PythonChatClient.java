@@ -193,6 +193,18 @@ public class PythonChatClient {
                 .block();
     }
 
+    public void resetState(String baseUrl, String tenantId, String conversationId) {
+        client(baseUrl).post()
+                .uri("/state/reset")
+                .bodyValue(Map.of(
+                        "tenant_id", tenantId,
+                        "conversation_id", conversationId
+                ))
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+    }
+
     private ChatbotUpstreamException classify(
             String baseUrl,
             String tenantId,

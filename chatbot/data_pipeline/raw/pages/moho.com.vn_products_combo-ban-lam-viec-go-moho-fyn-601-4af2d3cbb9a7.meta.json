@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/combo-ban-lam-viec-go-moho-fyn-601",
+  "final_url": "https://moho.com.vn/products/combo-ban-lam-viec-go-moho-fyn-601",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:43:47.812818+00:00",
+  "content_hash": "4af2d3cbb9a75f17feacd8eb27b20e2f0474d53a469e85c1381c29a9763c7f73",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:43:47 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "331452",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"3da2e3b142a748b7a5efdc26c10900f1\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:43:47 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "878",
+    "X-RequestId": "9d0e0bd1830ed67748b7708db7a12bc5",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_combo-ban-lam-viec-go-moho-fyn-601-4af2d3cbb9a7.html"
+}

@@ -5,14 +5,16 @@ import com.app.modelserver.LlmProperties;
 import com.app.ops.dto.KbRebuildHistoryItemDto;
 import com.app.tenants.Tenant;
 import com.app.tenants.TenantRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Path;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -22,6 +24,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 @Service
 public class TenantKbRebuildService {
@@ -48,19 +52,25 @@ public class TenantKbRebuildService {
     private final LlmInstanceManager llmInstanceManager;
     private final TenantKbRebuildStatusService tenantKbRebuildStatusService;
     private final TenantKbVersionRepository tenantKbVersionRepository;
+    private final TenantKbSourceService tenantKbSourceService;
+    private final ObjectMapper objectMapper;
 
     public TenantKbRebuildService(
             TenantRepository tenantRepository,
             LlmProperties llmProperties,
             LlmInstanceManager llmInstanceManager,
             TenantKbRebuildStatusService tenantKbRebuildStatusService,
-            TenantKbVersionRepository tenantKbVersionRepository
+            TenantKbVersionRepository tenantKbVersionRepository,
+            TenantKbSourceService tenantKbSourceService,
+            ObjectMapper objectMapper
     ) {
         this.tenantRepository = tenantRepository;
         this.llmProperties = llmProperties;
         this.llmInstanceManager = llmInstanceManager;
         this.tenantKbRebuildStatusService = tenantKbRebuildStatusService;
         this.tenantKbVersionRepository = tenantKbVersionRepository;
+        this.tenantKbSourceService = tenantKbSourceService;
+        this.objectMapper = objectMapper;
     }
 
     public RebuildResponse rebuild(UUID tenantId) {
@@ -78,49 +88,37 @@ public class TenantKbRebuildService {
 
         Path rootKbDir = Path.of(kbDirValue).toAbsolutePath().normalize();
         Path rootRawUrls = rootKbDir.resolve("raw_urls.txt");
+        Path sourceManifest = tenantKbSourceService.sourceManifestPath(tenantId);
         Instant startedAt = Instant.now();
         String versionTag = nextVersionTag(tenantId, startedAt);
         Path versionDir = rootKbDir.resolve("versions").resolve(versionTag).normalize();
-        Path rawUrls = versionDir.resolve("raw_urls.txt");
-        Path docsJsonl = versionDir.resolve("docs.jsonl");
+        Path versionRawUrls = versionDir.resolve("raw_urls.txt");
+        Path versionManifest = versionDir.resolve("source_manifest.json");
         Path chunksJsonl = versionDir.resolve("chunks.jsonl");
-        Path indexJson = versionDir.resolve("index.json");
+        Path productsJsonl = versionDir.resolve("products.jsonl");
 
-        prepareVersionDirectory(versionDir, rootRawUrls, rawUrls);
+        prepareVersionDirectory(versionDir, rootRawUrls, versionRawUrls, sourceManifest, versionManifest, tenantId);
 
-        String shop = rootKbDir.getFileName() == null ? tenant.getCode() : rootKbDir.getFileName().toString();
-        TenantKbVersion kbVersion = createStartedVersion(tenantId, versionTag, versionDir, rootRawUrls);
+        TenantKbVersion kbVersion = createStartedVersion(tenantId, versionTag, versionDir, sourceManifest);
         tenantKbRebuildStatusService.markStarted(tenantId, startedAt, "KB rebuild started");
 
         try {
-            runCommand(
+            Path kbBase = rootKbDir.getParent();
+            if (kbBase == null) {
+                throw new IllegalStateException("Tenant kb_dir parent is invalid");
+            }
+            ScriptResult scriptResult = runRebuildScript(
                     chatbotDir,
-                    List.of(
-                            llmProperties.getPythonBin(),
-                            "tools/scrape_site.py",
-                            shop,
-                            rawUrls.toString(),
-                            docsJsonl.toString()
-                    ),
-                    "KB scrape failed"
-            );
-
-            runCommand(
-                    chatbotDir,
-                    List.of(
-                            llmProperties.getPythonBin(),
-                            "tools/build_kb.py",
-                            docsJsonl.toString(),
-                            chunksJsonl.toString(),
-                            indexJson.toString()
-                    ),
-                    "KB build failed"
+                    tenant.getCode(),
+                    sourceManifest,
+                    kbBase.toAbsolutePath().normalize(),
+                    versionTag
             );
 
             llmInstanceManager.evictTenant(tenantId);
             Instant finishedAt = Instant.now();
             String message = "KB rebuilt successfully. The next tenant chat request will start with the updated KB.";
-            markVersionReady(kbVersion, finishedAt, message, chunksJsonl, docsJsonl);
+            markVersionReady(kbVersion, finishedAt, message, chunksJsonl, productsJsonl, scriptResult);
             tenantKbRebuildStatusService.markFinished(tenantId, startedAt, finishedAt, "SUCCESS", message);
 
             return new RebuildResponse(
@@ -141,25 +139,39 @@ public class TenantKbRebuildService {
         }
     }
 
-    private void prepareVersionDirectory(Path versionDir, Path rootRawUrls, Path versionRawUrls) {
+    private void prepareVersionDirectory(
+            Path versionDir,
+            Path rootRawUrls,
+            Path versionRawUrls,
+            Path rootManifest,
+            Path versionManifest,
+            UUID tenantId
+    ) {
         try {
             Files.createDirectories(versionDir);
             if (Files.exists(rootRawUrls)) {
-                Files.copy(rootRawUrls, versionRawUrls, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(rootRawUrls, versionRawUrls, REPLACE_EXISTING);
             } else {
                 Files.writeString(versionRawUrls, "");
+            }
+            if (Files.exists(rootManifest)) {
+                Files.copy(rootManifest, versionManifest, REPLACE_EXISTING);
+            } else {
+                TenantKbSourceService.SourceManifest manifest = tenantKbSourceService.readManifest(tenantId);
+                objectMapper.writerWithDefaultPrettyPrinter().writeValue(versionManifest.toFile(), manifest);
             }
         } catch (IOException e) {
             throw new IllegalStateException("Unable to prepare KB version directory: " + versionDir);
         }
     }
 
-    private TenantKbVersion createStartedVersion(UUID tenantId, String versionTag, Path versionDir, Path rootRawUrls) {
+    private TenantKbVersion createStartedVersion(UUID tenantId, String versionTag, Path versionDir, Path sourceManifest) {
         TenantKbVersion version = new TenantKbVersion();
         version.setTenantId(tenantId);
         version.setVersionTag(versionTag);
         version.setKbDir(versionDir.toAbsolutePath().normalize().toString());
-        version.setSourceUrlSnapshot(readSourceUrlSnapshot(rootRawUrls));
+        version.setSourceUrlSnapshot(readSourceSnapshot(sourceManifest));
+        version.setSourceType("PRODUCT_DATASET");
         version.setStatus(TenantKbVersionStatus.BUILDING);
         version.setBuildMessage("Rebuild started");
         return tenantKbVersionRepository.save(version);
@@ -176,34 +188,51 @@ public class TenantKbRebuildService {
         return candidate;
     }
 
-    private String readSourceUrlSnapshot(Path rawUrls) {
-        if (!Files.exists(rawUrls)) {
-            return "[]";
+    private String readSourceSnapshot(Path sourceManifest) {
+        if (!Files.exists(sourceManifest)) {
+            return "{}";
         }
         try {
-            List<String> urls = Files.readAllLines(rawUrls).stream()
-                    .map(String::trim)
-                    .filter(line -> !line.isBlank())
-                    .toList();
-            return toJsonArray(urls);
+            return Files.readString(sourceManifest);
         } catch (IOException ignored) {
-            return "[]";
+            return "{}";
         }
     }
 
-    private String toJsonArray(List<String> values) {
-        return values.stream()
-                .map(value -> "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
-                .reduce((left, right) -> left + "," + right)
-                .map(json -> "[" + json + "]")
-                .orElse("[]");
+    private ScriptResult runRebuildScript(
+            File chatbotDir,
+            String tenantCode,
+            Path sourceManifest,
+            Path kbBase,
+            String versionTag
+    ) {
+        List<String> command = List.of(
+                llmProperties.getPythonBin(),
+                "tools/rebuild_tenant_product_kb.py",
+                "--tenant-code", tenantCode,
+                "--source-manifest", sourceManifest.toString(),
+                "--kb-base", kbBase.toString(),
+                "--version-tag", versionTag,
+                "--dataset-id", tenantCode + "-" + versionTag
+        );
+        return runCommand(chatbotDir, command, "KB rebuild failed");
     }
 
-    private void markVersionReady(TenantKbVersion version, Instant finishedAt, String message, Path chunksJsonl, Path docsJsonl) {
+    private void markVersionReady(
+            TenantKbVersion version,
+            Instant finishedAt,
+            String message,
+            Path chunksJsonl,
+            Path productsJsonl,
+            ScriptResult scriptResult
+    ) {
         version.setStatus(TenantKbVersionStatus.READY);
         version.setBuiltAt(finishedAt);
         version.setBuildMessage(message);
-        version.setArtifactCount(countArtifactLines(chunksJsonl, docsJsonl));
+        version.setArtifactCount(scriptResult.chunkCount() != null ? scriptResult.chunkCount() : countArtifactLines(chunksJsonl, productsJsonl));
+        version.setDatasetId(scriptResult.datasetId());
+        version.setSourceType(scriptResult.sourceType() == null ? "PRODUCT_DATASET" : scriptResult.sourceType());
+        version.setSourceUrlSnapshot(scriptResult.sourceSnapshot() == null ? version.getSourceUrlSnapshot() : scriptResult.sourceSnapshot());
         tenantKbVersionRepository.save(version);
     }
 
@@ -214,12 +243,12 @@ public class TenantKbRebuildService {
         tenantKbVersionRepository.save(version);
     }
 
-    private Integer countArtifactLines(Path chunksJsonl, Path docsJsonl) {
+    private Integer countArtifactLines(Path chunksJsonl, Path productsJsonl) {
         Integer chunks = countLines(chunksJsonl);
         if (chunks != null) {
             return chunks;
         }
-        return countLines(docsJsonl);
+        return countLines(productsJsonl);
     }
 
     private Integer countLines(Path path) {
@@ -267,8 +296,9 @@ public class TenantKbRebuildService {
 
         Path kbDir = Path.of(kbDirValue).normalize();
         List<Path> artifactPaths = List.of(
+                kbDir.resolve("source_manifest.json"),
                 kbDir.resolve("raw_urls.txt"),
-                kbDir.resolve("docs.jsonl"),
+                kbDir.resolve("products.jsonl"),
                 kbDir.resolve("chunks.jsonl"),
                 kbDir.resolve("index.json")
         );
@@ -300,7 +330,7 @@ public class TenantKbRebuildService {
         );
     }
 
-    private void runCommand(File workingDir, List<String> command, String failurePrefix) {
+    private ScriptResult runCommand(File workingDir, List<String> command, String failurePrefix) {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.directory(workingDir);
         processBuilder.redirectErrorStream(true);
@@ -311,9 +341,7 @@ public class TenantKbRebuildService {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    if (output.size() < 20) {
-                        output.add(line);
-                    }
+                    output.add(line);
                 }
             }
 
@@ -321,6 +349,7 @@ public class TenantKbRebuildService {
             if (exitCode != 0) {
                 throw new IllegalStateException(failurePrefix + ": " + summarizeOutput(output));
             }
+            return parseScriptResult(output);
         } catch (IOException e) {
             throw new IllegalStateException(failurePrefix + ": unable to start Python tooling");
         } catch (InterruptedException e) {
@@ -329,11 +358,51 @@ public class TenantKbRebuildService {
         }
     }
 
+    private ScriptResult parseScriptResult(List<String> output) {
+        String jsonLine = output.stream()
+                .map(String::trim)
+                .filter(line -> line.startsWith("{") && line.endsWith("}"))
+                .reduce((first, second) -> second)
+                .orElse(null);
+        if (jsonLine == null) {
+            return new ScriptResult(null, null, null, null);
+        }
+        try {
+            JsonNode root = objectMapper.readTree(jsonLine);
+            JsonNode sourceSnapshotNode = root.path("source_url_snapshot");
+            String sourceSnapshot = sourceSnapshotNode.isMissingNode() || sourceSnapshotNode.isNull()
+                    ? null
+                    : objectMapper.writeValueAsString(sourceSnapshotNode);
+            return new ScriptResult(
+                    text(root, "dataset_id"),
+                    intValue(root, "chunk_count"),
+                    text(root, "source_type"),
+                    sourceSnapshot
+            );
+        } catch (IOException ignored) {
+            return new ScriptResult(null, null, null, null);
+        }
+    }
+
+    private String text(JsonNode node, String field) {
+        JsonNode value = node.path(field);
+        if (value.isMissingNode() || value.isNull()) {
+            return null;
+        }
+        String text = value.asText();
+        return text == null || text.isBlank() ? null : text;
+    }
+
+    private Integer intValue(JsonNode node, String field) {
+        JsonNode value = node.path(field);
+        return value.isNumber() ? value.asInt() : null;
+    }
+
     private String summarizeOutput(List<String> output) {
         if (output.isEmpty()) {
             return "no output";
         }
-        return String.join(" | ", output).trim();
+        return String.join(" | ", output.stream().limit(20).toList()).trim();
     }
 
     private FileTime safeLastModified(Path path) {
@@ -352,6 +421,14 @@ public class TenantKbRebuildService {
             Instant lastRebuildFinishedAt,
             String lastRebuildStatus,
             String lastRebuildMessage
+    ) {
+    }
+
+    private record ScriptResult(
+            String datasetId,
+            Integer chunkCount,
+            String sourceType,
+            String sourceSnapshot
     ) {
     }
 }

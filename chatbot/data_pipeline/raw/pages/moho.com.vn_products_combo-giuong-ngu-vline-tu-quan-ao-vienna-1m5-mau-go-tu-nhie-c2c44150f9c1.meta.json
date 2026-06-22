@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/combo-giuong-ngu-vline-tu-quan-ao-vienna-1m5-mau-go-tu-nhien",
+  "final_url": "https://moho.com.vn/products/combo-giuong-ngu-vline-tu-quan-ao-vienna-1m5-mau-go-tu-nhien",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:28:10.884144+00:00",
+  "content_hash": "c2c44150f9c12cfaad07718a9bc1151a545ff26b49dbe0a9da0f4918facbdd82",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:28:10 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "345723",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"0d7b826c8ad043f68eeac4eee9104f2d\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:28:10 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1298",
+    "X-RequestId": "41439c4557eb86be63425ca730f4d9f8",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_combo-giuong-ngu-vline-tu-quan-ao-vienna-1m5-mau-go-tu-nhie-c2c44150f9c1.html"
+}

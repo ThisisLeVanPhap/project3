@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ban-sofa-moho-koster-mau-nau",
+  "final_url": "https://moho.com.vn/products/ban-sofa-moho-koster-mau-nau",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:31:13.167883+00:00",
+  "content_hash": "db96f6725f6dcc9d1dd515a44e09b20fab0a4e2dce2dc9f1d68e2dec19a29246",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:31:12 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "314794",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"29d3a2fa5e1b45319132d771a4daad7e\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:31:12 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1110",
+    "X-RequestId": "74fc92745000a6ac596edc461bc5bb0e",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ban-sofa-moho-koster-mau-nau-db96f6725f6d.html"
+}

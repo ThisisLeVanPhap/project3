@@ -1,0 +1,44 @@
+{
+  "verify_method": "lazy-load verification (publish -> desired, chat -> running)",
+  "tenant": {
+    "id": "6c2cf829-5ff7-4df0-b5ec-aacb94da7c6b",
+    "code": "datn_demo_moho",
+    "kbDir": "F:\\20251\\prj3\\chatbot\\kb\\datn_demo_moho"
+  },
+  "rebuilt_version": {
+    "version_id": "f6dcec58-dd9f-42f1-9c34-357ba2cc4998",
+    "version_tag": "v20260616173418",
+    "kb_dir": "F:\\20251\\prj3\\chatbot\\kb\\datn_demo_moho\\versions\\v20260616173418"
+  },
+  "phase_after_publish": {
+    "desired_version_id": "f6dcec58-dd9f-42f1-9c34-357ba2cc4998",
+    "desired_version_tag": "v20260616173418",
+    "running_present": false,
+    "running_version_id": null,
+    "running_version_tag": null,
+    "in_sync": false,
+    "expected": "desired must point to new version; running may still be absent or stale until chat"
+  },
+  "phase_after_chat": {
+    "chat_status": 200,
+    "llm_base_url": "http://127.0.0.1:8101",
+    "chat_model": "rule",
+    "desired_version_id": "f6dcec58-dd9f-42f1-9c34-357ba2cc4998",
+    "desired_version_tag": "v20260616173418",
+    "running_present": true,
+    "running_version_id": "f6dcec58-dd9f-42f1-9c34-357ba2cc4998",
+    "running_version_tag": "v20260616173418",
+    "running_kb_dir": null,
+    "running_mode": null,
+    "running_process_alive": null,
+    "in_sync": true,
+    "expected": "after real chat, running snapshot should exist and should be consistent with desired when fields are exposed"
+  },
+  "evidence_files": {
+    "rebuild_response": "tmp\\kb_lazy_verify_rebuild_response.json",
+    "publish_response": "tmp\\kb_lazy_verify_publish_response.json",
+    "runtime_status_after_publish": "tmp\\kb_lazy_verify_runtime_status_after_publish.json",
+    "chat_response": "tmp\\kb_lazy_verify_chat_response.json",
+    "runtime_status_after_chat": "tmp\\kb_lazy_verify_runtime_status_after_chat.json"
+  }
+}

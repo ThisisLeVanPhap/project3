@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-quan-ao-go-ke-ngan-moho-vienna-201-4-mau",
+  "final_url": "https://moho.com.vn/products/tu-quan-ao-go-ke-ngan-moho-vienna-201-4-mau",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:28:57.248909+00:00",
+  "content_hash": "9f8e1f894994d33b1ba0b2f492168c1d86c2a2567ddd4d79ee0bb2c28ae80c86",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:28:56 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "361824",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"468014410262464296ddcf6766eef728\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:28:56 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1371",
+    "X-RequestId": "60405f8161912f3d316ff66f700b4b90",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-quan-ao-go-ke-ngan-moho-vienna-201-4-mau-9f8e1f894994.html"
+}

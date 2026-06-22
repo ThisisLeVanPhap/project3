@@ -1,0 +1,10 @@
+﻿{
+    "id":  "10000000-0000-4000-8000-000000000102",
+    "code":  "datn_demo_moho",
+    "name":  "DEMO - MOHO Demo",
+    "kbDir":  "/opt/app/chatbot/kb/datn_demo_moho",
+    "status":  "ACTIVE",
+    "active_kb_version_id":  null,
+    "active_kb_version_tag":  null,
+    "active_kb_dir":  null
+}

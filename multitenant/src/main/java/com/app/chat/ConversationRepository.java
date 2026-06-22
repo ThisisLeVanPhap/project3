@@ -21,11 +21,28 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
             String userExternalId
     );
 
+    Optional<Conversation> findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+            UUID tenantId,
+            UUID chatbotId,
+            String userExternalId,
+            String status
+    );
+
     Optional<Conversation> findTop1ByTenantIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
             UUID tenantId,
             String userExternalId,
             String status
     );
+
+    List<Conversation> findByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+            UUID tenantId,
+            UUID chatbotId,
+            String userExternalId,
+            String status
+    );
+
+    // ✅ NEW: find all conversations for a unified customer (CRM integration)
+    List<Conversation> findByTenantIdAndUnifiedCustomerId(UUID tenantId, UUID unifiedCustomerId);
 
     // New: list conversations for a chatbot (for web chat sidebar)
     List<Conversation> findTop50ByTenantIdAndChatbotIdOrderByCreatedAtDesc(UUID tenantId, UUID chatbotId);

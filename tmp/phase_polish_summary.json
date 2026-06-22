@@ -1,0 +1,76 @@
+{
+  "product_dataset_registry": {
+    "dataset_present": true,
+    "artifact_present": true,
+    "artifact_6070": true,
+    "build_action_endpoint": "POST /api/admin/product-datasets/d2e1a56d-6a24-438f-9452-6b9a2c62f4aa/artifacts/build",
+    "bind_action_endpoint": "POST /api/admin/product-datasets/kb-bindings/bind"
+  },
+  "tenant_management": {
+    "tenant_present": true,
+    "active_kb_version_present": true,
+    "active_kb_dir_points_to_dataset_artifact": true,
+    "fallback_kb_dir_legacy": true,
+    "unbind_action_endpoint": "POST /api/admin/product-datasets/kb-bindings/unbind"
+  },
+  "runtime_before": {
+    "tenant_id": "10000000-0000-4000-8000-000000000102",
+    "desired": {
+      "kb_dir": "/opt/app/chatbot/kb/datasets/gotrangtri-20260610/dataset-20260620191737-gotrangtri-20260610",
+      "source": "ACTIVE_VERSION",
+      "version_id": "bf9e9c73-ba70-47fd-b5fe-061da7030eda",
+      "version_tag": "dataset-20260620193509-artifact-767a5866",
+      "fallback_reason": null
+    },
+    "running": null,
+    "in_sync": false
+  },
+  "runtime_after": {
+    "tenant_id": "10000000-0000-4000-8000-000000000102",
+    "desired": {
+      "kb_dir": "/opt/app/chatbot/kb/datasets/gotrangtri-20260610/dataset-20260620191737-gotrangtri-20260610",
+      "source": "ACTIVE_VERSION",
+      "version_id": "bf9e9c73-ba70-47fd-b5fe-061da7030eda",
+      "version_tag": "dataset-20260620193509-artifact-767a5866",
+      "fallback_reason": null
+    },
+    "running": {
+      "mode": "JAVA_SPAWNED",
+      "kb_dir": "/opt/app/chatbot/kb/datasets/gotrangtri-20260610/dataset-20260620191737-gotrangtri-20260610",
+      "source": "ACTIVE_VERSION",
+      "version_id": "bf9e9c73-ba70-47fd-b5fe-061da7030eda",
+      "version_tag": "dataset-20260620193509-artifact-767a5866",
+      "started_at": "2026-06-21T03:09:48.845166051Z",
+      "last_used_at": "2026-06-21T03:09:57.302200667Z",
+      "process_alive": true,
+      "pid": 76,
+      "note": null,
+      "ready": null,
+      "kb_loaded": null,
+      "retrieval_mode": null
+    },
+    "in_sync": true
+  },
+  "chat_messages": [
+    {
+      "key": "new",
+      "status": 200,
+      "answer_preview": "{'reply': 'Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.', 'newConversationId': '2037e088-87f7-4feb-8879-0c040caaf637', 'latencyMs': 0, 'model': 'system', 'adapter': '', 'llmBaseUrl': ''}"
+    },
+    {
+      "key": "tu_quan_ao",
+      "status": 200,
+      "answer_preview": "{'reply': 'Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\\n\\n1. Tủ quần áo hiện đại thiết kế tối giản GHS-51904 [P1]\\n   - Giá: 23.400.000 VND\\n   - Danh mục: Tủ\\n   - Phu hop vi: khop nhom Tủ\\n   - Thuộc tính chính: Kích thước: 80x55x244cm; SKU: GHS-51904; Trạng thái trên trang sản phẩm: InStock\\n   - Link nguồn: https://gotrangtri.vn/shop/tu-quan-ao-hien-dai-thiet-ke-toi-gian-ghs-51904\\n\\n2. Tủ quần áo chữ L GHS-5269 tối ưu góc chết phòng ngủ [P2]\\n   - Giá: 22.800.000 VND\\n   - Danh mục: Tủ\\n   - Phu hop vi: khop nhom Tủ\\n   - Thuộc tính chính: Kích thước: 1400x600x2400mm; Trạ"
+    },
+    {
+      "key": "ban_lam_viec",
+      "status": 200,
+      "answer_preview": "{'reply': 'Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\\n\\n1. Thiết kế phòng ngủ nhỏ có bàn làm việc GHS-9415 [P1]\\n   - Giá: 29.300.000 VND\\n   - Danh mục: Bàn làm việc\\n   - Phu hop vi: khop nhom Bàn làm việc\\n   - Thuộc tính chính: Kích thước: 1200x550x750mm; SKU: GHS-9415; Trạng thái trên trang sản phẩm: InStock\\n   - Link nguồn: https://gotrangtri.vn/shop/thiet-ke-phong-ngu-nho-co-ban-lam-viec-ghs-9415\\n\\n2. Bàn làm việc văn phòng kết hợp tủ phụ GHS-41470 [P2]\\n   - Giá: 3.200.000 VND\\n   - Danh mục: Bàn làm việc\\n   - Phu hop vi: khop nhom Bàn làm việc\\n   - Thuộc tính ch"
+    },
+    {
+      "key": "sofa",
+      "status": 200,
+      "answer_preview": "{'reply': 'Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\\n\\n1. Ghế sofa phòng khách thiết kế nhỏ gọn hiện đại GHS-8331 [P1]\\n   - Giá: 9.100.000 VND\\n   - Danh mục: Sofa\\n   - Phu hop vi: khop nhom Sofa\\n   - Thuộc tính chính: Chất liệu: khung gỗ tự nhiên 100%, lò xo lưới, mút mềm K43 và vải nỉ bọc cao cấp; Màu sắc: khách hàng tùy ý lựa chọn mẫu vải tại cửa hàng; Kích thước: 580 x 470 x 425mm; SKU: GHS-8331; Trạng thái trên trang sản phẩm: InStock\\n   - Link nguồn: https://gotrangtri.vn/shop/ghe-sofa-phong-khach-thiet-ke-nho-gon-hien-dai-ghs-8331\\n\\n2. Bàn sofa hiện đại bằng gỗ "
+    }
+  ]
+}

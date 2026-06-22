@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/set-set-tu-quan-ao-go-moho-dalumd-4-canh-dai-2m4-mau-nau-hanh-nhan",
+  "final_url": "https://moho.com.vn/products/set-set-tu-quan-ao-go-moho-dalumd-4-canh-dai-2m4-mau-nau-hanh-nhan",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:04:19.932375+00:00",
+  "content_hash": "c0c33c5ba6b7bcc5f7af0db7ba4dd7656845b3768e0d28dc94a3de8855b57426",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:04:19 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "332790",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"27ae47118041431b9ddf636d5db29c86\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:04:19 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1169",
+    "X-RequestId": "339669beecd17c1e1d455fccf5f72aea",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_set-set-tu-quan-ao-go-moho-dalumd-4-canh-dai-2m4-mau-nau-ha-c0c33c5ba6b7.html"
+}

@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/combo-phong-an-hobro-basic",
+  "final_url": "https://moho.com.vn/products/combo-phong-an-hobro-basic",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:30:11.163011+00:00",
+  "content_hash": "7bc9fdee0bf613aa0b1cb51141e9855f23b141be4326f6d08ab8f6bb692b9221",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:30:10 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "340399",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"4ab931b73b3c48efbeba631dd8657639\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:30:10 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1240",
+    "X-RequestId": "b94c4415ee248627d3adf59fc9e5217b",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_combo-phong-an-hobro-basic-7bc9fdee0bf6.html"
+}

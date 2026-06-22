@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/bo-ban-an-go-6-ghe-cao-su-moho-oslo-601",
+  "final_url": "https://moho.com.vn/products/bo-ban-an-go-6-ghe-cao-su-moho-oslo-601",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:50:52.036010+00:00",
+  "content_hash": "588d84893d19efdead1ed254ca31305e4972eb018b94f62dd7e173c5fef0e45d",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:50:51 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "394060",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"d3cd6954e0da4652a786d11bcfd20378\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:50:51 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82977",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1578",
+    "X-RequestId": "de6ef46dd2f359270dbafa5534e0b2c4",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_bo-ban-an-go-6-ghe-cao-su-moho-oslo-601-588d84893d19.html"
+}

@@ -17,12 +17,14 @@ from .logger import log_event, log_feedback, log_retrieval_debug
 from .state import get_state, save_turn, set_stage, reset_state
 from .sales_flow import extract_slots, next_stage, build_sales_prefix, detect_intent, has_sufficient_constraints
 from .purchase_request import build_purchase_request_draft
+from .purchase_intent_score import score_purchase_intent, should_create_purchase_request_draft
 from .sales_handoff import InMemorySalesHandoffService, StoredSalesHandoffService, build_sales_handoff_service
 from .sales_response_renderer import render_sales_response
 from .sales_slots import extract_sales_slots
 from .sales_state import (
     SalesConversationState,
     apply_message_to_state,
+    known_consultation_slots,
     resolve_product_reference,
     state_to_dict,
     update_recommended_products,
@@ -507,8 +509,10 @@ def _sales_debug_payload(
     payload = {
         "sales_mode": sales_mode,
         "sales_intents": slots.get("intents", []),
+        "nlu_intent": slots.get("nlu_intent") or getattr(state, "slots", {}).get("last_nlu_intent") if state else None,
         "lead_score": getattr(state, "lead_score", 0) if state else 0,
         "lead_status": getattr(state, "lead_status", "cold") if state else "cold",
+        "purchase_intent_score": getattr(state, "slots", {}).get("purchase_intent_score", 0) if state else 0,
         "selected_products": _safe_sales_products(list(getattr(state, "selected_products", []) or [])) if state else [],
         "last_recommended_count": len(getattr(state, "last_recommended_products", []) or []) if state else 0,
         "purchase_request_status": _purchase_request_status(state),
@@ -516,6 +520,11 @@ def _sales_debug_payload(
         "handoff_status": getattr(state, "handoff_status", "not_ready") if state else "not_ready",
         "handoff_id": getattr(state, "handoff_id", None) if state else None,
         "missing_fields": list(getattr(state, "missing_fields", []) or []) if state else [],
+        "current_stage": getattr(state, "current_stage", None) if state else None,
+        "known_slots": known_consultation_slots(state) if state else {},
+        "missing_slots": list(getattr(state, "slots", {}).get("consultation_missing_slots", []) or []) if state else [],
+        "next_best_action": getattr(state, "slots", {}).get("next_best_action") if state else None,
+        "objection_type": (slots.get("objection_type") or getattr(state, "slots", {}).get("objection_type")) if state else None,
         "handoff_required": bool(getattr(state, "handoff_required", False)) if state else False,
         "sales_action_taken": action,
         "sales_state_persistent": persistent,
@@ -537,8 +546,14 @@ def _sales_action_from_state(
     status = (draft or {}).get("status")
     if "cancel" in intents:
         return "cancelled"
+    if not slots.get("is_product_reference_question") and not slots.get("has_product_reference") and (slots.get("objection_type") or state.slots.get("objection_type")):
+        return "handle_objection"
     if "handoff_request" in intents:
         return "handoff"
+    if state.current_stage == "discover" and state.slots.get("next_best_action") == "ask_discovery_question":
+        return "ask_discovery"
+    if "purchase_intent" in intents and not state.selected_products and (state.slots.get("product_type") or state.slots.get("product_category")) and state.slots.get("consultation_missing_slots"):
+        return "ask_discovery"
     if status == "draft" and ("purchase_intent" in intents or "contact_provided" in intents):
         return "ask_confirmation"
     if status == "needs_contact" and "purchase_intent" in intents:
@@ -1173,10 +1188,22 @@ class FeedbackReq(BaseModel):
     note: Optional[str] = ""
 
 
+class StateResetReq(BaseModel):
+    tenant_id: Optional[str] = None
+    conversation_id: str
+
+
 @app.post("/feedback")
 def feedback(req: FeedbackReq):
     log_feedback(req.model_dump())
     return {"ok": True}
+
+
+@app.post("/state/reset")
+def reset_runtime_state(req: StateResetReq):
+    reset_state(req.conversation_id)
+    _clear_sales_state(req.tenant_id, req.conversation_id)
+    return {"ok": True, "conversation_id": req.conversation_id}
 
 
 @app.post("/chat", response_model=ChatResp)
@@ -1360,10 +1387,24 @@ def chat(req: ChatReq):
         sales_result = apply_message_to_state(sales_state, req.message)
         sales_slots_for_action = sales_result.get("slots") or {}
         sales_intents_for_action = sales_slots_for_action.get("intents") or []
+        scored_purchase = score_purchase_intent(
+            sales_slots_for_action,
+            has_selected_product=bool(sales_state.selected_products),
+            has_contact=bool(sales_state.contact),
+            has_address=bool(sales_state.slots.get("address") or sales_state.slots.get("location") or sales_state.slots.get("delivery_area")),
+        )
+        sales_state.slots["purchase_intent_score"] = scored_purchase.score
+        sales_state.slots["purchase_intent_signals"] = scored_purchase.signals
+        can_create_scored_draft = should_create_purchase_request_draft(
+            sales_slots_for_action,
+            has_selected_product=bool(sales_state.selected_products),
+            has_contact=bool(sales_state.contact),
+        )
         should_build_sales_draft = (
             "cancel" in sales_intents_for_action
             or "handoff_request" in sales_intents_for_action
             or "purchase_intent" in sales_intents_for_action
+            or can_create_scored_draft
             or (
                 "contact_provided" in sales_intents_for_action
                 and previous_purchase_status in {"needs_contact", "draft"}
@@ -1777,7 +1818,12 @@ def chat(req: ChatReq):
     else:
         raise HTTPException(status_code=422, detail=f"Unsupported provider: {provider}")
 
-    resp = out.strip() if out else "Sorry, I couldn't process that request right now."
+    resp = out.strip() if out else ""
+    if not resp and provider == "claude" and context:
+        resp = render_product_answer(req.message, context)
+        debug_trace["fallback_answer_mode"] = "product-template"
+    if not resp:
+        resp = "Sorry, I couldn't process that request right now."
 
     # Keep answers concise, but not too short for consultative flow
     if response_model != "structured_price":

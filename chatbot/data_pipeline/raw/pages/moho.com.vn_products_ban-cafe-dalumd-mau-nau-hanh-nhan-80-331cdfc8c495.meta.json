@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ban-cafe-dalumd-mau-nau-hanh-nhan-80",
+  "final_url": "https://moho.com.vn/products/ban-cafe-dalumd-mau-nau-hanh-nhan-80",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:44:47.640955+00:00",
+  "content_hash": "331cdfc8c495124c17efa60a7646e908423f80e087082c5d3ba975bbe62ade0d",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:44:47 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "321127",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"1b21f9c28f904bde8f42f1dabea36795\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:44:47 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1062",
+    "X-RequestId": "883f18f1e55cc5d1547a0762668b2ff9",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ban-cafe-dalumd-mau-nau-hanh-nhan-80-331cdfc8c495.html"
+}

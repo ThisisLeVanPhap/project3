@@ -31,6 +31,7 @@ const state = {
     selectedOnboardingRequestId: null,
     messengerBindings: [],
     productDatasets: [],
+    productDatasetArtifacts: {},
     selectedProductDataset: null,
     activeKbDirectory: null,
     kbVersions: [],
@@ -46,7 +47,7 @@ const PRIMARY_GROUPS = {
     chatbotChannels: ["chatbots", "bindings", "messenger-status", "telegram-status"],
     knowledgeBase: ["kb-dirs", "kb-versions", "kb-rebuild", "product-datasets"],
     businessData: ["leads", "purchase-requests"],
-    operations: ["runtime", "health", "benchmark", "dev-debug"]
+    operations: ["runtime", "reset-conversation", "health", "benchmark", "dev-debug"]
 };
 
 const DEFAULT_SUB_TABS = {
@@ -499,6 +500,8 @@ function tenantMatchesFilter(tenant, filter){
         tenant.name,
         tenant.status,
         tenant.kbDir || tenant.kb_dir,
+        tenant.activeKbDir || tenant.active_kb_dir,
+        tenant.activeKbVersionTag || tenant.active_kb_version_tag,
         tenant.activeKbVersionId || tenant.active_kb_version_id
     ]).includes(filter);
 }
@@ -547,7 +550,7 @@ function productDatasetBusinessId(dataset){
     return dataset?.dataset_id || dataset?.datasetId || dataset?.id || "";
 }
 
-function renderProductDatasetsTable(emptyMessage="Click Load datasets to refresh product dataset registry."){
+function renderProductDatasetsTable(emptyMessage="Click Load datasets to refresh product dataset registry. Raw crawl output will stay invisible here until it becomes a dataset folder with manifest.json and rag_products.jsonl."){
     const panel = $("productDatasetsTablePanel");
     if(!panel) return;
 
@@ -589,7 +592,8 @@ function renderProductDatasetsTable(emptyMessage="Click Load datasets to refresh
                             <td>
                                 <div class="table-actions dataset-actions">
                                     <button class="secondary" data-action="dataset-view">View</button>
-                                    <button class="secondary" data-action="dataset-assign">Assign to selected tenant</button>
+                                    <button class="secondary" data-action="dataset-artifacts">Artifacts</button>
+                                    <button class="secondary" data-action="dataset-build-artifact">Build KB Artifact</button>
                                     <button class="danger" data-action="dataset-delete">Delete record</button>
                                 </div>
                             </td>
@@ -650,23 +654,47 @@ function renderProductDatasetDetail(dataset){
     });
 }
 
-function renderProductDatasetAssignResult(result, datasetId){
+function renderProductDatasetArtifacts(datasetId, artifacts){
     const panel = $("productDatasetAssignPanel");
     if(!panel) return;
-    const tenant = state.selectedTenant;
+    const items = Array.isArray(artifacts) ? artifacts : [];
     panel.classList.remove("hidden");
     panel.innerHTML = `
         <div class="card2 assign-result-card">
-            <h3>Assign result</h3>
-            <div class="dataset-detail-grid">
-                <div class="dataset-detail-row"><div class="muted">Selected tenant</div><div class="dataset-detail-value">${escapeHtml(selectedTenantLabel() || result?.tenant_code || result?.tenantId || "-")}</div></div>
-                <div class="dataset-detail-row"><div class="muted">Tenant code</div><div class="dataset-detail-value">${escapeHtml(result?.tenant_code || tenant?.code || "-")}</div></div>
-                <div class="dataset-detail-row"><div class="muted">Dataset id</div><div class="dataset-detail-value">${escapeHtml(result?.dataset_id || result?.datasetId || datasetId)}</div></div>
-                <div class="dataset-detail-row"><div class="muted">KB dir</div><div class="dataset-detail-value">${escapeHtml(result?.kb_dir || result?.kbDir)}</div></div>
-                <div class="dataset-detail-row"><div class="muted">Chunk count</div><div class="dataset-detail-value">${escapeHtml(displayValue(result?.chunk_count ?? result?.chunkCount))}</div></div>
-                <div class="dataset-detail-row"><div class="muted">Tenant KB version</div><div class="dataset-detail-value">${escapeHtml(result?.version_tag || result?.versionTag || result?.kb_version_id || result?.kbVersionId)}</div></div>
-                <div class="dataset-detail-row"><div class="muted">Message</div><div class="dataset-detail-value">${escapeHtml(result?.message || (result?.success ? "Assigned successfully" : "-"))}</div></div>
-            </div>
+            <h3>KB artifacts</h3>
+            <div class="muted">Dataset: ${escapeHtml(datasetId || "-")}</div>
+            ${items.length ? `
+                <table class="table dataset-artifacts-table">
+                    <thead>
+                        <tr>
+                            <th>Build tag</th>
+                            <th>Status</th>
+                            <th>Chunks</th>
+                            <th>Quality</th>
+                            <th>Artifact path</th>
+                            <th>Built at</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${items.map(artifact => {
+                            const id = artifact.id || "";
+                            const status = artifact.status || "-";
+                            return `
+                                <tr data-artifact-id="${escapeHtml(id)}">
+                                    <td><b>${escapeHtml(artifact.build_tag || artifact.buildTag || "-")}</b><div class="muted">${escapeHtml(id)}</div></td>
+                                    <td>${renderDatasetStatusBadge(status)}</td>
+                                    <td>${escapeHtml(displayValue(artifact.artifact_count ?? artifact.artifactCount))}</td>
+                                    <td>${escapeHtml(artifact.quality_status || artifact.qualityStatus || "-")}</td>
+                                    <td class="table-preview dataset-path-preview" title="${escapeHtml(artifact.artifact_path || artifact.artifactPath || "")}">${escapeHtml(shortPreview(artifact.artifact_path || artifact.artifactPath, 72))}</td>
+                                    <td>${escapeHtml(fmtDateTime(artifact.built_at || artifact.builtAt) || "-")}</td>
+                                    <td><button class="secondary" data-action="artifact-bind" ${status !== "READY" ? "disabled" : ""}>Bind to selected tenant</button></td>
+                                </tr>
+                            `;
+                        }).join("")}
+                    </tbody>
+                </table>
+            ` : `<div class="panel-state empty">No KB artifacts yet. Build an artifact first.</div>`}
         </div>
     `;
 }
@@ -687,7 +715,7 @@ async function loadProductDatasets(){
         setJsonOutput("productDatasetsOut", r, true);
         if(r.ok && Array.isArray(r.data)){
             state.productDatasets = r.data;
-            renderProductDatasetsTable("No product datasets registered yet.");
+            renderProductDatasetsTable("No product datasets registered yet. If you already have crawl output, materialize it into a dataset folder with manifest.json and rag_products.jsonl first.");
             $("productDatasetsMsg").innerText = `Loaded ${state.productDatasets.length} dataset(s)`;
             return r;
         }
@@ -752,32 +780,83 @@ async function viewProductDataset(id){
     return null;
 }
 
-async function assignProductDataset(id){
+async function loadProductDatasetArtifacts(id){
+    if(!id){
+        $("productDatasetsMsg").innerText = "Missing dataset id";
+        return null;
+    }
+    const dataset = state.productDatasets.find(item => productDatasetRowId(item) === id) || state.selectedProductDataset;
+    const datasetId = productDatasetBusinessId(dataset) || id;
+    const r = await req("GET", `/api/admin/product-datasets/${encodeURIComponent(id)}/artifacts`, undefined, { tenantHeaders: false });
+    setJsonOutput("productDatasetsOut", r, true);
+    if(r.ok && Array.isArray(r.data)){
+        state.productDatasetArtifacts[id] = r.data;
+        renderProductDatasetArtifacts(datasetId, r.data);
+        $("productDatasetsMsg").innerText = `Loaded ${r.data.length} KB artifact(s)`;
+        return r;
+    }
+    $("productDatasetsMsg").innerText = r.data?.message || `Load KB artifacts failed (${r.status})`;
+    return r;
+}
+
+async function buildProductDatasetArtifact(id){
+    const dataset = state.productDatasets.find(item => productDatasetRowId(item) === id) || state.selectedProductDataset;
+    const datasetId = productDatasetBusinessId(dataset) || id;
+    if(!window.confirm(`Build tenant-independent KB artifact for dataset ${datasetId}? This will not change any tenant unless AUTO_USE_LATEST bindings exist.`)){
+        return null;
+    }
+    $("productDatasetsMsg").innerText = "Building KB artifact...";
+    const r = await req("POST", `/api/admin/product-datasets/${encodeURIComponent(id)}/artifacts/build`, undefined, { tenantHeaders: false });
+    setJsonOutput("productDatasetsOut", r, true);
+    if(r.ok){
+        $("productDatasetsMsg").innerText = `Built KB artifact ${r.data?.build_tag || r.data?.buildTag || ""}`;
+        await Promise.allSettled([loadProductDatasetArtifacts(id), loadKbVersions(), loadActiveKbDirectory(), loadKbRuntimeStatus(), loadTenants(false)]);
+        return r;
+    }
+    $("productDatasetsMsg").innerText = r.data?.message || `Build KB artifact failed (${r.status})`;
+    return r;
+}
+
+async function bindArtifactToSelectedTenant(artifactId){
     if(!state.selectedTenant){
-        $("productDatasetsMsg").innerText = "No tenant selected. Go to Tenant Management -> Tenants and click Select/Use tenant before assigning a dataset.";
+        $("productDatasetsMsg").innerText = "No tenant selected. Go to Tenant Management -> Tenants and click Select/Use tenant before binding an artifact.";
         renderSelectedTenantNotice("productDatasetsTenantNotice");
         return null;
     }
-
-    const dataset = state.productDatasets.find(item => productDatasetRowId(item) === id) || state.selectedProductDataset;
-    const datasetId = productDatasetBusinessId(dataset) || id;
-    if(!window.confirm(`Assign dataset ${datasetId} to tenant ${selectedTenantLabel()}?`)){
+    if(!window.confirm(`Bind KB artifact to tenant ${selectedTenantLabel()}? Runtime will be evicted so the tenant can load the new active KB.`)){
         return null;
     }
-
     const body = state.selectedTenant.code
-        ? { tenant_code: state.selectedTenant.code }
-        : { tenantId: state.selectedTenant.id };
-    const r = await req("POST", `/api/admin/product-datasets/${encodeURIComponent(id)}/assign`, body, { tenantHeaders: false });
+        ? { tenant_code: state.selectedTenant.code, artifact_id: artifactId, update_policy: "AUTO_USE_LATEST" }
+        : { tenant_id: state.selectedTenant.id, artifact_id: artifactId, update_policy: "AUTO_USE_LATEST" };
+    const r = await req("POST", "/api/admin/product-datasets/kb-bindings/bind", body, { tenantHeaders: false });
     setJsonOutput("productDatasetsOut", r, true);
     if(r.ok){
-        renderProductDatasetAssignResult(r.data, datasetId);
-        $("productDatasetsMsg").innerText = r.data?.message || `Assigned dataset ${datasetId}. Open KB Versions / Runtime Status to verify active KB.`;
-        await loadProductDatasets();
-        await Promise.allSettled([loadKbVersions(), loadActiveKbDirectory(), loadKbRuntimeStatus()]);
+        $("productDatasetsMsg").innerText = "KB artifact bound to tenant. Runtime was evicted by backend.";
+        await Promise.allSettled([loadTenants(false, state.selectedTenant.id), loadKbVersions(), loadActiveKbDirectory(), loadKbRuntimeStatus()]);
         return r;
     }
-    $("productDatasetsMsg").innerText = r.data?.message || `Assign dataset failed (${r.status})`;
+    $("productDatasetsMsg").innerText = r.data?.message || `Bind KB artifact failed (${r.status})`;
+    return r;
+}
+
+async function unbindSelectedTenantKb(){
+    if(!state.selectedTenant){
+        $("tenantsMsg").innerText = "Select a tenant first";
+        return null;
+    }
+    if(!window.confirm(`Unbind active KB from tenant ${selectedTenantLabel()}? Legacy fallback KB dir will be kept.`)){
+        return null;
+    }
+    const body = state.selectedTenant.code ? { tenant_code: state.selectedTenant.code } : { tenant_id: state.selectedTenant.id };
+    const r = await req("POST", "/api/admin/product-datasets/kb-bindings/unbind", body, { tenantHeaders: false });
+    setJsonOutput("productDatasetsOut", r, true);
+    if(r.ok){
+        $("tenantsMsg").innerText = "KB unbound. Runtime was evicted by backend.";
+        await Promise.allSettled([loadTenants(false, state.selectedTenant.id), loadKbVersions(), loadActiveKbDirectory(), loadKbRuntimeStatus()]);
+        return r;
+    }
+    $("tenantsMsg").innerText = r.data?.message || `Unbind KB failed (${r.status})`;
     return r;
 }
 
@@ -1051,18 +1130,22 @@ function renderKbSourceUrls(data){
     const panel = $("kbSourceUrlsPanel");
     if(!panel) return;
     if(!data){
-        renderPanelState("kbSourceUrlsPanel", "Click Load source URLs to read raw_urls.txt for the selected tenant.", "empty");
+        renderPanelState("kbSourceUrlsPanel", "Click Load source URLs to inspect the selected tenant source config.", "empty");
         return;
     }
     const urls = Array.isArray(data.urls) ? data.urls : [];
+    const source = data.source || {};
     panel.classList.remove("hidden");
     panel.innerHTML = `
         <div class="card2 dataset-detail-card">
-            <div><b>Source URLs</b></div>
+            <div><b>Source config</b></div>
             <div class="muted">Tenant: ${escapeHtml(data.tenantId || data.tenant_id || state.selectedTenant?.id)}</div>
+            <div class="muted">Mode: ${escapeHtml(source.mode || "PRODUCT_URL_LIST")}</div>
+            <div class="muted">Provider: ${escapeHtml(source.provider || "-")}</div>
+            <div class="muted">Product sitemap URL: ${escapeHtml(source.sitemapUrl || source.sourceUrl || "-")}</div>
             ${urls.length
                 ? `<ul class="kb-url-list">${urls.map(url => `<li>${escapeHtml(url)}</li>`).join("")}</ul>`
-                : `<div class="panel-state empty">No source URLs found in raw_urls.txt.</div>`}
+                : `<div class="panel-state empty">No curated product URLs stored for this tenant.</div>`}
         </div>
     `;
 }
@@ -1072,16 +1155,23 @@ async function loadKbSourceUrls(){
     $("kbRebuildMsg").innerText = "Loading source URLs...";
     renderPanelState("kbSourceUrlsPanel", "Loading source URLs...", "loading");
     try{
-        const r = await req("GET", "/api/kb/source-urls");
-        if(r.ok){
-            state.kbSourceUrls = r.data;
-            renderKbSourceUrls(r.data);
-            $("kbRebuildMsg").innerText = `Loaded ${(r.data?.urls || []).length} source URL(s)`;
-            return r;
+        const [urlsRes, configRes] = await Promise.all([
+            req("GET", "/api/kb/source-urls"),
+            req("GET", "/api/kb/source-urls/config")
+        ]);
+        if(urlsRes.ok && configRes.ok){
+            state.kbSourceUrls = {
+                ...(urlsRes.data || {}),
+                source: configRes.data?.source || {}
+            };
+            renderKbSourceUrls(state.kbSourceUrls);
+            $("kbRebuildMsg").innerText = `Loaded ${(urlsRes.data?.urls || []).length} source URL(s)`;
+            return urlsRes;
         }
-        renderPanelState("kbSourceUrlsPanel", r.data?.message || `Load source URLs failed (${r.status})`, "error");
-        $("kbRebuildMsg").innerText = r.data?.message || `Load source URLs failed (${r.status})`;
-        return r;
+        const failed = !urlsRes.ok ? urlsRes : configRes;
+        renderPanelState("kbSourceUrlsPanel", failed.data?.message || `Load source URLs failed (${failed.status})`, "error");
+        $("kbRebuildMsg").innerText = failed.data?.message || `Load source URLs failed (${failed.status})`;
+        return failed;
     }catch(err){
         renderPanelState("kbSourceUrlsPanel", err.message || "Load source URLs failed", "error");
         $("kbRebuildMsg").innerText = err.message || "Load source URLs failed";
@@ -1116,6 +1206,43 @@ function renderKbRebuildResponse(data){
     `;
 }
 
+async function addKbProductUrl(){
+    if(!requireSelectedTenant("kbRebuildMsg", "kbSourceUrlsPanel")) return null;
+    const url = $("kbProductUrlInput")?.value?.trim();
+    if(!url){
+        $("kbRebuildMsg").innerText = "Product URL is required";
+        return null;
+    }
+    $("kbRebuildMsg").innerText = "Adding product URL...";
+    const r = await req("POST", "/api/kb/source-urls", { url });
+    if(r.ok){
+        $("kbProductUrlInput").value = "";
+        await loadKbSourceUrls();
+        $("kbRebuildMsg").innerText = `Added product URL for tenant ${selectedTenantLabel()}`;
+        return r;
+    }
+    $("kbRebuildMsg").innerText = r.data?.message || `Add product URL failed (${r.status})`;
+    return r;
+}
+
+async function setKbSitemap(){
+    if(!requireSelectedTenant("kbRebuildMsg", "kbSourceUrlsPanel")) return null;
+    const sitemapUrl = $("kbSitemapUrlInput")?.value?.trim();
+    if(!sitemapUrl){
+        $("kbRebuildMsg").innerText = "Product sitemap URL is required";
+        return null;
+    }
+    $("kbRebuildMsg").innerText = "Saving product sitemap URL...";
+    const r = await req("POST", "/api/kb/source-urls/sitemap", { sitemapUrl });
+    if(r.ok){
+        await loadKbSourceUrls();
+        $("kbRebuildMsg").innerText = `Saved product sitemap URL for tenant ${selectedTenantLabel()}`;
+        return r;
+    }
+    $("kbRebuildMsg").innerText = r.data?.message || `Save product sitemap URL failed (${r.status})`;
+    return r;
+}
+
 async function rebuildKb(){
     if(!requireSelectedTenant("kbRebuildMsg", "kbRebuildStatusPanel")) return null;
     if(!window.confirm(`Rebuild KB for tenant ${selectedTenantLabel()}? This can run crawler/build tooling and may take a while.`)){
@@ -1128,7 +1255,7 @@ async function rebuildKb(){
         if(r.ok){
             renderKbRebuildResponse(r.data);
             $("kbRebuildMsg").innerText = r.data?.message || "KB rebuild finished";
-            await Promise.allSettled([loadKbVersions(), loadActiveKbDirectory(), loadKbRuntimeStatus()]);
+            await Promise.allSettled([loadKbSourceUrls(), loadKbVersions(), loadActiveKbDirectory(), loadKbRuntimeStatus()]);
             return r;
         }
         renderPanelState("kbRebuildStatusPanel", r.data?.message || `Rebuild failed (${r.status})`, "error");
@@ -1261,7 +1388,7 @@ function renderSelectedTenantNotice(containerId){
     const label = selectedTenantLabel();
     el.classList.toggle("warning", !label);
     const noTenantMessage = containerId === "productDatasetsTenantNotice"
-        ? `No tenant selected. Go to Tenant Management &rarr; Tenants and click Select/Use tenant before assigning a dataset.`
+        ? `No tenant selected. Go to Tenant Management &rarr; Tenants and click Select/Use tenant before binding a KB artifact.`
         : `No tenant selected. Go to Tenant Management &rarr; Tenants and click Select/Use tenant.`;
     el.innerHTML = label
         ? `Using selected tenant: <b>${escapeHtml(label)}</b>`
@@ -1279,9 +1406,104 @@ function renderSelectedTenantNotices(){
         "kbVersionsTenantNotice",
         "kbRebuildTenantNotice",
         "kbRuntimeTenantNotice",
+        "resetConversationTenantNotice",
         "productDatasetsTenantNotice"
     ].forEach(renderSelectedTenantNotice);
     updateOverview();
+}
+
+function renderResetChatbotOptions(){
+    const sel = $("resetChatbotId");
+    if(!sel) return;
+    const previous = sel.value;
+    sel.innerHTML = "";
+    const opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = state.bots.length ? "Select chatbot" : "Load chatbots for selected tenant first";
+    sel.appendChild(opt0);
+    for(const bot of state.bots){
+        const op = document.createElement("option");
+        op.value = bot.id;
+        op.textContent = `${bot.name || bot.id} [${bot.channel || "-"}]`;
+        sel.appendChild(op);
+    }
+    if(previous && state.bots.some(bot => String(bot.id) === String(previous))){
+        sel.value = previous;
+    }
+}
+
+function renderResetConversationResult(data){
+    const panel = $("resetConversationResult");
+    if(!panel) return;
+    if(!data){
+        panel.classList.add("hidden");
+        panel.innerHTML = "";
+        return;
+    }
+    panel.classList.remove("hidden");
+    panel.innerHTML = `
+        <div><b>${escapeHtml(data.message || "Conversation reset for testing")}</b></div>
+        <div class="reset-result-grid">
+            <div><span class="muted">Tenant</span><br>${escapeHtml(data.tenantId || data.tenant_id || "-")}</div>
+            <div><span class="muted">Conversation</span><br>${escapeHtml(data.conversationId || data.conversation_id || "-")}</div>
+            <div><span class="muted">Messages deleted</span><br>${escapeHtml(data.messagesDeleted ?? data.messages_deleted ?? 0)}</div>
+            <div><span class="muted">Runtime cache cleared</span><br>${escapeHtml(data.runtimeCacheCleared ?? data.runtime_cache_cleared ?? false)}</div>
+            <div><span class="muted">Leads deleted</span><br>${escapeHtml(data.leadsDeleted ?? data.leads_deleted ?? 0)}</div>
+            <div><span class="muted">Purchase requests deleted</span><br>${escapeHtml(data.purchaseRequestsDeleted ?? data.purchase_requests_deleted ?? 0)}</div>
+        </div>
+    `;
+}
+
+function setResetConversationMode(mode){
+    const byConversation = mode !== "externalUser";
+    $("resetConversationIdFields")?.classList.toggle("hidden", !byConversation);
+    $("resetExternalUserFields")?.classList.toggle("hidden", byConversation);
+}
+
+async function resetConversationForTesting(button){
+    const tenant = requireSelectedTenant("resetConversationMsg", "resetConversationResult");
+    if(!tenant) return;
+
+    const mode = document.querySelector('input[name="resetConversationMode"]:checked')?.value || "conversationId";
+    const body = {
+        deleteMessages: $("resetDeleteMessages")?.checked !== false
+    };
+
+    if(mode === "externalUser"){
+        body.channel = $("resetChannel")?.value?.trim();
+        body.externalUserId = $("resetExternalUserId")?.value?.trim();
+        body.chatbotId = $("resetChatbotId")?.value?.trim();
+        if(!body.channel || !body.externalUserId || !body.chatbotId){
+            $("resetConversationMsg").innerText = "Enter channel, external user key, and chatbot";
+            return;
+        }
+    }else{
+        body.conversationId = $("resetConversationId")?.value?.trim();
+        if(!body.conversationId){
+            $("resetConversationMsg").innerText = "Enter a conversation ID";
+            return;
+        }
+    }
+
+    const target = mode === "externalUser"
+        ? `${body.channel} external user ${body.externalUserId}`
+        : `conversation ${body.conversationId}`;
+    if(!window.confirm(`Reset ${target} for tenant ${selectedTenantLabel()}? Messages will be deleted when checked. Leads and purchase requests are kept.`)){
+        return;
+    }
+
+    $("resetConversationMsg").innerText = "Resetting...";
+    renderResetConversationResult(null);
+    await withButtonLoading(button, "Resetting...", async ()=>{
+        const r = await req("POST", "/api/admin/conversations/reset", body, { tenantHeaders: true });
+        if(r.ok){
+            $("resetConversationMsg").innerText = "Reset complete";
+            renderResetConversationResult(r.data);
+            return;
+        }
+        $("resetConversationMsg").innerText = r.data?.message || `Reset failed (${r.status})`;
+        renderResetConversationResult(r.data);
+    });
 }
 
 function clearTenantScopedBotState(){
@@ -1290,6 +1512,7 @@ function clearTenantScopedBotState(){
     state.editingBotId = null;
     renderBotSelect();
     renderChatbotEditSelect();
+    renderResetChatbotOptions();
     renderChatbotsTable();
     populateBotForm(null);
 }
@@ -1658,7 +1881,8 @@ function renderTenantsTable(){
                     <th>Name</th>
                     <th>Status</th>
                     <th>API key</th>
-                    <th>KB dir</th>
+                    <th>Active KB dir</th>
+                    <th>Fallback KB dir</th>
                     <th>Active KB version</th>
                     <th>Created</th>
                     <th>Actions</th>
@@ -1667,6 +1891,9 @@ function renderTenantsTable(){
             <tbody>
                 ${rows.map(tenant => {
                     const activeKbVersionId = tenant.activeKbVersionId || tenant.active_kb_version_id;
+                    const activeKbVersionTag = tenant.activeKbVersionTag || tenant.active_kb_version_tag || activeKbVersionId;
+                    const activeKbDir = tenant.activeKbDir || tenant.active_kb_dir;
+                    const fallbackKbDir = tenant.kbDir || tenant.kb_dir;
                     const createdAt = tenant.createdAt || tenant.created_at;
                     return `
                         <tr data-tenant-id="${escapeHtml(tenant.id)}">
@@ -1674,12 +1901,15 @@ function renderTenantsTable(){
                             <td>${escapeHtml(tenant.name)}</td>
                             <td>${renderStatusBadge(tenant.status)}</td>
                             <td>${escapeHtml(maskSecret(tenant.apiKey || tenant.api_key))}</td>
-                            <td class="table-preview" title="${escapeHtml(tenant.kbDir || tenant.kb_dir || "")}">${escapeHtml(tenant.kbDir || tenant.kb_dir)}</td>
-                            <td class="table-preview" title="${escapeHtml(activeKbVersionId || "")}">${escapeHtml(activeKbVersionId)}</td>
+                            <td class="table-preview" title="${escapeHtml(activeKbDir || "")}">${escapeHtml(shortPreview(activeKbDir, 56))}</td>
+                            <td class="table-preview" title="${escapeHtml(fallbackKbDir || "")}">${escapeHtml(shortPreview(fallbackKbDir, 56))}</td>
+                            <td class="table-preview" title="${escapeHtml(activeKbVersionId || "")}">${escapeHtml(shortPreview(activeKbVersionTag, 48))}</td>
                             <td>${escapeHtml(fmtDateTime(createdAt) || "-")}</td>
                             <td>
                                 <div class="table-actions">
                                     <button class="secondary" data-action="tenant-use">Select/Use tenant</button>
+                                    <button class="danger" data-action="tenant-unbind-kb" ${activeKbVersionId ? "" : "disabled"}>Unbind KB</button>
+                                    <button class="danger" data-action="tenant-delete">Delete</button>
                                 </div>
                             </td>
                         </tr>
@@ -2217,6 +2447,7 @@ async function loadBots(silent=false){
         setJsonOutput("botsOut", r, true);
     }catch(err){
         state.bots = [];
+        renderResetChatbotOptions();
         renderChatbotsTable();
         if(!silent) $("botsMsg").innerText = err.message || "Load chatbots failed";
         return null;
@@ -2233,6 +2464,7 @@ async function loadBots(silent=false){
     // Also refresh bot dropdown in Bindings
     renderBotSelect();
     renderChatbotEditSelect();
+    renderResetChatbotOptions();
     renderChatbotsTable();
 
     if(state.editingBotId){
@@ -2683,7 +2915,10 @@ function renderLeads(leads){
 }
 
 async function updateLeadStatus(id, status){
-    const r = await req("POST", `/admin/api/leads/${encodeURIComponent(id)}/status?status=${encodeURIComponent(status)}`, undefined, { tenantHeaders: true });
+    const tenantId = getCurrentTenantId();
+    const params = new URLSearchParams({ status });
+    if(tenantId) params.set("tenantId", tenantId);
+    const r = await req("POST", `/admin/api/leads/${encodeURIComponent(id)}/status?${params.toString()}`, undefined, { tenantHeaders: true });
     if(!r.ok) throw new Error("Failed to update status");
     return r.data;
 }
@@ -2768,6 +3003,37 @@ function replaceElementWithClone(id){
     const clone = existing.cloneNode(true);
     existing.replaceWith(clone);
     return clone;
+}
+
+async function deleteTenantById(tenantId, button){
+    const tenant = state.tenants.find(item => String(item.id) === String(tenantId));
+    const label = tenant ? (tenant.name || tenant.code || tenant.id) : tenantId;
+    if(!window.confirm(`Delete tenant "${label}"? This removes tenant-scoped bots, conversations, KB versions, bindings, leads and purchase requests. Shared product datasets/artifacts are kept.`)){
+        return;
+    }
+    setButtonLoading(button, true, "Deleting...");
+    try{
+        const r = await req("DELETE", `/api/admin/tenants/${encodeURIComponent(tenantId)}`, undefined, { tenantHeaders:false });
+        setJsonOutput("tenantsOut", r, true);
+        if(!r.ok){
+            $("tenantsMsg").innerText = r.data?.message || `Delete tenant failed (${r.status})`;
+            return;
+        }
+        if(state.selectedTenant && String(state.selectedTenant.id) === String(tenantId)){
+            state.selectedTenant = null;
+            clearTenantScopedBotState();
+            clearTenantScopedKbState();
+            renderSelectedTenantNotices();
+            $("selectedTenantName").innerText = "—";
+            $("tenantId").value = "";
+            $("apiKey").value = "";
+            saveCfg();
+        }
+        await loadTenants(false);
+        showMsg("tenantsMsg", `Deleted tenant ${label}`, 1800);
+    }finally{
+        setButtonLoading(button, false);
+    }
 }
 
 async function loadTenants(autoPickFirst=false, preferredTenantId=""){
@@ -2855,6 +3121,26 @@ function wireTenantProvisioningUi(){
 
     loadTenantsButton?.addEventListener("click", (event)=> withButtonLoading(event.currentTarget, "Loading...", ()=> loadTenants(false)));
     clearTenantsButton?.addEventListener("click", ()=> $("tenantsOut").innerText = "");
+    $("tenantsTablePanel")?.addEventListener("click", event => {
+        const button = event.target.closest("button");
+        if(!button) return;
+        const tenantId = button.closest("tr")?.dataset?.tenantId;
+        if(!tenantId) return;
+        if(button.dataset.action === "tenant-use"){
+            applyTenantById(tenantId);
+        } else if(button.dataset.action === "tenant-unbind-kb"){
+            applyTenantById(tenantId);
+            withButtonLoading(button, "Unbinding...", () => unbindSelectedTenantKb().catch(err => {
+                console.error(err);
+                $("tenantsMsg").innerText = err.message || "Unbind KB failed";
+            }));
+        } else if(button.dataset.action === "tenant-delete"){
+            deleteTenantById(tenantId, button).catch(err => {
+                console.error(err);
+                $("tenantsMsg").innerText = err.message || "Delete tenant failed";
+            });
+        }
+    });
 }
 
 function wireMemberManagementUi(){
@@ -2951,10 +3237,15 @@ function wireProductDatasetUi(){
                 console.error(err);
                 $("productDatasetsMsg").innerText = err.message || "Load dataset detail failed";
             }));
-        } else if(action === "dataset-assign"){
-            withButtonLoading(button, "Assigning...", () => assignProductDataset(datasetId).catch(err => {
+        } else if(action === "dataset-artifacts"){
+            withButtonLoading(button, "Loading...", () => loadProductDatasetArtifacts(datasetId).catch(err => {
                 console.error(err);
-                $("productDatasetsMsg").innerText = err.message || "Assign dataset failed";
+                $("productDatasetsMsg").innerText = err.message || "Load KB artifacts failed";
+            }));
+        } else if(action === "dataset-build-artifact"){
+            withButtonLoading(button, "Building...", () => buildProductDatasetArtifact(datasetId).catch(err => {
+                console.error(err);
+                $("productDatasetsMsg").innerText = err.message || "Build KB artifact failed";
             }));
         } else if(action === "dataset-delete"){
             withButtonLoading(button, "Deleting...", () => deleteProductDataset(datasetId).catch(err => {
@@ -2962,6 +3253,16 @@ function wireProductDatasetUi(){
                 $("productDatasetsMsg").innerText = err.message || "Delete dataset record failed";
             }));
         }
+    });
+    $("productDatasetAssignPanel")?.addEventListener("click", event => {
+        const button = event.target.closest("button");
+        if(!button || button.dataset.action !== "artifact-bind") return;
+        const artifactId = button.closest("tr")?.dataset?.artifactId;
+        if(!artifactId) return;
+        withButtonLoading(button, "Binding...", () => bindArtifactToSelectedTenant(artifactId).catch(err => {
+            console.error(err);
+            $("productDatasetsMsg").innerText = err.message || "Bind KB artifact failed";
+        }));
     });
 }
 
@@ -2999,6 +3300,18 @@ function wireKbUi(){
     $("loadKbSourceUrls")?.addEventListener("click", event =>
         withButtonLoading(event.currentTarget, "Loading...", () => loadKbSourceUrls().catch(err => {
             console.error(err);
+        }))
+    );
+    $("addKbProductUrl")?.addEventListener("click", event =>
+        withButtonLoading(event.currentTarget, "Adding...", () => addKbProductUrl().catch(err => {
+            console.error(err);
+            $("kbRebuildMsg").innerText = err.message || "Add product URL failed";
+        }))
+    );
+    $("setKbSitemap")?.addEventListener("click", event =>
+        withButtonLoading(event.currentTarget, "Saving...", () => setKbSitemap().catch(err => {
+            console.error(err);
+            $("kbRebuildMsg").innerText = err.message || "Save product sitemap URL failed";
         }))
     );
     $("rebuildKb")?.addEventListener("click", event =>
@@ -3055,6 +3368,22 @@ wireTenantProvisioningUi();
 wireMemberManagementUi();
 wireProductDatasetUi();
 wireKbUi();
+
+function wireResetConversationUi(){
+    document.querySelectorAll('input[name="resetConversationMode"]').forEach(input => {
+        input.addEventListener("change", () => setResetConversationMode(input.value));
+    });
+    $("resetConversationBtn")?.addEventListener("click", event => {
+        resetConversationForTesting(event.currentTarget).catch(err => {
+            console.error(err);
+            $("resetConversationMsg").innerText = err.message || "Reset failed";
+        });
+    });
+    renderResetChatbotOptions();
+    setResetConversationMode("conversationId");
+}
+
+wireResetConversationUi();
 
 $("loadRuntime").addEventListener("click", async ()=>{
     $("runtimeMsg").innerText = "";

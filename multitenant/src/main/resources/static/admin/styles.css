@@ -242,6 +242,37 @@ button.is-loading{opacity:.7}
     color:#ff9b9b;
     opacity:1;
 }
+.inline-choice{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    margin:0;
+    width:auto;
+}
+.inline-choice input{
+    width:auto;
+}
+.reset-mode-row,
+.reset-options{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+    margin:12px 0;
+}
+.reset-result-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
+    gap:10px;
+    margin-top:10px;
+}
+.reset-result-grid > div{
+    padding:10px;
+    border-radius:10px;
+    background:#0b1326;
+    border:1px solid rgba(255,255,255,.08);
+    overflow-wrap:anywhere;
+}
 .panel-state{
     padding:12px;
     border-radius:10px;

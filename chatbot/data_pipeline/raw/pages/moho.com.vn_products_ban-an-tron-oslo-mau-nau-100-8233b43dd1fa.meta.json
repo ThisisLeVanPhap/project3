@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ban-an-tron-oslo-mau-nau-100",
+  "final_url": "https://moho.com.vn/products/ban-an-tron-oslo-mau-nau-100",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:29:16.248891+00:00",
+  "content_hash": "8233b43dd1fa9bc04d52ca64a7828983879f61c7204ce5a0be0d766ed10d7a8d",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:29:15 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "349841",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"753ced94e92a4356b55e2c68dc711213\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:29:15 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1416",
+    "X-RequestId": "bc98af50d44f47924d977e5346cab0c9",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ban-an-tron-oslo-mau-nau-100-8233b43dd1fa.html"
+}

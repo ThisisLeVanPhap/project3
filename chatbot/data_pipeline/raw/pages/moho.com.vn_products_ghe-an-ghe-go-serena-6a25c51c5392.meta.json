@@ -1,0 +1,29 @@
+{
+  "url": "https://moho.com.vn/products/ghe-an-ghe-go-serena",
+  "final_url": "https://moho.com.vn/products/ghe-an-ghe-go-serena",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:26:26.632993+00:00",
+  "content_hash": "6a25c51c53923a10f2c94ee73cbce32e19825b7cb54f228762f76a4c7a59c3a9",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:26:26 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Transfer-Encoding": "chunked",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "private",
+    "ETag": "W/\"082c0434f64f4a9db57c287d787017e9\"",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:26:26 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "hit, server",
+    "X-Cache-Ver": "82975",
+    "X-RequestId": "4da1e410db9b1ba8b3f5e66f4c662ada",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-an-ghe-go-serena-6a25c51c5392.html"
+}

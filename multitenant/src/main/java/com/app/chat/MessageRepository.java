@@ -27,4 +27,7 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     // Count messages in conversation
     long countByConversationId(UUID conversationId);
     void deleteByConversationId(UUID conversationId);
+
+    long countByTenantIdAndConversationId(UUID tenantId, UUID conversationId);
+    long deleteByTenantIdAndConversationId(UUID tenantId, UUID conversationId);
 }

@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/combo-giuong-tu-quan-ao-vline-v3",
+  "final_url": "https://moho.com.vn/products/combo-giuong-tu-quan-ao-vline-v3",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:01:15.022534+00:00",
+  "content_hash": "bf25eef3248213dc0fafef0d668098485b95072d84bb9b5e964886699ece53f0",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:01:14 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "376313",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"1e6eec9eac734d8a84443b07280a7d90\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:01:14 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1434",
+    "X-RequestId": "0f5f3850dfd046c6040397158996fb70",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_combo-giuong-tu-quan-ao-vline-v3-bf25eef32482.html"
+}

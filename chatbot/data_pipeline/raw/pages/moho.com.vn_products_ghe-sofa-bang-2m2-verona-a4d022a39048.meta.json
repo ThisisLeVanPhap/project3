@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-sofa-bang-2m2-verona",
+  "final_url": "https://moho.com.vn/products/ghe-sofa-bang-2m2-verona",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:42:28.551212+00:00",
+  "content_hash": "a4d022a390482eaf64e1072105e7cee0974222edb9a5be806ddbce7c94a445fd",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:42:28 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "332196",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"7e22a92534044d0bb1e957935d9fe3de\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:42:28 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1152",
+    "X-RequestId": "921c65d435f8b070e33d58adb0fdc3a8",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-sofa-bang-2m2-verona-a4d022a39048.html"
+}

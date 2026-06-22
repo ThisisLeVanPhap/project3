@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-sofa-1m8-moho-mochi",
+  "final_url": "https://moho.com.vn/products/ghe-sofa-1m8-moho-mochi",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:40:32.142583+00:00",
+  "content_hash": "612c0e975fedde38553f44d1849a256fe615b2bae9b4806d6e9b06824bc040a1",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:40:31 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "345999",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"b4379707f55b4240bb4de5ed7022924c\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:40:31 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1212",
+    "X-RequestId": "8559b5a83aeabd171bd8111f91ab79e7",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-sofa-1m8-moho-mochi-612c0e975fed.html"
+}

@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-quan-ao-go-moho-koster-mau-nau-nhieu-kich-thuoc",
+  "final_url": "https://moho.com.vn/products/tu-quan-ao-go-moho-koster-mau-nau-nhieu-kich-thuoc",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:43:40.251963+00:00",
+  "content_hash": "6d388b3655703b12392e0422c5c944869296a75ddb1d37f4fc082c2e18650a76",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:43:40 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "342802",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"3f3401faadc745c09579069faa5d6a61\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:43:40 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1339",
+    "X-RequestId": "39a73b51408ffff5fdb7ef6c5b2d093a",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-quan-ao-go-moho-koster-mau-nau-nhieu-kich-thuoc-6d388b365570.html"
+}

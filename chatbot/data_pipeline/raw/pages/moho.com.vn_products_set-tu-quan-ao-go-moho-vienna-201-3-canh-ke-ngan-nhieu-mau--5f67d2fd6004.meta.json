@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/set-tu-quan-ao-go-moho-vienna-201-3-canh-ke-ngan-nhieu-mau-sac",
+  "final_url": "https://moho.com.vn/products/set-tu-quan-ao-go-moho-vienna-201-3-canh-ke-ngan-nhieu-mau-sac",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:51:05.284936+00:00",
+  "content_hash": "5f67d2fd60041c37d10fed7848cce4c75901dda76e68ee789f75b3c4374603d5",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:51:05 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "348511",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"832ca9528f8746d9aa7a82c2e3b35eb3\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:51:05 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82977",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1263",
+    "X-RequestId": "081fbd187b3ae4de181237c775d9442f",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_set-tu-quan-ao-go-moho-vienna-201-3-canh-ke-ngan-nhieu-mau--5f67d2fd6004.html"
+}

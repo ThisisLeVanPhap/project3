@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/combo-sofa-go-cao-su-chu-l-moho-hobro-mau-nau-2m7",
+  "final_url": "https://moho.com.vn/products/combo-sofa-go-cao-su-chu-l-moho-hobro-mau-nau-2m7",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:04:17.550639+00:00",
+  "content_hash": "f86281098f2ac184e393e39d60fa3a4f10c3f3e77b328c33d558d6e2c34039db",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:04:17 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "366539",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"3c61133ca0ec4a149018b35fa5824b44\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:04:17 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1265",
+    "X-RequestId": "36c3c0d28c3554ecfcda4f53d2b508ed",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_combo-sofa-go-cao-su-chu-l-moho-hobro-mau-nau-2m7-f86281098f2a.html"
+}

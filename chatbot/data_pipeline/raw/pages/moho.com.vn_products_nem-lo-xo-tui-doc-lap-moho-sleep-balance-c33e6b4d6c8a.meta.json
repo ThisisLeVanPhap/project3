@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/nem-lo-xo-tui-doc-lap-moho-sleep-balance",
+  "final_url": "https://moho.com.vn/products/nem-lo-xo-tui-doc-lap-moho-sleep-balance",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:25:28.545662+00:00",
+  "content_hash": "c33e6b4d6c8ae6ddc470277e36e1ab61fa86b0c7e5222dff52f5f5244ef7b585",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:25:28 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "318931",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"90d75ce646a544429a4effbae5b0a78e\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:25:28 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1085",
+    "X-RequestId": "b8e9a8fea62d4b5ebeb29dec84055f2b",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_nem-lo-xo-tui-doc-lap-moho-sleep-balance-c33e6b4d6c8a.html"
+}

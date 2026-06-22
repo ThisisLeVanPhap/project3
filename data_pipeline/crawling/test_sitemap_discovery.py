@@ -65,6 +65,26 @@ class SitemapProductUrlDiscovererTests(unittest.TestCase):
 
         self.assertEqual(urls, ["https://shop.example/shop/sofa-1/"])
 
+    def test_product_sitemap_without_patterns_discovers_all_urls(self):
+        fetcher = FakeSitemapFetcher({
+            "https://shop.example/sitemap_products_1.xml": """
+            <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+              <url><loc>https://shop.example/products/sofa-1</loc></url>
+              <url><loc>https://shop.example/products/table-1</loc></url>
+            </urlset>
+            """
+        })
+
+        urls = SitemapProductUrlDiscoverer(fetcher=fetcher).discover(
+            "https://shop.example/sitemap_products_1.xml",
+            allowed_domains=["shop.example"],
+        )
+
+        self.assertEqual(urls, [
+            "https://shop.example/products/sofa-1",
+            "https://shop.example/products/table-1",
+        ])
+
     def test_dedupe_and_max_urls(self):
         fetcher = FakeSitemapFetcher({
             "https://shop.example/sitemap.xml": """

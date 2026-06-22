@@ -2,6 +2,9 @@ package com.app.purchases;
 
 import com.app.auth.TenantMember;
 import com.app.auth.TenantMemberRepository;
+import com.app.chat.Conversation;
+import com.app.chat.ConversationRepository;
+import com.app.customers.CustomerIdentityService;
 import com.app.leads.Lead;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,6 +39,12 @@ class PurchaseRequestServiceTest {
 
     @Mock
     private TenantMemberRepository tenantMemberRepository;
+
+    @Mock
+    private CustomerIdentityService customerIdentityService;
+
+    @Mock
+    private ConversationRepository conversationRepository;
 
     @InjectMocks
     private PurchaseRequestService purchaseRequestService;
@@ -49,7 +60,7 @@ class PurchaseRequestServiceTest {
                 user: Sản phẩm muốn mua: https://store.example.vn/sofa-x
                 """);
 
-        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc("tenant-1", "conv-1"))
+        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdAndStatusInOrderByCreatedAtDesc(eq("tenant-1"), eq("conv-1"), any(List.class)))
                 .thenReturn(Optional.empty());
         when(purchaseRequestRepo.save(any(PurchaseRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -84,7 +95,7 @@ class PurchaseRequestServiceTest {
         existing.setNotes("");
         existing.setRequestedProductRef("");
 
-        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc("tenant-1", "conv-2"))
+        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdAndStatusInOrderByCreatedAtDesc(eq("tenant-1"), eq("conv-2"), any(List.class)))
                 .thenReturn(Optional.of(existing));
         when(purchaseRequestRepo.save(any(PurchaseRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -111,7 +122,7 @@ class PurchaseRequestServiceTest {
                 user: CONFIRM
                 """);
 
-        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc("tenant-1", "conv-3"))
+        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdAndStatusInOrderByCreatedAtDesc(eq("tenant-1"), eq("conv-3"), any(List.class)))
                 .thenReturn(Optional.empty());
         when(purchaseRequestRepo.save(any(PurchaseRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -134,7 +145,7 @@ class PurchaseRequestServiceTest {
                 user: CONFIRM
                 """);
 
-        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc("tenant-1", "conv-4"))
+        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdAndStatusInOrderByCreatedAtDesc(eq("tenant-1"), eq("conv-4"), any(List.class)))
                 .thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class, () -> purchaseRequestService.findOrCreateFromLead(lead));
@@ -319,7 +330,7 @@ class PurchaseRequestServiceTest {
                 .thenReturn(Optional.empty());
         when(purchaseRequestRepo.findByTenantIdAndHandoffId(tenantId, "handoff-1"))
                 .thenReturn(Optional.empty());
-        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(tenantId, "conv-1"))
+        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdAndStatusInOrderByCreatedAtDesc(eq(tenantId), eq("conv-1"), any(List.class)))
                 .thenReturn(Optional.empty());
         when(purchaseRequestRepo.save(any(PurchaseRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -343,6 +354,111 @@ class PurchaseRequestServiceTest {
         assertEquals("NEW", saved.getStatus());
         assertEquals("Rem cuon tranh cao cap GHO-607", saved.getRequestedProductRef());
         assertEquals(null, saved.getAssignedToMemberId());
+    }
+
+    @Test
+    void chatbotHandoffRejectsDuplicateOpenPurchaseRequestForConversation() {
+        String tenantId = "8e0f40c4-83de-4d44-bf0f-5e53769595e0";
+        ChatbotPurchaseRequestCreateRequest request = chatbotRequest(
+                tenantId,
+                "handoff-open",
+                "idem-open",
+                "conv-open",
+                "0912 345 678"
+        );
+        PurchaseRequest open = new PurchaseRequest();
+        open.setTenantId(tenantId);
+        open.setChannel("web");
+        open.setConversationId("conv-open");
+        open.setStatus("NEW");
+
+        when(purchaseRequestRepo.findByTenantIdAndIdempotencyKey(tenantId, "idem-open"))
+                .thenReturn(Optional.empty());
+        when(purchaseRequestRepo.findByTenantIdAndHandoffId(tenantId, "handoff-open"))
+                .thenReturn(Optional.empty());
+        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdAndStatusInOrderByCreatedAtDesc(
+                eq(tenantId),
+                eq("conv-open"),
+                any(List.class)
+        )).thenReturn(Optional.of(open));
+
+        var ex = assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> purchaseRequestService.createFromChatbotHandoff(request)
+        );
+
+        assertEquals(409, ex.getStatusCode().value());
+        verify(purchaseRequestRepo, never()).save(any(PurchaseRequest.class));
+    }
+
+    @Test
+    void chatbotHandoffCreatesNewWhenOnlyFinalOrResetDiscardedRequestsExist() {
+        String tenantId = "8e0f40c4-83de-4d44-bf0f-5e53769595e0";
+        ChatbotPurchaseRequestCreateRequest request = chatbotRequest(
+                tenantId,
+                "handoff-after-reset",
+                "idem-after-reset",
+                "conv-after-reset",
+                "0912 345 678"
+        );
+
+        when(purchaseRequestRepo.findByTenantIdAndIdempotencyKey(tenantId, "idem-after-reset"))
+                .thenReturn(Optional.empty());
+        when(purchaseRequestRepo.findByTenantIdAndHandoffId(tenantId, "handoff-after-reset"))
+                .thenReturn(Optional.empty());
+        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdAndStatusInOrderByCreatedAtDesc(
+                eq(tenantId),
+                eq("conv-after-reset"),
+                any(List.class)
+        )).thenReturn(Optional.empty());
+        when(purchaseRequestRepo.save(any(PurchaseRequest.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        PurchaseRequestService.ChatbotCreateResult result =
+                purchaseRequestService.createFromChatbotHandoff(request);
+
+        assertTrue(result.created());
+        assertEquals("conv-after-reset", result.purchaseRequest().getConversationId());
+        assertEquals("NEW", result.purchaseRequest().getStatus());
+    }
+
+    @Test
+    void chatbotHandoffLinksCustomerIdentityWhenConversationExternalIdExists() {
+        String tenantId = "8e0f40c4-83de-4d44-bf0f-5e53769595e0";
+        String conversationId = UUID.randomUUID().toString();
+        ChatbotPurchaseRequestCreateRequest request = chatbotRequest(
+                tenantId,
+                "handoff-identity",
+                "idem-identity",
+                conversationId,
+                "+84 912 345 678"
+        );
+        Conversation conversation = new Conversation();
+        conversation.setId(UUID.fromString(conversationId));
+        conversation.setTenantId(UUID.fromString(tenantId));
+        conversation.setUserExternalId("messenger:page:page-1:sender:sender-1");
+
+        when(purchaseRequestRepo.findByTenantIdAndIdempotencyKey(tenantId, "idem-identity"))
+                .thenReturn(Optional.empty());
+        when(purchaseRequestRepo.findByTenantIdAndHandoffId(tenantId, "handoff-identity"))
+                .thenReturn(Optional.empty());
+        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdAndStatusInOrderByCreatedAtDesc(eq(tenantId), eq(conversationId), any(List.class)))
+                .thenReturn(Optional.empty());
+        when(purchaseRequestRepo.save(any(PurchaseRequest.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(conversationRepository.findById(UUID.fromString(conversationId)))
+                .thenReturn(Optional.of(conversation));
+
+        purchaseRequestService.createFromChatbotHandoff(request);
+
+        verify(customerIdentityService).resolveOrCreateIdentity(
+                UUID.fromString(tenantId),
+                "web",
+                "messenger:page:page-1:sender:sender-1",
+                "Nguyen Van A",
+                "84912345678",
+                "a@example.com"
+        );
     }
 
     @Test
@@ -397,7 +513,7 @@ class PurchaseRequestServiceTest {
                 .thenReturn(Optional.empty());
         when(purchaseRequestRepo.findByTenantIdAndHandoffId(tenantId, "handoff-tenant-1"))
                 .thenReturn(Optional.empty());
-        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(tenantId, "conv-tenant-1"))
+        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdAndStatusInOrderByCreatedAtDesc(eq(tenantId), eq("conv-tenant-1"), any(List.class)))
                 .thenReturn(Optional.empty());
         when(purchaseRequestRepo.save(any(PurchaseRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));

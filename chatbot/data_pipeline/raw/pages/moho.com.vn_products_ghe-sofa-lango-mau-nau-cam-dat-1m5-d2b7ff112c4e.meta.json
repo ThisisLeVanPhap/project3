@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-sofa-lango-mau-nau-cam-dat-1m5",
+  "final_url": "https://moho.com.vn/products/ghe-sofa-lango-mau-nau-cam-dat-1m5",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:31:06.500945+00:00",
+  "content_hash": "d2b7ff112c4e63a584509189379944084bc0f6977781cdfe2435cac9634d0773",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:31:06 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "317463",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"05a2d97d24384229bd69a034345c809d\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:31:06 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1165",
+    "X-RequestId": "67f893fbba56f4484698212f49ae8bd9",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-sofa-lango-mau-nau-cam-dat-1m5-d2b7ff112c4e.html"
+}

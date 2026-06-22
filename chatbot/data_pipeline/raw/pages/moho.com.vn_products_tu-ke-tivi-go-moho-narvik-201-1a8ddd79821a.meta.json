@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-ke-tivi-go-moho-narvik-201",
+  "final_url": "https://moho.com.vn/products/tu-ke-tivi-go-moho-narvik-201",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:32:23.300749+00:00",
+  "content_hash": "1a8ddd79821a3913a8eede52bde1e3f0bd8a022371c5de35bb4e83f3d5b436f5",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:32:22 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "329628",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"6f405ce32deb4502bb6a4d38cd65c6b8\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:32:22 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1212",
+    "X-RequestId": "c73e8889f62c0b1b66370b37533711f3",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-ke-tivi-go-moho-narvik-201-1a8ddd79821a.html"
+}

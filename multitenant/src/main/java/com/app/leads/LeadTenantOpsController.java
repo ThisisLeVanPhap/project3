@@ -4,7 +4,9 @@ import com.app.auth.SessionPrincipalAccessor;
 import com.app.leads.channel.MessengerOutbox;
 import com.app.leads.channel.TelegramOutbox;
 import com.app.leads.dto.OrderInfoReq;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/tenant/api/leads-ops")
@@ -31,8 +33,7 @@ public class LeadTenantOpsController {
         principalAccessor.requireTenantOperator();
         String currentTenantId = principalAccessor.requireTenantIdMatching(tenantId);
 
-        Lead lead = leadRepo.findById(req.leadId()).orElseThrow();
-        if (!currentTenantId.equals(lead.getTenantId())) throw new RuntimeException("Access denied");
+        Lead lead = requireLead(req.leadId(), currentTenantId);
 
         lead.setOrderInfo(req.orderInfo() == null ? "" : req.orderInfo().trim());
         lead.setShippingStatus("READY");
@@ -45,8 +46,7 @@ public class LeadTenantOpsController {
         principalAccessor.requireTenantOperator();
         String currentTenantId = principalAccessor.requireTenantIdMatching(tenantId);
 
-        Lead lead = leadRepo.findById(id).orElseThrow();
-        if (!currentTenantId.equals(lead.getTenantId())) throw new RuntimeException("Access denied");
+        Lead lead = requireLead(id, currentTenantId);
 
         lead.setShippingStatus("SHIPPED");
         leadRepo.save(lead);
@@ -69,12 +69,16 @@ public class LeadTenantOpsController {
         principalAccessor.requireTenantOperator();
         String currentTenantId = principalAccessor.requireTenantIdMatching(tenantId);
 
-        Lead lead = leadRepo.findById(id).orElseThrow();
-        if (!currentTenantId.equals(lead.getTenantId())) throw new RuntimeException("Access denied");
+        Lead lead = requireLead(id, currentTenantId);
 
         lead.setStage("DISCOVER");
         leadRepo.save(lead);
 
         return lead;
+    }
+
+    private Lead requireLead(Long id, String tenantId) {
+        return leadRepo.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lead not found"));
     }
 }

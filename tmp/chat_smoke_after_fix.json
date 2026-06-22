@@ -1,0 +1,121 @@
+{
+  "tenant": {
+    "id": "10000000-0000-4000-8000-000000000102",
+    "code": "datn_demo_moho"
+  },
+  "chatbot": {
+    "tenantId": "10000000-0000-4000-8000-000000000102",
+    "id": "20000000-0000-4000-8000-000000000102",
+    "name": "DEMO MOHO Sales Bot",
+    "channel": "web",
+    "persona": {
+      "tone": "friendly",
+      "purpose": "demo tenant_sales UI only",
+      "data_note": "DEMO/SAMPLE"
+    },
+    "status": "ACTIVE",
+    "baseModel": null,
+    "adapterPath": null,
+    "tokenizerPath": null,
+    "systemPrompt": "DEMO chatbot for UI screenshots only. Do not treat seed replies as evaluation evidence.",
+    "maxNewTokens": 768,
+    "temperature": 0.7,
+    "topP": 0.9,
+    "topK": 50,
+    "responseStyle": "natural",
+    "mode": "tenant_sales",
+    "provider": "claude",
+    "apiModel": null,
+    "apiBaseUrl": null
+  },
+  "conversationId": "78138fd0-543a-450d-80bb-074b4bcbad25",
+  "runtime_before": {
+    "tenant_id": "10000000-0000-4000-8000-000000000102",
+    "desired": {
+      "kb_dir": "/opt/app/chatbot/kb/datasets/gotrangtri-20260610/dataset-20260620191737-gotrangtri-20260610",
+      "source": "ACTIVE_VERSION",
+      "version_id": "bf9e9c73-ba70-47fd-b5fe-061da7030eda",
+      "version_tag": "dataset-20260620193509-artifact-767a5866",
+      "fallback_reason": null
+    },
+    "running": null,
+    "in_sync": false
+  },
+  "messages": [
+    {
+      "key": "new",
+      "message": "/new",
+      "status": 200,
+      "response": {
+        "reply": "Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.",
+        "newConversationId": "2037e088-87f7-4feb-8879-0c040caaf637",
+        "latencyMs": 0,
+        "model": "system",
+        "adapter": "",
+        "llmBaseUrl": ""
+      }
+    },
+    {
+      "key": "tu_quan_ao",
+      "message": "Tôi muốn mua tủ quần áo",
+      "status": 200,
+      "response": {
+        "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Tủ quần áo hiện đại thiết kế tối giản GHS-51904 [P1]\n   - Giá: 23.400.000 VND\n   - Danh mục: Tủ\n   - Phu hop vi: khop nhom Tủ\n   - Thuộc tính chính: Kích thước: 80x55x244cm; SKU: GHS-51904; Trạng thái trên trang sản phẩm: InStock\n   - Link nguồn: https://gotrangtri.vn/shop/tu-quan-ao-hien-dai-thiet-ke-toi-gian-ghs-51904\n\n2. Tủ quần áo chữ L GHS-5269 tối ưu góc chết phòng ngủ [P2]\n   - Giá: 22.800.000 VND\n   - Danh mục: Tủ\n   - Phu hop vi: khop nhom Tủ\n   - Thuộc tính chính: Kích thước: 1400x600x2400mm; Trạng thái trên trang sản phẩm: InStock\n   - Link nguồn: https://gotrangtri.vn/shop/tu-quan-ao-chu-l-ghs-5269-toi-uu-goc-chet-phong-ngu\n\n3. Tủ quần áo góc chữ L GHS-5270 tiết kiệm diện tích tối ưu [P3]\n   - Giá: 17.100.000 VND\n   - Danh mục: Tủ\n   - Phu hop vi: khop nhom Tủ\n   - Thuộc tính chính: Kích thước: 1200x500x2100mm; Trạng thái trên trang sản phẩm: InStock\n   - Link nguồn: https://gotrangtri.vn/shop/tu-quan-ao-goc-chu-l-ghs-5270-tiet-kiem-dien-tich-toi-uu\n\nLưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua. Ban muon minh loc tiep theo khoang gia, kich thuoc hay chat lie",
+        "latencyMs": 2,
+        "model": "claude-sonnet-4-6",
+        "adapter": "",
+        "llmBaseUrl": "http://127.0.0.1:8101"
+      }
+    },
+    {
+      "key": "ban_lam_viec",
+      "message": "Có bàn làm việc nào phù hợp phòng nhỏ không?",
+      "status": 200,
+      "response": {
+        "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Thiết kế phòng ngủ nhỏ có bàn làm việc GHS-9415 [P1]\n   - Giá: 29.300.000 VND\n   - Danh mục: Bàn làm việc\n   - Phu hop vi: khop nhom Bàn làm việc\n   - Thuộc tính chính: Kích thước: 1200x550x750mm; SKU: GHS-9415; Trạng thái trên trang sản phẩm: InStock\n   - Link nguồn: https://gotrangtri.vn/shop/thiet-ke-phong-ngu-nho-co-ban-lam-viec-ghs-9415\n\n2. Bàn làm việc văn phòng kết hợp tủ phụ GHS-41470 [P2]\n   - Giá: 3.200.000 VND\n   - Danh mục: Bàn làm việc\n   - Phu hop vi: khop nhom Bàn làm việc\n   - Thuộc tính chính: Kích thước: 1600 x 600 x 750mm; SKU: GHS-41470; Trạng thái trên trang sản phẩm: InStock\n   - Link nguồn: https://gotrangtri.vn/shop/ban-lam-viec-van-phong-ket-hop-tu-phu-ghs-41470\n\n3. Bàn làm việc kết hợp giá sách nhỏ gọn tiện lợi GHS-4886 [P3]\n   - Giá: 3.500.000 VND\n   - Danh mục: Bàn làm việc\n   - Phu hop vi: khop nhom Bàn làm việc\n   - Thuộc tính chính: Chất liệu: Gỗ MDF lõi xanh chống ẩm phủ Melamine màu kết hợp vân gỗ tự nhiên; Màu sắc: khách hàng tùy ý lựa chọn trong 12 màu sắc, kiểu vân gỗ có tại cửa hàng; Kích thước: 1000 x 600 x 1350mm; SKU: GHS-4886; Trạng thái trên trang sản phẩm: InStock\n   - Link n",
+        "latencyMs": 0,
+        "model": "claude-sonnet-4-6",
+        "adapter": "",
+        "llmBaseUrl": "http://127.0.0.1:8101"
+      }
+    },
+    {
+      "key": "sofa",
+      "message": "Tư vấn sofa cho phòng khách nhỏ ngân sách 5 triệu",
+      "status": 200,
+      "response": {
+        "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Ghế sofa phòng khách thiết kế nhỏ gọn hiện đại GHS-8331 [P1]\n   - Giá: 9.100.000 VND\n   - Danh mục: Sofa\n   - Phu hop vi: khop nhom Sofa\n   - Thuộc tính chính: Chất liệu: khung gỗ tự nhiên 100%, lò xo lưới, mút mềm K43 và vải nỉ bọc cao cấp; Màu sắc: khách hàng tùy ý lựa chọn mẫu vải tại cửa hàng; Kích thước: 580 x 470 x 425mm; SKU: GHS-8331; Trạng thái trên trang sản phẩm: InStock\n   - Link nguồn: https://gotrangtri.vn/shop/ghe-sofa-phong-khach-thiet-ke-nho-gon-hien-dai-ghs-8331\n\n2. Bàn sofa hiện đại bằng gỗ cho phòng khách GHS-41025 [P2]\n   - Giá: 5.000.000 VND\n   - Danh mục: Bàn trà\n   - Phu hop vi: khop nhom Bàn trà\n   - Thuộc tính chính: Chất liệu: Gỗ MDF lõi xanh chống ẩm phun sơn kết hợp melamine *Lý do vì sao chúng tôi lại sản xuất hàng bằng gỗ lõi xanh chống ẩm thay vì gỗ mdf thường xem tại đây: Gỗ MDF là gì?; Màu sắc: như sản phẩm mẫu hoặc khách hàng tùy ý lựa chọn màu sắc, kiểu vân gỗ có tại gotrangtri; Kích thước: 1150 x 590 x 410mm; SKU: GHS-41025; Trạng thái trên trang sản phẩm: InStock\n   - Link nguồn: https://gotrangtri.vn/shop/ban-sofa-hien-dai-bang-go-cho-phong-khach-ghs-41025\n\n3. Kệ gỗ để sách cho p",
+        "latencyMs": 0,
+        "model": "claude-sonnet-4-6",
+        "adapter": "",
+        "llmBaseUrl": "http://127.0.0.1:8101"
+      }
+    }
+  ],
+  "runtime_after": {
+    "tenant_id": "10000000-0000-4000-8000-000000000102",
+    "desired": {
+      "kb_dir": "/opt/app/chatbot/kb/datasets/gotrangtri-20260610/dataset-20260620191737-gotrangtri-20260610",
+      "source": "ACTIVE_VERSION",
+      "version_id": "bf9e9c73-ba70-47fd-b5fe-061da7030eda",
+      "version_tag": "dataset-20260620193509-artifact-767a5866",
+      "fallback_reason": null
+    },
+    "running": {
+      "mode": "JAVA_SPAWNED",
+      "kb_dir": "/opt/app/chatbot/kb/datasets/gotrangtri-20260610/dataset-20260620191737-gotrangtri-20260610",
+      "source": "ACTIVE_VERSION",
+      "version_id": "bf9e9c73-ba70-47fd-b5fe-061da7030eda",
+      "version_tag": "dataset-20260620193509-artifact-767a5866",
+      "started_at": "2026-06-21T03:09:48.845166051Z",
+      "last_used_at": "2026-06-21T03:09:57.302200667Z",
+      "process_alive": true,
+      "pid": 76,
+      "note": null,
+      "ready": null,
+      "kb_loaded": null,
+      "retrieval_mode": null
+    },
+    "in_sync": true
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-go-lyh-dem-lung-thao-roi",
+  "final_url": "https://moho.com.vn/products/ghe-go-lyh-dem-lung-thao-roi",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:26:40.957400+00:00",
+  "content_hash": "8e4761f0c277cd6298b41048c4eb7b9a9fbac7be0682d54916970b8607aba694",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:26:38 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "343143",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"59ea3a4b715b412288b1764a690deab0\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:26:38 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1221",
+    "X-RequestId": "29ca9a36d401ab84ebaace73e51b610b",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-go-lyh-dem-lung-thao-roi-8e4761f0c277.html"
+}

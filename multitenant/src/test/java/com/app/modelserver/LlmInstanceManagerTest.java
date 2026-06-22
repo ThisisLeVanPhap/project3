@@ -3,10 +3,16 @@ package com.app.modelserver;
 import com.app.kb.ResolvedTenantKbDirectory;
 import com.app.kb.TenantKbDirectoryResolver;
 import com.app.kb.TenantKbDirectorySource;
+import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -140,6 +146,9 @@ class LlmInstanceManagerTest {
         assertEquals(versionId, status.running().versionId());
         assertTrue(status.running().processAlive());
         assertEquals(1234L, status.running().pid());
+        assertNull(status.running().ready());
+        assertNull(status.running().kbLoaded());
+        assertNull(status.running().retrievalMode());
         assertTrue(status.inSync());
     }
 
@@ -177,10 +186,50 @@ class LlmInstanceManagerTest {
     }
 
     @Test
-    void runtimeStatusExternalModeDoesNotClaimActualKbDir() {
+    void runtimeStatusExternalModeReadsHealthzKbDirAndVersion() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        HttpServer server = startJsonServer(() -> """
+                {
+                  "ready": true,
+                  "kb_dir": "F:/chatbot/kb/demo/versions/v20260614172805",
+                  "kb_loaded": true,
+                  "retrieval_mode": "keyword"
+                }
+                """);
+        try {
+            LlmProperties props = new LlmProperties();
+            props.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
+            TenantKbDirectoryResolver resolver = mock(TenantKbDirectoryResolver.class);
+            when(resolver.resolve(tenantId)).thenReturn(new ResolvedTenantKbDirectory(
+                    tenantId,
+                    "chatbot/kb/demo",
+                    TenantKbDirectorySource.LEGACY_TENANT_KB_DIR,
+                    null,
+                    null,
+                    null
+            ));
+            LlmInstanceManager manager = new LlmInstanceManager(props, resolver);
+
+            LlmInstanceManager.RuntimeKbStatusSnapshot status = manager.getRuntimeKbStatus(tenantId);
+
+            assertEquals("EXTERNAL_BASE_URL", status.running().mode());
+            assertEquals("F:/chatbot/kb/demo/versions/v20260614172805", status.running().kbDir());
+            assertEquals("v20260614172805", status.running().versionTag());
+            assertEquals("EXTERNAL_HEALTHZ", status.running().source());
+            assertTrue(status.running().ready());
+            assertTrue(status.running().kbLoaded());
+            assertEquals("keyword", status.running().retrievalMode());
+            assertEquals("Java does not own external Python process", status.running().note());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void runtimeStatusExternalModeDegradesSoftlyWhenHealthzFails() {
         UUID tenantId = UUID.randomUUID();
         LlmProperties props = new LlmProperties();
-        props.setBaseUrl("http://external-chatbot:8000/");
+        props.setBaseUrl("http://127.0.0.1:1");
         TenantKbDirectoryResolver resolver = mock(TenantKbDirectoryResolver.class);
         when(resolver.resolve(tenantId)).thenReturn(new ResolvedTenantKbDirectory(
                 tenantId,
@@ -196,8 +245,46 @@ class LlmInstanceManagerTest {
 
         assertEquals("EXTERNAL_BASE_URL", status.running().mode());
         assertNull(status.running().kbDir());
-        assertEquals("Java does not own external Python process", status.running().note());
+        assertNull(status.running().versionTag());
+        assertNull(status.running().ready());
+        assertNull(status.running().kbLoaded());
+        assertNull(status.running().retrievalMode());
+        assertEquals("Java could not read external runtime /healthz", status.running().note());
         assertNull(status.inSync());
+    }
+
+    @Test
+    void tenantSpecificKbDoesNotReportExternalRuntimeStatusEvenWhenExternalBaseUrlIsSet() {
+        UUID tenantId = UUID.randomUUID();
+        LlmProperties props = new LlmProperties();
+        props.setBaseUrl("http://127.0.0.1:65535");
+        TenantKbDirectoryResolver resolver = mock(TenantKbDirectoryResolver.class);
+        ResolvedTenantKbDirectory resolved = new ResolvedTenantKbDirectory(
+                tenantId,
+                "chatbot/kb/demo/versions/v20260609120000",
+                TenantKbDirectorySource.ACTIVE_VERSION,
+                UUID.randomUUID(),
+                "v20260609120000",
+                null
+        );
+        when(resolver.resolve(tenantId)).thenReturn(resolved);
+        LlmInstanceManager manager = new LlmInstanceManager(props, resolver);
+        manager.recordSpawnedRuntimeKb(tenantId, resolved, 1234L, Instant.parse("2026-06-09T12:00:00Z"), new FakeProcess(true));
+
+        LlmInstanceManager.RuntimeKbStatusSnapshot status = manager.getRuntimeKbStatus(tenantId);
+
+        assertEquals("JAVA_SPAWNED", status.running().mode());
+        assertEquals("chatbot/kb/demo/versions/v20260609120000", status.running().kbDir());
+        assertTrue(status.inSync());
+    }
+
+    @Test
+    void infersVersionTagFromWindowsKbDir() {
+        LlmInstanceManager manager = new LlmInstanceManager(new LlmProperties(), mock(TenantKbDirectoryResolver.class));
+
+        String versionTag = manager.inferVersionTagFromKbDir("F:\\20251\\prj3\\chatbot\\kb\\demo\\versions\\v20260614172805");
+
+        assertEquals("v20260614172805", versionTag);
     }
 
     @Test
@@ -220,6 +307,21 @@ class LlmInstanceManagerTest {
         assertFalse(rendered.contains("token"));
         assertFalse(rendered.contains("secret"));
         assertFalse(rendered.contains("api_key"));
+    }
+
+    private static HttpServer startJsonServer(Supplier<String> bodySupplier) throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/healthz", exchange -> {
+            byte[] bytes = bodySupplier.get().getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, bytes.length);
+            try (OutputStream outputStream = exchange.getResponseBody()) {
+                outputStream.write(bytes);
+            }
+        });
+        server.setExecutor(Executors.newSingleThreadExecutor());
+        server.start();
+        return server;
     }
 
     private static class FakeProcess extends Process {

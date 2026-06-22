@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-tv-oslo-201-mau-tu-nhien-trang-160",
+  "final_url": "https://moho.com.vn/products/tu-tv-oslo-201-mau-tu-nhien-trang-160",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:03:39.782827+00:00",
+  "content_hash": "dd658a66a7902d7dfd0be293b965fa2307cee597c7c4b4fa4132e6fb5254f788",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:03:39 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "312151",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"8869168dd88f4087890c5be62e022f0a\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:03:39 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1139",
+    "X-RequestId": "73d653343dd607404a6a5c15e23d1f98",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-tv-oslo-201-mau-tu-nhien-trang-160-dd658a66a790.html"
+}

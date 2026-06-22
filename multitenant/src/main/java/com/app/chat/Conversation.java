@@ -39,4 +39,8 @@ public class Conversation extends TenantScoped {
     // ✅ NEW: for ordering/debug
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
+
+    // ✅ NEW: unified customer ID for cross-channel identity resolution
+    @Column(name = "unified_customer_id")
+    private UUID unifiedCustomerId;
 }

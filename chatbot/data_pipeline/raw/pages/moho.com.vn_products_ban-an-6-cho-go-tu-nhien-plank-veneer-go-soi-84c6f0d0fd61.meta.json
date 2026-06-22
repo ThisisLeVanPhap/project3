@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ban-an-6-cho-go-tu-nhien-plank-veneer-go-soi",
+  "final_url": "https://moho.com.vn/products/ban-an-6-cho-go-tu-nhien-plank-veneer-go-soi",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:42:17.988944+00:00",
+  "content_hash": "84c6f0d0fd61cce30bb6e9c366bdc7b6d8fb1e13e19fe71b1bf7cba8a38d49ba",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:42:17 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "354894",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"26f34907c7784d8ea26dec775f824087\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:42:17 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1229",
+    "X-RequestId": "399d065fe722930e2e599e52726a8d2d",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ban-an-6-cho-go-tu-nhien-plank-veneer-go-soi-84c6f0d0fd61.html"
+}

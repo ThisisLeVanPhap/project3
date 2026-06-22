@@ -1,0 +1,26 @@
+﻿{
+    "tenant_id":  "10000000-0000-4000-8000-000000000102",
+    "desired":  {
+                    "kb_dir":  "/opt/app/chatbot/kb/datasets/gotrangtri-20260610/dataset-20260620191737-gotrangtri-20260610",
+                    "source":  "ACTIVE_VERSION",
+                    "version_id":  "728ecddd-4516-4122-9504-03e0abe3d763",
+                    "version_tag":  "dataset-20260620192717-artifact-767a5866",
+                    "fallback_reason":  null
+                },
+    "running":  {
+                    "mode":  "JAVA_SPAWNED",
+                    "kb_dir":  "/opt/app/chatbot/kb/datasets/gotrangtri-20260610/dataset-20260620191737-gotrangtri-20260610",
+                    "source":  "ACTIVE_VERSION",
+                    "version_id":  "728ecddd-4516-4122-9504-03e0abe3d763",
+                    "version_tag":  "dataset-20260620192717-artifact-767a5866",
+                    "started_at":  "2026-06-20T19:29:59.333606329Z",
+                    "last_used_at":  "2026-06-20T19:31:53.289560384Z",
+                    "process_alive":  true,
+                    "pid":  73,
+                    "note":  null,
+                    "ready":  null,
+                    "kb_loaded":  null,
+                    "retrieval_mode":  null
+                },
+    "in_sync":  true
+}

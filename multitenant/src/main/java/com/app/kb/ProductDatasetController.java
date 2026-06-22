@@ -48,6 +48,30 @@ public class ProductDatasetController {
         productDatasetService.delete(id);
     }
 
+    @GetMapping("/{id}/artifacts")
+    public List<ProductDatasetArtifactResponse> listArtifacts(@PathVariable UUID id) {
+        principalAccessor.requirePlatformAdmin();
+        return productDatasetService.listArtifacts(id);
+    }
+
+    @PostMapping("/{id}/artifacts/build")
+    public ProductDatasetArtifactResponse buildArtifact(@PathVariable UUID id) {
+        principalAccessor.requirePlatformAdmin();
+        return productDatasetService.buildArtifact(id);
+    }
+
+    @PostMapping("/kb-bindings/bind")
+    public TenantKbBindingResponse bindArtifact(@RequestBody TenantKbBindRequest request) {
+        principalAccessor.requirePlatformAdmin();
+        return productDatasetService.bindArtifactToTenant(request);
+    }
+
+    @PostMapping("/kb-bindings/unbind")
+    public TenantKbBindingResponse unbindTenantKb(@RequestBody TenantKbUnbindRequest request) {
+        principalAccessor.requirePlatformAdmin();
+        return productDatasetService.unbindTenantKb(request);
+    }
+
     @PostMapping("/{id}/assign")
     public ProductDatasetAssignResponse assign(
             @PathVariable UUID id,

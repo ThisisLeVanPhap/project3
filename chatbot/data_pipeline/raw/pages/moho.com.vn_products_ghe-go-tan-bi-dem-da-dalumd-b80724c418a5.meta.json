@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-go-tan-bi-dem-da-dalumd",
+  "final_url": "https://moho.com.vn/products/ghe-go-tan-bi-dem-da-dalumd",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:00:29.981817+00:00",
+  "content_hash": "b80724c418a5426054d22762b470e907e7d1349d419500ef6b9995629ef69c79",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:00:29 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "340428",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"aa5973b7146744949c57c74876ad8d07\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:00:29 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1106",
+    "X-RequestId": "33668dca5c3ec5f7c61a514b40c1ae41",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-go-tan-bi-dem-da-dalumd-b80724c418a5.html"
+}

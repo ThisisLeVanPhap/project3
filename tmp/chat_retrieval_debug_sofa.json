@@ -1,0 +1,12 @@
+{
+  "key": "sofa",
+  "message": "Tư vấn sofa cho phòng khách nhỏ ngân sách 5 triệu",
+  "status": 200,
+  "response": {
+    "reply": "Mình tìm thấy một số sản phẩm phù hợp trong dữ liệu hiện có:\n\n1. Ghế sofa phòng khách thiết kế nhỏ gọn hiện đại GHS-8331 [P1]\n   - Giá: 9.100.000 VND\n   - Danh mục: Sofa\n   - Phu hop vi: khop nhom Sofa\n   - Thuộc tính chính: Chất liệu: khung gỗ tự nhiên 100%, lò xo lưới, mút mềm K43 và vải nỉ bọc cao cấp; Màu sắc: khách hàng tùy ý lựa chọn mẫu vải tại cửa hàng; Kích thước: 580 x 470 x 425mm; SKU: GHS-8331; Trạng thái trên trang sản phẩm: InStock\n   - Link nguồn: https://gotrangtri.vn/shop/ghe-sofa-phong-khach-thiet-ke-nho-gon-hien-dai-ghs-8331\n\n2. Bàn sofa hiện đại bằng gỗ cho phòng khách GHS-41025 [P2]\n   - Giá: 5.000.000 VND\n   - Danh mục: Bàn trà\n   - Phu hop vi: khop nhom Bàn trà\n   - Thuộc tính chính: Chất liệu: Gỗ MDF lõi xanh chống ẩm phun sơn kết hợp melamine *Lý do vì sao chúng tôi lại sản xuất hàng bằng gỗ lõi xanh chống ẩm thay vì gỗ mdf thường xem tại đây: Gỗ MDF là gì?; Màu sắc: như sản phẩm mẫu hoặc khách hàng tùy ý lựa chọn màu sắc, kiểu vân gỗ có tại gotrangtri; Kích thước: 1150 x 590 x 410mm; SKU: GHS-41025; Trạng thái trên trang sản phẩm: InStock\n   - Link nguồn: https://gotrangtri.vn/shop/ban-sofa-hien-dai-bang-go-cho-phong-khach-ghs-41025\n\n3. Kệ gỗ để sách cho p",
+    "latencyMs": 0,
+    "model": "claude-sonnet-4-6",
+    "adapter": "",
+    "llmBaseUrl": "http://127.0.0.1:8101"
+  }
+}

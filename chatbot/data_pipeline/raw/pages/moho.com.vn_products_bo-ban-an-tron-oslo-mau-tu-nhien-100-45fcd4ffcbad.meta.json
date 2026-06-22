@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/bo-ban-an-tron-oslo-mau-tu-nhien-100",
+  "final_url": "https://moho.com.vn/products/bo-ban-an-tron-oslo-mau-tu-nhien-100",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:04:45.336987+00:00",
+  "content_hash": "45fcd4ffcbad3c23c213f0f4cd7ce31da5ddd96c12eae09e80e8c1c42fda3784",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:04:44 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "390707",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"d12a92c6b31f4da9809c4fda88960387\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:04:44 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1722",
+    "X-RequestId": "c0400c2ce72dca58dbe79350138f65da",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_bo-ban-an-tron-oslo-mau-tu-nhien-100-45fcd4ffcbad.html"
+}

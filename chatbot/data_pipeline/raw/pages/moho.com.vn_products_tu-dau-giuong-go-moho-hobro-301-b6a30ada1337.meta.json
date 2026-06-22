@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-dau-giuong-go-moho-hobro-301",
+  "final_url": "https://moho.com.vn/products/tu-dau-giuong-go-moho-hobro-301",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:27:04.942892+00:00",
+  "content_hash": "b6a30ada1337ddb613c39d34b78141922c000051c241274ff98aa3535b22faa4",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:27:04 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "327040",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"924e695e0c8f42ecb97ab7595024a365\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:27:04 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1242",
+    "X-RequestId": "1dc51ad5e01817fe85949fd1604b5fff",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-dau-giuong-go-moho-hobro-301-b6a30ada1337.html"
+}

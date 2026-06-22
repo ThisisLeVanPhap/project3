@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-sofa-moho-leeds-701",
+  "final_url": "https://moho.com.vn/products/ghe-sofa-moho-leeds-701",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:48:19.323395+00:00",
+  "content_hash": "cc1f19d2595932d9afc438f1462d4c1c08caa6c4bdfab00529642cba4e40797c",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:48:18 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "327543",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"91aa8ad887ce468aa2d94b743b71d9af\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:48:18 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82977",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1178",
+    "X-RequestId": "91092aa7ddd020ffe21ecc8980f42935",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-sofa-moho-leeds-701-cc1f19d25959.html"
+}

@@ -114,6 +114,55 @@ class PurchaseRequestControllerTest {
     }
 
     @Test
+    void platformAdminViewsPurchaseRequestDetailForSelectedTenant() throws Exception {
+        String tenantId = "8e0f40c4-83de-4d44-bf0f-5e53769595e0";
+        TenantContext.set(tenantId);
+        PurchaseRequest purchaseRequest = purchaseRequest(42L, tenantId, "Nguyen Van A", "0912345678", "12 Nguyen Trai", "Call first", "NEW", Instant.parse("2026-04-01T10:07:10Z"));
+
+        when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN, AppRole.TENANT_MEMBER)).thenReturn(
+                new AppPrincipal("platform-admin", AppRole.PLATFORM_ADMIN, null, "Platform Admin", "admin")
+        );
+        when(purchaseRequestService.findByTenantAndId(tenantId, 42L)).thenReturn(purchaseRequest);
+        when(purchaseRequestService.findMemberDisplayNames(tenantId)).thenReturn(Map.of());
+
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new PurchaseRequestController(purchaseRequestService, principalAccessor))
+                .setControllerAdvice(new ApiExceptionHandler())
+                .build();
+
+        mvc.perform(get("/api/purchase-requests/{id}", 42L)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(42))
+                .andExpect(jsonPath("$.tenant_id").value(tenantId))
+                .andExpect(jsonPath("$.conversation_id").exists())
+                .andExpect(jsonPath("$.status").value("NEW"));
+
+        verify(purchaseRequestService).findByTenantAndId(tenantId, 42L);
+    }
+
+    @Test
+    void tenantAdminViewsOwnPurchaseRequestDetail() throws Exception {
+        String tenantId = "8e0f40c4-83de-4d44-bf0f-5e53769595e0";
+        PurchaseRequest purchaseRequest = purchaseRequest(43L, tenantId, "Tran Thi B", "0988111222", "34 Le Loi", "", "CONTACTED", Instant.parse("2026-04-01T10:07:10Z"));
+
+        when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN, AppRole.TENANT_MEMBER)).thenReturn(
+                new AppPrincipal(UUID.randomUUID().toString(), AppRole.TENANT_ADMIN, tenantId, "Tenant Admin", "admin@tenant.local")
+        );
+        when(purchaseRequestService.findByTenantAndId(tenantId, 43L)).thenReturn(purchaseRequest);
+        when(purchaseRequestService.findMemberDisplayNames(tenantId)).thenReturn(Map.of());
+
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new PurchaseRequestController(purchaseRequestService, principalAccessor))
+                .setControllerAdvice(new ApiExceptionHandler())
+                .build();
+
+        mvc.perform(get("/api/purchase-requests/{id}", 43L)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(43))
+                .andExpect(jsonPath("$.status").value("CONTACTED"));
+    }
+
+    @Test
     void rejectsTenantFilterForDifferentTenant() throws Exception {
         TenantContext.set("8e0f40c4-83de-4d44-bf0f-5e53769595e0");
         when(principalAccessor.requireAnyRole(AppRole.PLATFORM_ADMIN, AppRole.TENANT_ADMIN, AppRole.TENANT_MEMBER)).thenReturn(
@@ -324,6 +373,8 @@ class PurchaseRequestControllerTest {
     ) throws Exception {
         PurchaseRequest purchaseRequest = new PurchaseRequest();
         purchaseRequest.setTenantId(tenantId);
+        purchaseRequest.setChannel("web");
+        purchaseRequest.setConversationId("conv-" + id);
         purchaseRequest.setCustomerName(customerName);
         purchaseRequest.setPhone(phone);
         purchaseRequest.setShippingAddress(shippingAddress);

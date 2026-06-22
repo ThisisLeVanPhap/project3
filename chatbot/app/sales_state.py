@@ -5,8 +5,13 @@ from typing import Any, Dict, List
 
 try:
     from .sales_slots import extract_sales_slots, fold_text, repair_mojibake, score_lead
+    from .purchase_intent_score import score_purchase_intent
 except ImportError:  # pragma: no cover - direct script imports
     from app.sales_slots import extract_sales_slots, fold_text, repair_mojibake, score_lead
+    from app.purchase_intent_score import score_purchase_intent
+
+
+CONSULTATION_STAGES = {"discover", "suggest", "compare", "handle_objection", "confirm", "purchase_request"}
 
 
 @dataclass
@@ -215,11 +220,90 @@ def resolve_product_reference(message: str, state: SalesConversationState) -> Pr
     return ProductReferenceResult(False, None, "no_match", best_score)
 
 
+def known_consultation_slots(state: SalesConversationState) -> Dict[str, Any]:
+    keys = (
+        "product_type", "product_category", "room", "budget", "budget_text", "budget_usd", "style",
+        "space", "material", "color", "constraints", "pets", "kids", "children", "back_pain",
+        "health_need", "easy_clean", "selected_product_name", "selected_product_id", "objection_type",
+    )
+    return {key: state.slots.get(key) for key in keys if state.slots.get(key) not in (None, "", [], {})}
+
+
+def consultation_missing_slots(state: SalesConversationState) -> List[str]:
+    missing: List[str] = []
+    slots = state.slots or {}
+    has_product = bool(slots.get("product_type") or slots.get("product_category") or state.selected_products)
+    if not has_product:
+        missing.append("product_type")
+    if has_product and not (slots.get("room") or slots.get("space")):
+        missing.append("room_or_space")
+    if has_product and not (slots.get("budget") or slots.get("budget_text") or slots.get("budget_usd") or slots.get("price_target") or slots.get("price_max")):
+        missing.append("budget")
+    if state.current_stage == "confirm" and not state.contact and not state.handoff_required:
+        missing.append("contact")
+    return missing[:2]
+
+
+def consultation_stage_for(state: SalesConversationState, slots: Dict[str, Any] | None = None) -> str:
+    slots = slots or {}
+    intents = slots.get("intents") or state.slots.get("last_intents") or []
+    if state.handoff_status == "sent":
+        return "purchase_request"
+    if slots.get("is_product_reference_question") or slots.get("has_product_reference") and "purchase_intent" not in intents:
+        return "compare"
+    if slots.get("objection_type") or state.slots.get("objection_type"):
+        return "handle_objection"
+    if "purchase_intent" in intents or state.purchase_request or state.selected_products and state.contact:
+        return "confirm"
+    if state.last_recommended_products or state.selected_products:
+        return "suggest"
+    if state.slots.get("product_type") or state.slots.get("product_category"):
+        return "suggest"
+    return "discover"
+
+
+def next_best_action(state: SalesConversationState, slots: Dict[str, Any] | None = None) -> str:
+    slots = slots or {}
+    intents = slots.get("intents") or []
+    if state.handoff_status == "sent":
+        return "send_purchase_request"
+    if slots.get("is_product_reference_question") or slots.get("has_product_reference"):
+        return "compare_options"
+    if slots.get("objection_type") or state.slots.get("objection_type"):
+        return "handle_objection"
+    if state.confirmation_status == "pending":
+        return "ask_confirmation"
+    if "purchase_intent" in intents and state.selected_products and not state.contact and not state.handoff_required:
+        return "ask_contact"
+    if "purchase_intent" in intents and not state.selected_products:
+        if (state.slots.get("product_type") or state.slots.get("product_category")) and consultation_missing_slots(state):
+            return "ask_discovery_question"
+        return "ask_product"
+    if slots.get("is_product_reference_question") or slots.get("has_product_reference"):
+        return "compare_options"
+    missing = consultation_missing_slots(state)
+    if missing and state.current_stage == "discover":
+        return "ask_discovery_question"
+    if state.current_stage == "suggest":
+        return "suggest_from_kb"
+    return "continue_consultation"
+
+
 def apply_message_to_state(state: SalesConversationState, message: str) -> Dict[str, Any]:
     slots = extract_sales_slots(message)
-    state.slots.update({k: v for k, v in slots.items() if k not in {"intents", "intent", "missing_fields"}})
+    incoming = {k: v for k, v in slots.items() if k not in {"intents", "intent", "missing_fields"}}
+    old_category = state.slots.get("product_category") or state.slots.get("product_type")
+    new_category = incoming.get("product_category") or incoming.get("product_type")
+    if old_category and new_category and fold_text(old_category) != fold_text(new_category):
+        state.slots["product_category_prev"] = old_category
+        state.selected_products = []
+        state.purchase_request = None
+        state.confirmation_status = "none"
+        state.handoff_status = "not_ready"
+    state.slots.update(incoming)
     state.slots["last_intent"] = slots.get("intent")
     state.slots["last_intents"] = slots.get("intents", [])
+    state.slots["last_nlu_intent"] = slots.get("nlu_intent")
     for key in ("phone", "email"):
         if slots.get(key):
             state.contact[key] = slots[key]
@@ -236,11 +320,30 @@ def apply_message_to_state(state: SalesConversationState, message: str) -> Dict[
     if resolved.matched and resolved.product:
         if not any((p.get("sku"), p.get("source_url"), p.get("product_name")) == (resolved.product.get("sku"), resolved.product.get("source_url"), resolved.product.get("product_name")) for p in state.selected_products):
             state.selected_products.append(resolved.product)
+        state.slots["selected_product_id"] = resolved.product.get("sku") or resolved.product.get("pid") or resolved.product.get("source_url")
+        state.slots["selected_product_name"] = resolved.product.get("product_name")
 
     state.lead_score, state.lead_status = score_lead(slots, has_selected_product=bool(state.selected_products))
-    state.missing_fields = suggest_missing_fields(state, slots)
+    purchase_score = score_purchase_intent(
+        slots,
+        has_selected_product=bool(state.selected_products),
+        has_contact=bool(state.contact),
+        has_address=bool(state.slots.get("address") or state.slots.get("location") or state.slots.get("delivery_area")),
+    )
+    state.slots["purchase_intent_score"] = purchase_score.score
+    state.slots["purchase_intent_signals"] = purchase_score.signals
+    purchase_missing = suggest_missing_fields(state, slots)
+    stage = consultation_stage_for(state, slots)
+    state.current_stage = stage
+    consult_missing = consultation_missing_slots(state)
+    state.missing_fields = purchase_missing or consult_missing
+    action = next_best_action(state, slots)
+    state.slots["consultation_stage"] = stage
+    state.slots["next_best_action"] = action
+    if consult_missing:
+        state.slots["consultation_missing_slots"] = consult_missing
     state.updated_at = time.time()
-    return {"slots": slots, "resolved_product": resolved}
+    return {"slots": slots, "resolved_product": resolved, "stage": stage, "next_best_action": action, "missing_slots": consult_missing}
 
 
 def suggest_missing_fields(state: SalesConversationState, slots: Dict[str, Any] | None = None) -> List[str]:
@@ -250,4 +353,7 @@ def suggest_missing_fields(state: SalesConversationState, slots: Dict[str, Any] 
         missing.append("product")
     if state.selected_products and not state.contact and not state.handoff_required:
         missing.append("contact")
+    if state.selected_products and state.contact and not (state.slots.get("address") or state.slots.get("location") or state.slots.get("delivery_area")):
+        if (state.slots.get("purchase_intent_score") or 0) >= 0.85:
+            missing.append("address")
     return missing

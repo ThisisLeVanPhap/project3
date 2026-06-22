@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tham-curve-tron-den",
+  "final_url": "https://moho.com.vn/products/tham-curve-tron-den",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:28:11.389051+00:00",
+  "content_hash": "b6ce165febe8cfec985c765dfd803e19dc2c241ff75ec6c6cc34ccde2fd4ee5a",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:28:11 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "288982",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"90440e4db93845e7b1d3a4fa0f503c9e\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:28:11 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "748",
+    "X-RequestId": "fe79759d9e5d4cf4da2e4244d4e44565",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tham-curve-tron-den-b6ce165febe8.html"
+}

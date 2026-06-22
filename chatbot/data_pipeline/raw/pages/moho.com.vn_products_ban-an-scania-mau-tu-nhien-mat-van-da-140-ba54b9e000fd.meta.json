@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ban-an-scania-mau-tu-nhien-mat-van-da-140",
+  "final_url": "https://moho.com.vn/products/ban-an-scania-mau-tu-nhien-mat-van-da-140",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:43:19.252277+00:00",
+  "content_hash": "ba54b9e000fd90b177fb949f8ac470beaf7d6ebeaf75ec9fa2d98382bf4bb7ea",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:43:18 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "332610",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"9d3908e625764b3db304e3457c4eb6f4\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:43:18 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1203",
+    "X-RequestId": "c72800c59c6a0028cb941423957266da",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ban-an-scania-mau-tu-nhien-mat-van-da-140-ba54b9e000fd.html"
+}

@@ -30,12 +30,19 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-admin}
       SERVER_PORT: 8080
       PYTHON_LLM_BASE_URL: ${PYTHON_LLM_BASE_URL:-http://chatbot-api:8000}
+      PYTHON_BIN: ${PYTHON_BIN:-python3}
+      MODEL_SERVER_DIR: ${MODEL_SERVER_DIR:-/opt/app/chatbot}
       LLM_HEALTH_PATH: ${LLM_HEALTH_PATH:-/healthz}
       LLM_CONNECT_TIMEOUT_MS: ${LLM_CONNECT_TIMEOUT_MS:-2000}
       LLM_RESPONSE_TIMEOUT_MS: ${LLM_RESPONSE_TIMEOUT_MS:-120000}
       MESSENGER_VERIFY_TOKEN: ${MESSENGER_VERIFY_TOKEN:-woodchat_secret}
     ports:
       - "${APP_PORT:-8080}:8080"
+    volumes:
+      - ./chatbot:/opt/app/chatbot
+      - ./data_pipeline:/opt/app/data_pipeline
+      - ${CHATBOT_MODELS_HOST_DIR:-./chatbot/models}:/models
+      - huggingface-cache:/root/.cache/huggingface
 
   chatbot-api:
     build:

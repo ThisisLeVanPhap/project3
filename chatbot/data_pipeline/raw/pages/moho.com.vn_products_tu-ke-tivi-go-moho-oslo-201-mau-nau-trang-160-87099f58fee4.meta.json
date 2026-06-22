@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-ke-tivi-go-moho-oslo-201-mau-nau-trang-160",
+  "final_url": "https://moho.com.vn/products/tu-ke-tivi-go-moho-oslo-201-mau-nau-trang-160",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:43:21.628103+00:00",
+  "content_hash": "87099f58fee4dd01bf4ce12cccc0aed2b967a4054d030462b5636b94dba6ad58",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:43:21 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "324121",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"860919d499c246f7a2d3c47c81257144\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:43:21 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1162",
+    "X-RequestId": "27bcd3a7177dae1d211917d807805977",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-ke-tivi-go-moho-oslo-201-mau-nau-trang-160-87099f58fee4.html"
+}

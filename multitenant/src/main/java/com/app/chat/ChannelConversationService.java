@@ -1,5 +1,7 @@
 package com.app.chat;
 
+import com.app.customers.CustomerIdentityService;
+import com.app.customers.ResolvedCustomer;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -10,9 +12,14 @@ public class ChannelConversationService {
     private static final String ACTIVE_STATUS = "ACTIVE";
 
     private final ConversationRepository conversationRepository;
+    private final CustomerIdentityService customerIdentityService;
 
-    public ChannelConversationService(ConversationRepository conversationRepository) {
+    public ChannelConversationService(
+            ConversationRepository conversationRepository,
+            CustomerIdentityService customerIdentityService
+    ) {
         this.conversationRepository = conversationRepository;
+        this.customerIdentityService = customerIdentityService;
     }
 
     public Conversation findOrCreateActiveConversation(
@@ -22,13 +29,34 @@ public class ChannelConversationService {
             String senderKey
     ) {
         String conversationUserKey = toConversationUserKey(channel, senderKey);
-        return conversationRepository
-                .findTop1ByTenantIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+        Conversation conversation = conversationRepository
+                .findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
                         tenantId,
+                        chatbotId,
                         conversationUserKey,
                         ACTIVE_STATUS
                 )
                 .orElseGet(() -> createConversation(tenantId, chatbotId, conversationUserKey));
+
+        // ✅ NEW: Resolve and set unified customer ID if not already set
+        if (conversation.getUnifiedCustomerId() == null && customerIdentityService != null) {
+            try {
+                ResolvedCustomer resolved = customerIdentityService.resolveOrCreateIdentity(
+                        tenantId,
+                        channel,
+                        senderKey,
+                        null,
+                        null,
+                        null
+                );
+                conversation.setUnifiedCustomerId(resolved.unifiedCustomer().getId());
+                conversationRepository.save(conversation);
+            } catch (Exception e) {
+                // Identity resolution failed - conversation still usable without unified customer
+            }
+        }
+
+        return conversation;
     }
 
     public String buildMessengerSenderKey(String pageId, String senderId) {
@@ -37,6 +65,10 @@ public class ChannelConversationService {
 
     public String buildTelegramSenderKey(String chatId) {
         return "chat:" + normalize(chatId);
+    }
+
+    public String buildConversationUserKey(String channel, String senderKey) {
+        return toConversationUserKey(channel, senderKey);
     }
 
     static String toConversationUserKey(String channel, String senderKey) {

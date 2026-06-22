@@ -6,9 +6,13 @@ from pathlib import Path
 from typing import Any, Dict
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
+REPO_ROOT = ROOT_DIR.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
+from data_pipeline.crawling.quality_audit import audit_product_dataset
 from tools.build_product_kb import build_product_kb
 
 
@@ -24,7 +28,13 @@ def manifest_file(dataset_dir: Path, manifest: Dict[str, Any], key: str, fallbac
     return dataset_dir / str(files.get(key) or fallback)
 
 
-def import_dataset(dataset_dir: Path, tenant_code: str, kb_base: Path, version_tag: str | None) -> Dict[str, Any]:
+def import_dataset(
+    dataset_dir: Path,
+    tenant_code: str,
+    kb_base: Path,
+    version_tag: str | None,
+    allow_quality_fail: bool = False,
+) -> Dict[str, Any]:
     dataset_dir = dataset_dir.resolve()
     kb_base = kb_base.resolve()
     manifest = read_manifest(dataset_dir)
@@ -32,6 +42,10 @@ def import_dataset(dataset_dir: Path, tenant_code: str, kb_base: Path, version_t
     rag_products = manifest_file(dataset_dir, manifest, "rag_products", "rag_products.jsonl")
     if not rag_products.is_file():
         raise FileNotFoundError(f"rag_products.jsonl not found: {rag_products}")
+    quality_report = audit_product_dataset(dataset_dir, write_report=True)
+    if quality_report.get("status") == "fail" and not allow_quality_fail:
+        reasons = "; ".join(quality_report.get("fail_reasons") or quality_report.get("reasons") or ["quality audit failed"])
+        raise ValueError(f"Dataset quality audit failed: {reasons}")
 
     tenant_kb_dir = kb_base / tenant_code
     build_dir = tenant_kb_dir / "versions" / version_tag if version_tag else tenant_kb_dir
@@ -48,6 +62,9 @@ def import_dataset(dataset_dir: Path, tenant_code: str, kb_base: Path, version_t
         "kb_dir": str(build_dir),
         "products_path": str(products_path),
         "chunk_count": chunk_count,
+        "quality_status": quality_report.get("status"),
+        "quality_reasons": quality_report.get("reasons", []),
+        "quality_audit_path": quality_report.get("quality_audit_path"),
     }
     return result
 
@@ -58,6 +75,7 @@ def main() -> None:
     parser.add_argument("--tenant-code", required=True, help="Tenant code used under kb-base.")
     parser.add_argument("--kb-base", required=True, help="Base directory for tenant KB folders.")
     parser.add_argument("--version-tag", help="Optional KB version folder name under <tenant>/versions.")
+    parser.add_argument("--allow-quality-fail", action="store_true", help="Allow import even when dataset quality audit fails.")
     args = parser.parse_args()
 
     try:
@@ -66,6 +84,7 @@ def main() -> None:
             args.tenant_code.strip(),
             Path(args.kb_base),
             args.version_tag.strip() if args.version_tag else None,
+            allow_quality_fail=args.allow_quality_fail,
         )
         print(json.dumps(result, ensure_ascii=False))
     except Exception as exc:

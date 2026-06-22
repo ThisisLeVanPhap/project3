@@ -9,6 +9,8 @@ import java.util.List;
 
 public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 
+    long deleteByTenantId(String tenantId);
+
     @Query("select count(f) from Feedback f where f.createdAt >= :since")
     long countAllSince(@Param("since") Instant since);
 

@@ -90,6 +90,7 @@
         <button class="sub-tab hidden" data-group="businessData" data-tab="purchase-requests">Purchase Requests</button>
 
         <button class="sub-tab hidden" data-group="operations" data-tab="runtime">Runtime</button>
+        <button class="sub-tab hidden" data-group="operations" data-tab="reset-conversation">Reset Conversation</button>
         <button class="sub-tab hidden" data-group="operations" data-tab="health">Health</button>
         <button class="sub-tab hidden" data-group="operations" data-tab="benchmark">Benchmark</button>
         <button class="sub-tab hidden" data-group="operations" data-tab="dev-debug">Dev Debug</button>
@@ -542,6 +543,20 @@
             <div class="note">
                 Source URLs are read from the tenant KB directory <code>raw_urls.txt</code>. Rebuild status history is currently exposed through Monitoring snapshots only; there is no standalone KB rebuild-status endpoint.
             </div>
+            <div class="grid2">
+                <div>
+                    <label>Add product URL</label>
+                    <input id="kbProductUrlInput" placeholder="https://example.com/products/item" />
+                </div>
+                <div>
+                    <label>Set sitemap/root URL</label>
+                    <input id="kbSitemapUrlInput" placeholder="https://example.com/sitemap.xml or https://example.com" />
+                </div>
+            </div>
+            <div class="row">
+                <button class="secondary" id="addKbProductUrl">Add product URL</button>
+                <button class="secondary" id="setKbSitemap">Set sitemap/root URL</button>
+            </div>
             <div id="kbSourceUrlsPanel" class="kb-panel"></div>
             <div id="kbRebuildStatusPanel" class="kb-panel"></div>
             <span class="muted" id="kbRebuildMsg"></span>
@@ -551,7 +566,7 @@
             <div class="head">
                 <div>
                     <h2>Product Datasets</h2>
-                    <div class="muted">Datasets are offline crawled product catalogs that can be assigned to a tenant KB.</div>
+                    <div class="muted">Datasets are offline crawled product catalogs that can be assigned to a tenant KB. Raw crawl output alone will not appear here until it is materialized into a dataset folder with manifest.json and rag_products.jsonl.</div>
                 </div>
                 <div class="row">
                     <button class="secondary" id="toggleProductDatasetsOut">Show raw response</button>
@@ -649,6 +664,63 @@
             <div class="note tenant-context-notice" id="kbRuntimeTenantNotice"></div>
             <div id="kbRuntimeStatusPanel" class="kb-panel"></div>
             <span class="muted" id="kbRuntimeMsg"></span>
+        </section>
+
+        <section id="tab-reset-conversation" class="card hidden">
+            <div class="head">
+                <div>
+                    <h2>Reset Conversation</h2>
+                    <div class="muted">Clear testing history for one selected-tenant conversation.</div>
+                </div>
+            </div>
+            <div class="note tenant-context-notice" id="resetConversationTenantNotice"></div>
+
+            <div class="reset-mode-row">
+                <label class="inline-choice">
+                    <input type="radio" name="resetConversationMode" value="conversationId" checked />
+                    By conversationId
+                </label>
+                <label class="inline-choice">
+                    <input type="radio" name="resetConversationMode" value="externalUser" />
+                    By channel + external user
+                </label>
+            </div>
+
+            <div id="resetConversationIdFields" class="grid2">
+                <div>
+                    <label>Conversation ID</label>
+                    <input id="resetConversationId" placeholder="Conversation UUID" />
+                </div>
+            </div>
+
+            <div id="resetExternalUserFields" class="grid3 hidden">
+                <div>
+                    <label>Channel</label>
+                    <select id="resetChannel">
+                        <option value="messenger">messenger</option>
+                        <option value="telegram">telegram</option>
+                    </select>
+                </div>
+                <div>
+                    <label>External user key</label>
+                    <input id="resetExternalUserId" placeholder="messenger page:<pageId>:sender:<psid> or telegram chatId" />
+                </div>
+                <div>
+                    <label>Chatbot</label>
+                    <select id="resetChatbotId"></select>
+                </div>
+            </div>
+
+            <div class="row reset-options">
+                <label class="inline-choice">
+                    <input id="resetDeleteMessages" type="checkbox" checked />
+                    Delete messages
+                </label>
+                <button id="resetConversationBtn" class="danger">Reset conversation</button>
+                <span class="muted" id="resetConversationMsg"></span>
+            </div>
+
+            <div id="resetConversationResult" class="note hidden"></div>
         </section>
 
         <section id="tab-health" class="card hidden">

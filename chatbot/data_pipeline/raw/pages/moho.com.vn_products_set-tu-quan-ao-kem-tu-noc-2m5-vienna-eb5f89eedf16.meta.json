@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/set-tu-quan-ao-kem-tu-noc-2m5-vienna",
+  "final_url": "https://moho.com.vn/products/set-tu-quan-ao-kem-tu-noc-2m5-vienna",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:42:41.488963+00:00",
+  "content_hash": "eb5f89eedf16072294c1d4b64a490c050f73ab633499c7dbe813c2e66545644a",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:42:41 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "391477",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"b67c2f118bba416aa49a1b336c6669d8\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:42:41 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1526",
+    "X-RequestId": "067c2664ca068ecd7e0064cca63efdd3",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_set-tu-quan-ao-kem-tu-noc-2m5-vienna-eb5f89eedf16.html"
+}

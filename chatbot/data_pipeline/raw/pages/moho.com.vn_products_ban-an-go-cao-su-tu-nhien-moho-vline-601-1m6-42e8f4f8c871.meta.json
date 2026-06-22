@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ban-an-go-cao-su-tu-nhien-moho-vline-601-1m6",
+  "final_url": "https://moho.com.vn/products/ban-an-go-cao-su-tu-nhien-moho-vline-601-1m6",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:51:55.281798+00:00",
+  "content_hash": "42e8f4f8c871332e291ba24e86250ef706d8d0ee12471577883aebe867c49bfe",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:51:55 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "340615",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"af06481e927246a8b2d89f2ae220060d\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:51:55 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82977",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1216",
+    "X-RequestId": "3455929ea5e666feda7dc79972d42df5",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ban-an-go-cao-su-tu-nhien-moho-vline-601-1m6-42e8f4f8c871.html"
+}

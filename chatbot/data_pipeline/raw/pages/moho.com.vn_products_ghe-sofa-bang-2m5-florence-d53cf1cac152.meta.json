@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-sofa-bang-2m5-florence",
+  "final_url": "https://moho.com.vn/products/ghe-sofa-bang-2m5-florence",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:42:21.887357+00:00",
+  "content_hash": "d53cf1cac15287be5df425a30b653f8f989eb12a9151fa90c7f627cc230b6d07",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:42:21 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "343589",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"7bf90014f4954371a62ba1c3f7c74ee7\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:42:21 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1152",
+    "X-RequestId": "8cb1845f6888a2e995815dda6f9d5126",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-sofa-bang-2m5-florence-d53cf1cac152.html"
+}

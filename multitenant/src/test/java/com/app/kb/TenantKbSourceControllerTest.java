@@ -4,6 +4,8 @@ import com.app.auth.AppPrincipal;
 import com.app.auth.AppRole;
 import com.app.auth.SessionPrincipalAccessor;
 import com.app.common.ApiExceptionHandler;
+import com.app.tenant.TenantContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -15,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
+
 
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -29,6 +32,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class TenantKbSourceControllerTest {
 
+    @AfterEach
+    void clearTenantContext() {
+        TenantContext.clear();
+    }
+
     @Mock
     private TenantKbSourceService tenantKbSourceService;
 
@@ -38,7 +46,7 @@ class TenantKbSourceControllerTest {
     @Test
     void tenantAdminCanListOwnKbSourceUrls() throws Exception {
         UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
-        when(principalAccessor.requireTenantAdmin()).thenReturn(
+        when(principalAccessor.requireAnyRole(AppRole.TENANT_ADMIN, AppRole.PLATFORM_ADMIN)).thenReturn(
                 new AppPrincipal("admin-1", AppRole.TENANT_ADMIN, tenantId.toString(), "Tenant Admin", "admin@tenant.local")
         );
         when(tenantKbSourceService.list(tenantId)).thenReturn(
@@ -59,7 +67,7 @@ class TenantKbSourceControllerTest {
     void tenantAdminCanAddOwnKbSourceUrl() throws Exception {
         UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
         TenantKbSourceService.SourceUrlRequest request = new TenantKbSourceService.SourceUrlRequest("https://example.com/faq");
-        when(principalAccessor.requireTenantAdmin()).thenReturn(
+        when(principalAccessor.requireAnyRole(AppRole.TENANT_ADMIN, AppRole.PLATFORM_ADMIN)).thenReturn(
                 new AppPrincipal("admin-1", AppRole.TENANT_ADMIN, tenantId.toString(), "Tenant Admin", "admin@tenant.local")
         );
         when(tenantKbSourceService.add(tenantId, request)).thenReturn(
@@ -87,7 +95,7 @@ class TenantKbSourceControllerTest {
     void tenantAdminCanRemoveOwnKbSourceUrl() throws Exception {
         UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
         TenantKbSourceService.SourceUrlRequest request = new TenantKbSourceService.SourceUrlRequest("https://example.com/faq");
-        when(principalAccessor.requireTenantAdmin()).thenReturn(
+        when(principalAccessor.requireAnyRole(AppRole.TENANT_ADMIN, AppRole.PLATFORM_ADMIN)).thenReturn(
                 new AppPrincipal("admin-1", AppRole.TENANT_ADMIN, tenantId.toString(), "Tenant Admin", "admin@tenant.local")
         );
         when(tenantKbSourceService.remove(tenantId, request)).thenReturn(
@@ -113,9 +121,30 @@ class TenantKbSourceControllerTest {
     }
 
     @Test
+    void platformAdminWithTenantContextCanListKbSourceUrls() throws Exception {
+        UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
+        TenantContext.set(tenantId.toString());
+        when(principalAccessor.requireAnyRole(AppRole.TENANT_ADMIN, AppRole.PLATFORM_ADMIN)).thenReturn(
+                new AppPrincipal("admin-1", AppRole.PLATFORM_ADMIN, null, "Platform Admin", "admin@platform.local")
+        );
+        when(tenantKbSourceService.list(tenantId)).thenReturn(
+                new TenantKbSourceService.SourceUrlsResponse(tenantId, List.of("https://example.com/help"))
+        );
+
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new TenantKbSourceController(tenantKbSourceService, principalAccessor))
+                .setControllerAdvice(new ApiExceptionHandler())
+                .build();
+
+        mvc.perform(get("/api/kb/source-urls"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tenantId").value(tenantId.toString()))
+                .andExpect(jsonPath("$.urls[0]").value("https://example.com/help"));
+    }
+
+    @Test
     void tenantMemberCannotManageKbSourceUrls() throws Exception {
         doThrow(new ResponseStatusException(FORBIDDEN, "Insufficient role"))
-                .when(principalAccessor).requireTenantAdmin();
+                .when(principalAccessor).requireAnyRole(AppRole.TENANT_ADMIN, AppRole.PLATFORM_ADMIN);
 
         MockMvc mvc = MockMvcBuilders.standaloneSetup(new TenantKbSourceController(tenantKbSourceService, principalAccessor))
                 .setControllerAdvice(new ApiExceptionHandler())

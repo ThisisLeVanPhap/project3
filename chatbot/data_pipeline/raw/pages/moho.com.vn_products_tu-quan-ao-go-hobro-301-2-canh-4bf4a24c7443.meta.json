@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-quan-ao-go-hobro-301-2-canh",
+  "final_url": "https://moho.com.vn/products/tu-quan-ao-go-hobro-301-2-canh",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:26:55.329841+00:00",
+  "content_hash": "4bf4a24c744334542fd29b77900d2fe15ff5699da69047b47aa648093a00484e",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:26:54 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "337413",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"c8840700fd444c3c879ac79f4dfd3c28\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:26:54 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1259",
+    "X-RequestId": "1b6fe65de5a8e2da5e9f8b0cdbe60b9c",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-quan-ao-go-hobro-301-2-canh-4bf4a24c7443.html"
+}

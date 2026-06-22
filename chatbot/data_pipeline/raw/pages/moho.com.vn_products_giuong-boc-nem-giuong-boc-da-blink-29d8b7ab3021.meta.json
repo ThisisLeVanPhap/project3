@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/giuong-boc-nem-giuong-boc-da-blink",
+  "final_url": "https://moho.com.vn/products/giuong-boc-nem-giuong-boc-da-blink",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:40:56.771290+00:00",
+  "content_hash": "29d8b7ab3021f8c1c5575d5393a22528721515c75bb0e53b67892bbcb8c41a4e",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:40:56 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "332191",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"d79b7d9bb8ac43a6b20b1e67e60d3644\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:40:56 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1175",
+    "X-RequestId": "7ad8b47a72018faf6217d260f05039d3",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_giuong-boc-nem-giuong-boc-da-blink-29d8b7ab3021.html"
+}

@@ -43,9 +43,28 @@ class VietnameseSupportTests(unittest.TestCase):
 
         self.assertEqual(slots["space"], "small")
         self.assertTrue(slots["kids"])
+        self.assertTrue(slots["children"])
         self.assertTrue(slots["pets"])
         self.assertEqual(slots["style"], "modern")
         self.assertEqual(slots["budget_text"], "12 tri\u1ec7u")
+        self.assertIn("children", slots["constraints"])
+        self.assertIn("pets", slots["constraints"])
+
+    def test_consultation_slots_cover_room_health_and_objections(self):
+        slots = extract_slots("T\u00f4i c\u1ea7n gh\u1ebf sofa cho ph\u00f2ng kh\u00e1ch, nh\u00e0 c\u00f3 m\u00e8o, d\u1ec5 v\u1ec7 sinh, ng\u1ed3i l\u00e2u b\u1ecb \u0111au l\u01b0ng")
+
+        self.assertEqual(slots["room"], "ph\u00f2ng kh\u00e1ch")
+        self.assertTrue(slots["pets"])
+        self.assertTrue(slots["easy_clean"])
+        self.assertTrue(slots["back_pain"])
+        self.assertEqual(slots["health_need"], "back_pain")
+        self.assertIn("back_pain", slots["constraints"])
+        self.assertIn("easy_clean", slots["constraints"])
+
+    def test_objection_type_detection(self):
+        self.assertEqual(extract_slots("M\u1eabu n\u00e0y \u0111\u1eaft qu\u00e1")["objection_type"], "too_expensive")
+        self.assertEqual(extract_slots("Nh\u00e0 c\u00f3 m\u00e8o c\u00f3 h\u1ee3p kh\u00f4ng?")["objection_type"], "pets")
+        self.assertEqual(extract_slots("Gh\u1ebf n\u00e0y ng\u1ed3i l\u00e2u \u0111au l\u01b0ng c\u00f3 h\u1ee3p kh\u00f4ng?")["objection_type"], "back_pain")
 
     def test_vietnamese_stage_transitions_preserve_existing_flow(self):
         self.assertEqual(next_stage("discover", {"style": "modern"}, "T\u00f4i mu\u1ed1n sofa hi\u1ec7n \u0111\u1ea1i"), "propose")

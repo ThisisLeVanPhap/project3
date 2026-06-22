@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/combo-ghe-armchair-va-don-moho-oasis",
+  "final_url": "https://moho.com.vn/products/combo-ghe-armchair-va-don-moho-oasis",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:40:27.149485+00:00",
+  "content_hash": "2424690388b0a68d62e8ebd9d20a2128b94e177833323920bd1aa8d228f7a2d4",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:40:26 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "304200",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"5e954841d9e24ef88b7859a81bdddc88\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:40:26 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1076",
+    "X-RequestId": "752bc36e87c40bd832adde2fd1c0b075",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_combo-ghe-armchair-va-don-moho-oasis-2424690388b0.html"
+}

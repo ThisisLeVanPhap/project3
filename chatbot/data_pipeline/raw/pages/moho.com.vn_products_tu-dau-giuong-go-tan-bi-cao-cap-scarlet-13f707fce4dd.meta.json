@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-dau-giuong-go-tan-bi-cao-cap-scarlet",
+  "final_url": "https://moho.com.vn/products/tu-dau-giuong-go-tan-bi-cao-cap-scarlet",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:02:03.507482+00:00",
+  "content_hash": "13f707fce4dd49e0dcb9ff8beaad78be44a7517b9f34631df689583290dec300",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:02:03 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "330180",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"d6f9988fa53e44f88b1999069c94514a\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:02:03 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1153",
+    "X-RequestId": "8ca3296a8dcd48d4e03ec5a17fc36964",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-dau-giuong-go-tan-bi-cao-cap-scarlet-13f707fce4dd.html"
+}

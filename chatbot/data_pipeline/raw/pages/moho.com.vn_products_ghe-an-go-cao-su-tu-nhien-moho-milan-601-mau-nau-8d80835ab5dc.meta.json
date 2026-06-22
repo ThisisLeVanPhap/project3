@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-an-go-cao-su-tu-nhien-moho-milan-601-mau-nau",
+  "final_url": "https://moho.com.vn/products/ghe-an-go-cao-su-tu-nhien-moho-milan-601-mau-nau",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:50:13.529135+00:00",
+  "content_hash": "8d80835ab5dc31a6d4e23c5d9a1c32c28179102f30b6aea2203cd7a2f48a705c",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:50:13 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "318686",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"68ff4435f56349628a2bc24b9079b2dc\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:50:13 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82977",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1223",
+    "X-RequestId": "2eaeefa2b5cd8c3123ccfe6d7ba36b20",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-an-go-cao-su-tu-nhien-moho-milan-601-mau-nau-8d80835ab5dc.html"
+}

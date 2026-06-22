@@ -10,9 +10,13 @@ import java.util.Optional;
 
 public interface LeadRepository extends JpaRepository<Lead, Long> {
 
+    long deleteByTenantId(String tenantId);
+
     List<Lead> findTop200ByTenantIdOrderByCreatedAtDesc(String tenantId);
 
     List<Lead> findTop10ByTenantIdOrderByCreatedAtDesc(String tenantId);
+
+    Optional<Lead> findByIdAndTenantId(Long id, String tenantId);
 
     // --- stats ---
     @Query("select count(l) from Lead l where l.createdAt >= :since")
@@ -34,4 +38,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<Object[]> contactedByTenantSince(@Param("since") Instant since);
 
     Optional<Lead> findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(String tenantId, String conversationId);
+
+    List<Lead> findByTenantIdAndConversationId(String tenantId, String conversationId);
 }

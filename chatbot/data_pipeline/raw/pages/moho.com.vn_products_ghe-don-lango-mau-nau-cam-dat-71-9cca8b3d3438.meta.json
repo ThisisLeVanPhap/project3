@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-don-lango-mau-nau-cam-dat-71",
+  "final_url": "https://moho.com.vn/products/ghe-don-lango-mau-nau-cam-dat-71",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:24:26.710495+00:00",
+  "content_hash": "9cca8b3d34381e709217a2835bf2eebccd4141f64675015620baa6d41588114d",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:24:26 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "319386",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"a4e3192db51c47ba8f51688208a0e542\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:24:26 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1170",
+    "X-RequestId": "a88f8338880ef98ca7752af660fe8ef9",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-don-lango-mau-nau-cam-dat-71-9cca8b3d3438.html"
+}

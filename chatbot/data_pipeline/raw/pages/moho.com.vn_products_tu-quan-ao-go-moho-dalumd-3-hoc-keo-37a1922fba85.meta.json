@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-quan-ao-go-moho-dalumd-3-hoc-keo",
+  "final_url": "https://moho.com.vn/products/tu-quan-ao-go-moho-dalumd-3-hoc-keo",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:29:55.910229+00:00",
+  "content_hash": "37a1922fba853224b9d391990a93b4b6c7771a31bfb66ac50f866cd1035f416c",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:29:55 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "327799",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"64244236644e44e690d8a2343177d777\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:29:55 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1147",
+    "X-RequestId": "d1f636fc9d013e5edc6e51c139979e32",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-quan-ao-go-moho-dalumd-3-hoc-keo-37a1922fba85.html"
+}

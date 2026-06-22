@@ -18,6 +18,13 @@ RX_PETS = re.compile(r"\b(pet|dog|cat)\b", re.I)
 RX_PETS_VI = re.compile(r"\b(thú cưng|chó|mèo)\b", re.I)
 RX_KIDS = re.compile(r"\b(kid|child|toddler|baby)\b", re.I)
 RX_KIDS_VI = re.compile(r"\b(trẻ em|em bé|bé|con nhỏ|trẻ nhỏ)\b", re.I)
+RX_BACK_PAIN = re.compile(r"\b(back pain|lumbar|spine|ergonomic|long sitting)\b", re.I)
+RX_BACK_PAIN_VI = re.compile(r"\b(đau lưng|mỏi lưng|ngồi lâu|cột sống|êm lưng|tựa lưng)\b", re.I)
+RX_EASY_CLEAN = re.compile(r"\b(easy to clean|washable|clean easily|stain resistant)\b", re.I)
+RX_EASY_CLEAN_VI = re.compile(r"\b(dễ vệ sinh|de ve sinh|dễ lau|de lau|chống bẩn|chong ban|ít bám bụi|it bam bui)\b", re.I)
+RX_DURABILITY_OBJECTION = re.compile(r"\b(bền không|ben khong|có bền|co ben|durable|last long|chắc không|chac khong)\b", re.I)
+RX_EXPENSIVE_OBJECTION = re.compile(r"\b(đắt quá|dat qua|hơi đắt|hoi dat|mắc quá|mac qua|expensive|too much|over budget)\b", re.I)
+RX_NOT_READY = re.compile(r"\b(chưa chắc|chua chac|cân nhắc|can nhac|để nghĩ|de nghi|not sure|think about|maybe later)\b", re.I)
 RX_STYLE = re.compile(r"\b(modern|minimal|classic|scandinavian|boho|industrial|luxury)\b", re.I)
 RX_STYLE_VI = re.compile(r"\b(hiện đại|tối giản|cổ điển|bắc âu|boho|công nghiệp|cao cấp|luxury)\b", re.I)
 STYLE_MAP_VI = {
@@ -149,12 +156,50 @@ def extract_slots(text: str) -> Dict[str, Any]:
             if amount:
                 slots["budget_text"] = _format_budget_text(amount.group(1), amount.group(2) or "")
 
+    room_match = RX_ROOM_TYPE.search(t)
+    if room_match:
+        slots["room"] = room_match.group(1).lower()
+
+    constraints = []
     if RX_SMALL.search(t) or RX_SMALL_VI.search(t) or re.search(r"\b(small|tiny|compact|studio|apartment|nho|chat|gon|can ho|chung cu|phong nho)\b", mt):
         slots["space"] = "small"
+        constraints.append("small_room")
     if RX_PETS.search(t) or RX_PETS_VI.search(t) or re.search(r"\b(pet|dog|cat|thu cung|cho|meo)\b", mt):
         slots["pets"] = True
+        constraints.append("pets")
     if RX_KIDS.search(t) or RX_KIDS_VI.search(t) or re.search(r"\b(kid|child|toddler|baby|tre em|em be|be|con nho)\b", mt):
         slots["kids"] = True
+        slots["children"] = True
+        constraints.append("children")
+    if RX_BACK_PAIN.search(t) or RX_BACK_PAIN_VI.search(t) or re.search(r"\b(back pain|lumbar|dau lung|moi lung|ngoi lau|cot song|tua lung)\b", mt):
+        slots["back_pain"] = True
+        slots["health_need"] = "back_pain"
+        constraints.append("back_pain")
+    if RX_EASY_CLEAN.search(t) or RX_EASY_CLEAN_VI.search(t) or re.search(r"\b(easy clean|easy to clean|washable|de ve sinh|de lau|chong ban|it bam bui)\b", mt):
+        slots["easy_clean"] = True
+        constraints.append("easy_clean")
+
+    objection_type = None
+    if RX_EXPENSIVE_OBJECTION.search(t) or re.search(r"\b(dat qua|hoi dat|mac qua|too expensive|over budget)\b", mt):
+        objection_type = "too_expensive"
+    elif RX_DURABILITY_OBJECTION.search(t) or re.search(r"\b(ben khong|co ben|durable|last long|chac khong)\b", mt):
+        objection_type = "durability"
+    elif slots.get("easy_clean"):
+        objection_type = "easy_clean" if re.search(r"\b(co hop|phu hop|duoc khong|khong|khó|kho|concern|worry)\b", mt) else None
+    elif slots.get("pets"):
+        objection_type = "pets" if re.search(r"\b(co hop|phu hop|duoc khong|khong|concern|worry)\b", mt) else None
+    elif slots.get("children"):
+        objection_type = "children" if re.search(r"\b(co hop|phu hop|duoc khong|khong|concern|worry)\b", mt) else None
+    elif slots.get("back_pain"):
+        objection_type = "back_pain" if re.search(r"\b(co hop|phu hop|duoc khong|khong|concern|worry)\b", mt) else None
+    elif slots.get("space") == "small" and re.search(r"\b(co hop|phu hop|duoc khong|khong|fit|vua|chat)\b", mt):
+        objection_type = "small_room_fit"
+    elif RX_NOT_READY.search(t) or re.search(r"\b(chua chac|can nhac|de nghi|not sure|think about|maybe later)\b", mt):
+        objection_type = "not_ready"
+    if objection_type:
+        slots["objection_type"] = objection_type
+    if constraints:
+        slots["constraints"] = constraints
 
     # Style extraction
     m2 = RX_STYLE.search(t)
@@ -403,21 +448,27 @@ def build_sales_prefix(stage: str, slots: Dict[str, Any]) -> str:
         change_note = "Recent changes: " + "; ".join(changes) + ".\n"
 
     stage_instr = {
-        "discover": "Goal: ask 2-3 clarifying questions to understand needs, then offer 1 gentle suggestion.",
-        "propose": "Goal: propose 1-2 suitable options based on captured preferences, then ask 1 follow-up question.",
-        "compare": "Goal: compare options using only provided KB context; if missing, ask for product links/names.",
-        "close": "Goal: confirm key preferences and ask for next step (contact details or connect to staff). Do not claim you can place orders.",
-        "handoff": "Goal: politely offer to connect the customer with a human staff member.",
+        "discover": "Next best action: ask 1-2 key discovery questions before recommending.",
+        "propose": "Next best action: suggest 2-3 KB-grounded options if evidence exists; otherwise ask for one missing detail.",
+        "compare": "Next best action: compare only products present in verified KB context.",
+        "close": "Next best action: confirm intent and collect contact details; do not create an order.",
+        "handoff": "Next best action: offer staff follow-up after explicit confirmation and contact details.",
     }[stage]
 
     return (
-        f"[Sales Flow]\n"
-        f"Stage: {stage}\n"
-        f"Known customer context: {context}\n"
+        f"[Sales Consultation Flow]\n"
+        f"mode: tenant_sales\n"
+        f"current_stage: {stage}\n"
+        f"known_slots: {context}\n"
+        f"missing_slots: infer at most 1-2 important missing details from the latest message.\n"
+        f"allowed_actions: ask_discovery_question, suggest_from_kb, compare_options, handle_objection, ask_contact, ask_confirmation, staff_handoff\n"
         f"{change_note}"
         f"{stage_instr}\n\n"
-        "HARD RULES:\n"
+        "BUSINESS RULES:\n"
         "- Do NOT mention a specific product name unless the user provided it or it appears in verified KB context.\n"
+        "- Ask at most 1-2 questions in one turn.\n"
+        "- Do NOT create or imply a purchase request before explicit user confirmation.\n"
+        "- Only tenant_sales may move toward purchase request; comparison and market-price modes are advisory only.\n"
         "- Do NOT invent prices, delivery times, refunds, or return windows. Use placeholders only: <DELIVERY_TIME>, <RETURN_POLICY>, <PRICE_RANGE>.\n"
         "- If verified KB context exists, prefer concrete product types, materials, apartment-fit guidance, and policy details from that context over generic recommendations.\n"
         "- If store data is missing, apologize and offer staff handoff.\n"

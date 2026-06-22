@@ -4,7 +4,9 @@ import com.app.auth.SessionPrincipalAccessor;
 import com.app.leads.channel.MessengerOutbox;
 import com.app.leads.channel.TelegramOutbox;
 import com.app.leads.dto.ReplyReq;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/tenant/api/reply")
@@ -31,10 +33,8 @@ public class ReplyController {
         principalAccessor.requireTenantOperator();
         String currentTenantId = principalAccessor.requireTenantIdMatching(tenantId);
 
-        Lead lead = leadRepo.findById(req.leadId()).orElseThrow();
-        if (!currentTenantId.equals(lead.getTenantId())) {
-            throw new RuntimeException("Access denied");
-        }
+        Lead lead = leadRepo.findByIdAndTenantId(req.leadId(), currentTenantId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lead not found"));
 
         String msg = req.message() == null ? "" : req.message().trim();
         if (msg.isBlank()) return;
@@ -44,7 +44,7 @@ public class ReplyController {
         } else if ("telegram".equalsIgnoreCase(lead.getChannel())) {
             telegramOutbox.sendText(currentTenantId, lead.getCustomerHandle(), msg);
         } else {
-            throw new RuntimeException("Unsupported channel: " + lead.getChannel());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported channel: " + lead.getChannel());
         }
     }
 }

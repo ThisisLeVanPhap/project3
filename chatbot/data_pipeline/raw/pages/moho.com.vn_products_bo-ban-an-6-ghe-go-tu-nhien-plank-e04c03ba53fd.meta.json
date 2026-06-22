@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/bo-ban-an-6-ghe-go-tu-nhien-plank",
+  "final_url": "https://moho.com.vn/products/bo-ban-an-6-ghe-go-tu-nhien-plank",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:26:49.074317+00:00",
+  "content_hash": "e04c03ba53fd03d6d9f07e4cc42e9f0881c314bff933a1729532aa769b56642e",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:26:48 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "386965",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"448e9ad9a6ba431ba53e17b8d7b9cdf6\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:26:48 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1542",
+    "X-RequestId": "b374e3f78c5c54e09bfd6cf05b60a11c",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_bo-ban-an-6-ghe-go-tu-nhien-plank-e04c03ba53fd.html"
+}

@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/giuong-ngu-go-moho-narvik-201",
+  "final_url": "https://moho.com.vn/products/giuong-ngu-go-moho-narvik-201",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:25:40.703549+00:00",
+  "content_hash": "9599d352c099737d8bf3cefd9d6624c23580149cf5bd08b8dc2df30741cf7427",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:25:40 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "331045",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"f24b19f5123f4523b9d47427dbfdf659\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:25:40 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1332",
+    "X-RequestId": "f218034d2260fdb96731a714cb76244a",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_giuong-ngu-go-moho-narvik-201-9599d352c099.html"
+}

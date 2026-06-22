@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/tu-quan-ao-60-cm-vline",
+  "final_url": "https://moho.com.vn/products/tu-quan-ao-60-cm-vline",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:01:33.690900+00:00",
+  "content_hash": "82c3673940da0572b036e4c7d0d9bb12c31ab8f7324a5d6ac8ec94870dc9b447",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:01:33 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "358914",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"6d353839e9c14ad097becbb289850527\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:01:33 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1253",
+    "X-RequestId": "a649ad998c24a61d0c47ef43fa0138d0",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_tu-quan-ao-60-cm-vline-82c3673940da.html"
+}

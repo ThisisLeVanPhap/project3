@@ -1,0 +1,25 @@
+{
+  "tenant_id": "6c2cf829-5ff7-4df0-b5ec-aacb94da7c6b",
+  "desired": {
+    "kb_dir": "F:\\20251\\prj3\\chatbot\\kb\\datn_demo_moho\\versions\\v20260616173418",
+    "source": "ACTIVE_VERSION",
+    "version_id": "f6dcec58-dd9f-42f1-9c34-357ba2cc4998",
+    "version_tag": "v20260616173418",
+    "fallback_reason": null
+  },
+  "running": {
+    "mode": "JAVA_SPAWNED",
+    "kb_dir": "F:\\20251\\prj3\\chatbot\\kb\\datn_demo_moho\\versions\\v20260616173418",
+    "source": "ACTIVE_VERSION",
+    "version_id": "f6dcec58-dd9f-42f1-9c34-357ba2cc4998",
+    "version_tag": "v20260616173418",
+    "started_at": "2026-06-16T17:34:22.654743300Z",
+    "process_alive": true,
+    "pid": 27988,
+    "note": null,
+    "ready": null,
+    "kb_loaded": null,
+    "retrieval_mode": null
+  },
+  "in_sync": true
+}

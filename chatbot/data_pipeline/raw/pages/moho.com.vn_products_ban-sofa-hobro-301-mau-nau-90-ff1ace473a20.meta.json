@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ban-sofa-hobro-301-mau-nau-90",
+  "final_url": "https://moho.com.vn/products/ban-sofa-hobro-301-mau-nau-90",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:06:21.350056+00:00",
+  "content_hash": "ff1ace473a201e1f794d3a70fdd579ab20eb03656e00b82780c32a01a91590c3",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:24:06 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "329422",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"b8fdef50263b4179a23bdf3078338d9e\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:24:06 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1186",
+    "X-RequestId": "de363fca007a657468356b6828ff4624",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ban-sofa-hobro-301-mau-nau-90-ff1ace473a20.html"
+}

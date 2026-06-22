@@ -49,7 +49,7 @@ CATEGORY_PATTERNS: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
     ("Gương", (r"\bguong\b",)),
     ("Ghế", (r"\bghe\b",)),
     ("Giường", (r"\bgiuong\b",)),
-    ("Tủ", (r"\btu\b",)),
+    ("Tủ", (r"\btu quan ao\b", r"\btu ao\b", r"\bwardrobe\b", r"\bcabinet\b", r"\btu\b(?!\s+van)\b")),
 )
 
 

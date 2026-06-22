@@ -1,4 +1,5 @@
 from typing import Callable, Optional
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 from xml.etree import ElementTree
 
@@ -23,8 +24,10 @@ class SitemapProductUrlDiscoverer:
     def discover(
         self,
         sitemap_url: str,
-        product_url_patterns: list[str],
+        product_url_patterns: Optional[list[str]] = None,
         max_urls: int = 100,
+        allowed_domains: Optional[list[str]] = None,
+        exclude_patterns: Optional[list[str]] = None,
     ) -> list[str]:
         if not sitemap_url or not str(sitemap_url).strip():
             raise SitemapDiscoveryError("sitemap_url is required")
@@ -35,11 +38,13 @@ class SitemapProductUrlDiscoverer:
         discovered: list[str] = []
         self._discover_from_sitemap(
             str(sitemap_url).strip(),
-            product_url_patterns,
+            product_url_patterns or [],
             max_urls,
             seen,
             discovered,
             visited_sitemaps=set(),
+            allowed_domains=allowed_domains or [],
+            exclude_patterns=exclude_patterns or [],
         )
         return discovered
 
@@ -51,6 +56,8 @@ class SitemapProductUrlDiscoverer:
         seen: set[str],
         discovered: list[str],
         visited_sitemaps: set[str],
+        allowed_domains: list[str],
+        exclude_patterns: list[str],
     ):
         if len(discovered) >= max_urls or sitemap_url in visited_sitemaps:
             return
@@ -64,7 +71,7 @@ class SitemapProductUrlDiscoverer:
             for loc in _loc_values(root):
                 if len(discovered) >= max_urls:
                     break
-                if _matches_patterns(loc, product_url_patterns) and loc not in seen:
+                if _is_allowed_url(loc, product_url_patterns, allowed_domains, exclude_patterns) and loc not in seen:
                     seen.add(loc)
                     discovered.append(loc)
             return
@@ -80,6 +87,8 @@ class SitemapProductUrlDiscoverer:
                     seen,
                     discovered,
                     visited_sitemaps,
+                    allowed_domains,
+                    exclude_patterns,
                 )
             return
 
@@ -122,6 +131,19 @@ def _loc_values(root: ElementTree.Element) -> list[str]:
     return values
 
 
+def _is_allowed_url(
+    url: str,
+    include_patterns: list[str],
+    allowed_domains: list[str],
+    exclude_patterns: list[str],
+) -> bool:
+    if allowed_domains and not _matches_domain(url, allowed_domains):
+        return False
+    if any(pattern and pattern in url for pattern in exclude_patterns):
+        return False
+    return _matches_patterns(url, include_patterns)
+
+
 def _matches_patterns(url: str, patterns: list[str]) -> bool:
     if not patterns:
         return True
@@ -131,6 +153,18 @@ def _matches_patterns(url: str, patterns: list[str]) -> bool:
         if pattern.endswith("/") and not url.split(pattern, 1)[1].strip("/"):
             continue
         return True
+    return False
+
+
+def _matches_domain(url: str, allowed_domains: list[str]) -> bool:
+    host = urlsplit(url).netloc.lower().split("@").pop().split(":")[0]
+    if not host:
+        return False
+    for raw_domain in allowed_domains:
+        domain = urlsplit(raw_domain).netloc if "://" in raw_domain else raw_domain
+        domain = domain.lower().split("@").pop().split(":")[0].strip("/")
+        if host == domain or host.endswith(f".{domain}"):
+            return True
     return False
 
 

@@ -1,8 +1,11 @@
 package com.app.admin;
 
 import com.app.auth.SessionPrincipalAccessor;
+import com.app.kb.TenantKbVersion;
+import com.app.kb.TenantKbVersionRepository;
 import com.app.tenants.Tenant;
 import com.app.tenants.TenantProvisioningService;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,26 +17,50 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TenantAdminController {
     private final TenantProvisioningService tenantProvisioningService;
+    private final TenantKbVersionRepository tenantKbVersionRepository;
     private final SessionPrincipalAccessor principalAccessor;
 
     @PostMapping
     public TenantResponse create(@RequestBody TenantProvisioningService.CreateTenantRequest request) {
         principalAccessor.requirePlatformAdmin();
-        return TenantResponse.from(tenantProvisioningService.create(request));
+        return from(tenantProvisioningService.create(request));
     }
 
     @GetMapping
     public List<TenantResponse> list() {
         principalAccessor.requirePlatformAdmin();
         return tenantProvisioningService.list().stream()
-                .map(TenantResponse::from)
+                .map(this::from)
                 .toList();
     }
 
     @GetMapping("/{tenantId}")
     public TenantResponse get(@PathVariable UUID tenantId) {
         principalAccessor.requirePlatformAdmin();
-        return TenantResponse.from(tenantProvisioningService.get(tenantId));
+        return from(tenantProvisioningService.get(tenantId));
+    }
+
+    @DeleteMapping("/{tenantId}")
+    public void delete(@PathVariable UUID tenantId) {
+        principalAccessor.requirePlatformAdmin();
+        tenantProvisioningService.delete(tenantId);
+    }
+
+    private TenantResponse from(Tenant tenant) {
+        TenantKbVersion activeVersion = tenant.getActiveKbVersionId() == null
+                ? null
+                : tenantKbVersionRepository.findByTenantIdAndId(tenant.getId(), tenant.getActiveKbVersionId()).orElse(null);
+        return new TenantResponse(
+                tenant.getId(),
+                tenant.getCode(),
+                tenant.getName(),
+                tenant.getApiKey(),
+                tenant.getKbDir(),
+                tenant.getStatus(),
+                tenant.getActiveKbVersionId(),
+                activeVersion == null ? null : activeVersion.getVersionTag(),
+                activeVersion == null ? null : activeVersion.getKbDir()
+        );
     }
 
     public record TenantResponse(
@@ -42,17 +69,13 @@ public class TenantAdminController {
             String name,
             String apiKey,
             String kbDir,
-            String status
+            String status,
+            @JsonProperty("active_kb_version_id")
+            UUID activeKbVersionId,
+            @JsonProperty("active_kb_version_tag")
+            String activeKbVersionTag,
+            @JsonProperty("active_kb_dir")
+            String activeKbDir
     ) {
-        static TenantResponse from(Tenant tenant) {
-            return new TenantResponse(
-                    tenant.getId(),
-                    tenant.getCode(),
-                    tenant.getName(),
-                    tenant.getApiKey(),
-                    tenant.getKbDir(),
-                    tenant.getStatus()
-            );
-        }
     }
 }

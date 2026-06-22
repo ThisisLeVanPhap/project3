@@ -1,0 +1,168 @@
+{
+  "dataset_id": "gotrangtri-20260610",
+  "product_count_manifest": 6070,
+  "product_count_actual": 6070,
+  "rag_chunk_count_manifest": 6070,
+  "rag_chunk_count_actual": 6070,
+  "title_mojibake_count": 0,
+  "rag_title_mojibake_count": 0,
+  "rag_text_mojibake_count": 2,
+  "price_count": 6018,
+  "price_coverage": 0.991433,
+  "material_count": 3939,
+  "material_coverage": 0.648929,
+  "dimensions_count": 4636,
+  "dimensions_coverage": 0.763756,
+  "duplicate_url_count": 0,
+  "duplicate_url_ratio": 0.0,
+  "suspicious_category_count": 251,
+  "suspicious_category_ratio": 0.04135090609555189,
+  "stale_report": false,
+  "crawl_report_row_count": 6070,
+  "sample_bad_rows": [
+    {
+      "type": "rag_mojibake",
+      "title": "Ghế lưng cong, Ghế thư giãn GHS-718 - Ghế",
+      "url": "https://gotrangtri.vn/shop/ghe-lung-cong-ghe-thu-gian-ghs-718"
+    },
+    {
+      "type": "rag_mojibake",
+      "title": "Ghế lưng cong, ghế thư giãn GHS-717 - Ghế",
+      "url": "https://gotrangtri.vn/shop/ghe-lung-cong-ghe-thu-gian-ghs-717"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Đèn để bàn làm việc, bàn học sáng tạo GHO-289",
+      "category": "Đèn",
+      "expected_category": "Bàn làm việc",
+      "url": "https://gotrangtri.vn/shop/den-de-ban-lam-viec-ban-hoc-sang-tao-gho-289"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Mẫu tủ kệ trang trí đẹp phòng khách GHS-51982",
+      "category": "Tủ",
+      "expected_category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/mau-tu-ke-trang-tri-dep-phong-khach-ghs-51982"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Kệ gỗ sư tử để đồ trang trí tiện dụng GHO-487",
+      "category": "Tủ",
+      "expected_category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/ke-go-su-tu-de-do-trang-tri-tien-dung-gho-487"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Khung tranh để bàn trang trí bàn làm việc GHS-6475",
+      "category": "Tranh",
+      "expected_category": "Bàn làm việc",
+      "url": "https://gotrangtri.vn/shop/khung-tranh-de-ban-trang-tri-ban-lam-viec-ghs-6475"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Tủ quần áo gỗ đa năng kèm kệ GHY-207",
+      "category": "Tủ",
+      "expected_category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/tu-quan-ao-go-da-nang-kem-ke-ghy-207"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Khăn phủ tủ đầu giường ngủ họa tiết lá cây GHS-6425",
+      "category": "Tủ",
+      "expected_category": "Giường",
+      "url": "https://gotrangtri.vn/shop/khan-phu-tu-dau-giuong-ngu-hoa-tiet-la-cay-ghs-6425"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Tủ kệ tivi phòng khách thiết kế đẹp GHS-3385",
+      "category": "Tủ",
+      "expected_category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/tu-ke-tivi-phong-khach-thiet-ke-dep-ghs-3385"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Tủ kệ ti vi cao cấp Bắc Âu hiện đại GHS-52122",
+      "category": "Tủ",
+      "expected_category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/tu-ke-ti-vi-cao-cap-bac-au-hien-dai-ghs-52122"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Kệ đầu giường bằng gỗ có ngăn kéo tiện lợi GHS-51704",
+      "category": "Kệ",
+      "expected_category": "Giường",
+      "url": "https://gotrangtri.vn/shop/ke-dau-giuong-bang-go-co-ngan-keo-tien-loi-ghs-51704"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Tủ kệ tivi gỗ cho phòng khách GHS-3376",
+      "category": "Tủ",
+      "expected_category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/tu-ke-tivi-go-cho-phong-khach-ghs-3376"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Tủ đầu giường sang trọng phong cách mới GHS-51967",
+      "category": "Tủ",
+      "expected_category": "Giường",
+      "url": "https://gotrangtri.vn/shop/tu-dau-giuong-sang-trong-phong-cach-moi-ghs-51967"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Bàn trà sofa gỗ sồi GHS-4482",
+      "category": "Bàn trà",
+      "expected_category": "Sofa",
+      "url": "https://gotrangtri.vn/shop/ban-tra-sofa-go-soi-ghs-4482"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Mẫu bàn trà sofa gỗ MDF thanh lịch GHS-41829",
+      "category": "Bàn trà",
+      "expected_category": "Sofa",
+      "url": "https://gotrangtri.vn/shop/mau-ban-tra-sofa-go-mdf-thanh-lich-ghs-41829"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Kệ tủ gỗ mini đựng mỹ phẩm phong cách tối giản GHS-52469",
+      "category": "Tủ",
+      "expected_category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/ke-tu-go-mini-dung-my-pham-phong-cach-toi-gian-ghs-52469"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Bàn làm việc liền tủ tài liệu thiết kế hiện đại GHS-4988",
+      "category": "Bàn làm việc",
+      "expected_category": "Tủ",
+      "url": "https://gotrangtri.vn/shop/ban-lam-viec-lien-tu-tai-lieu-thiet-ke-hien-dai-ghs-4988"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Mẫu tủ kệ trang trí phòng khách phối màu đẹp GHS-52518",
+      "category": "Tủ",
+      "expected_category": "Kệ",
+      "url": "https://gotrangtri.vn/shop/mau-tu-ke-trang-tri-phong-khach-ghs-52518"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Tủ gỗ đầu giường gỗ sồi tự nhiên kiểu dáng nhỏ gọn GHS-51227",
+      "category": "Tủ",
+      "expected_category": "Giường",
+      "url": "https://gotrangtri.vn/shop/tu-go-dau-giuong-go-soi-tu-nhien-kieu-dang-nho-gon-ghs-51227"
+    },
+    {
+      "type": "suspicious_category",
+      "title": "Bàn trà sofa phòng khách đẹp GHS-41071",
+      "category": "Bàn trà",
+      "expected_category": "Sofa",
+      "url": "https://gotrangtri.vn/shop/ban-tra-sofa-phong-khach-dep-ghs-41071"
+    }
+  ],
+  "status": "warn",
+  "reasons": [
+    "RAG text mojibake count 2"
+  ],
+  "fail_reasons": [],
+  "warnings": [
+    "RAG text mojibake count 2"
+  ]
+}

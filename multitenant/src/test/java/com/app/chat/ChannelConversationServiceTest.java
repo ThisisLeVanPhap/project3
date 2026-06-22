@@ -28,14 +28,15 @@ class ChannelConversationServiceTest {
     private ChannelConversationService channelConversationService;
 
     @Test
-    void sameSenderSameTenantReusesConversation() {
+    void sameSenderSameTenantAndChatbotReusesConversation() {
         UUID tenantId = UUID.randomUUID();
         UUID chatbotId = UUID.randomUUID();
         Conversation existing = conversation(tenantId, chatbotId);
         String senderKey = channelConversationService.buildMessengerSenderKey("page-1", "sender-1");
 
-        when(conversationRepository.findTop1ByTenantIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+        when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
                 tenantId,
+                chatbotId,
                 "messenger:page:page-1:sender:sender-1",
                 "ACTIVE"
         )).thenReturn(Optional.of(existing));
@@ -59,13 +60,15 @@ class ChannelConversationServiceTest {
         Conversation existingTenantA = conversation(tenantA, chatbotId);
         Conversation createdTenantB = conversation(tenantB, chatbotId);
 
-        when(conversationRepository.findTop1ByTenantIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+        when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
                 eq(tenantA),
+                eq(chatbotId),
                 eq("messenger:page:page-1:sender:sender-1"),
                 eq("ACTIVE")
         )).thenReturn(Optional.of(existingTenantA));
-        when(conversationRepository.findTop1ByTenantIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+        when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
                 eq(tenantB),
+                eq(chatbotId),
                 eq("messenger:page:page-1:sender:sender-1"),
                 eq("ACTIVE")
         )).thenReturn(Optional.empty());
@@ -90,14 +93,46 @@ class ChannelConversationServiceTest {
     }
 
     @Test
+    void sameSenderDifferentChatbotCreatesDifferentConversation() {
+        UUID tenantId = UUID.randomUUID();
+        UUID chatbotA = UUID.randomUUID();
+        UUID chatbotB = UUID.randomUUID();
+        String senderKey = channelConversationService.buildMessengerSenderKey("page-1", "sender-1");
+        Conversation existingBotA = conversation(tenantId, chatbotA);
+        Conversation createdBotB = conversation(tenantId, chatbotB);
+
+        when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+                tenantId,
+                chatbotA,
+                "messenger:page:page-1:sender:sender-1",
+                "ACTIVE"
+        )).thenReturn(Optional.of(existingBotA));
+        when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+                tenantId,
+                chatbotB,
+                "messenger:page:page-1:sender:sender-1",
+                "ACTIVE"
+        )).thenReturn(Optional.empty());
+        when(conversationRepository.save(any(Conversation.class))).thenReturn(createdBotB);
+
+        Conversation resolvedA = channelConversationService.findOrCreateActiveConversation(tenantId, chatbotA, "messenger", senderKey);
+        Conversation resolvedB = channelConversationService.findOrCreateActiveConversation(tenantId, chatbotB, "messenger", senderKey);
+
+        assertEquals(existingBotA.getId(), resolvedA.getId());
+        assertEquals(chatbotB, resolvedB.getChatbotId());
+        assertNotEquals(resolvedA.getId(), resolvedB.getId());
+    }
+
+    @Test
     void newSenderCreatesNewConversation() {
         UUID tenantId = UUID.randomUUID();
         UUID chatbotId = UUID.randomUUID();
         String senderKey = channelConversationService.buildMessengerSenderKey("page-1", "sender-2");
         ArgumentCaptor<Conversation> savedConversation = ArgumentCaptor.forClass(Conversation.class);
 
-        when(conversationRepository.findTop1ByTenantIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+        when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
                 tenantId,
+                chatbotId,
                 "messenger:page:page-1:sender:sender-2",
                 "ACTIVE"
         )).thenReturn(Optional.empty());
@@ -124,8 +159,9 @@ class ChannelConversationServiceTest {
         Conversation existing = conversation(tenantId, chatbotId);
         String senderKey = channelConversationService.buildMessengerSenderKey("page-9", "sender-9");
 
-        when(conversationRepository.findTop1ByTenantIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+        when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
                 tenantId,
+                chatbotId,
                 "messenger:page:page-9:sender:sender-9",
                 "ACTIVE"
         )).thenReturn(Optional.of(existing));
@@ -144,8 +180,9 @@ class ChannelConversationServiceTest {
         );
 
         assertEquals(first.getId(), second.getId());
-        verify(conversationRepository, times(2)).findTop1ByTenantIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+        verify(conversationRepository, times(2)).findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
                 tenantId,
+                chatbotId,
                 "messenger:page:page-9:sender:sender-9",
                 "ACTIVE"
         );

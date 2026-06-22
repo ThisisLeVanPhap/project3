@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/giuong-ngu-go-tram-moho-dalumd-301-mau-nau-hanh-nhan",
+  "final_url": "https://moho.com.vn/products/giuong-ngu-go-tram-moho-dalumd-301-mau-nau-hanh-nhan",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:30:07.558013+00:00",
+  "content_hash": "4284845203cfa54edb6644ae09b7d64d09a2a1f194f2836c3ed37122a29ea586",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:30:07 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "335528",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"e91ac140daa544fc95af3a4550233252\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:30:07 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1182",
+    "X-RequestId": "c49bf72f4d1648ab3ea02bc2dfa85076",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_giuong-ngu-go-tram-moho-dalumd-301-mau-nau-hanh-nhan-4284845203cf.html"
+}

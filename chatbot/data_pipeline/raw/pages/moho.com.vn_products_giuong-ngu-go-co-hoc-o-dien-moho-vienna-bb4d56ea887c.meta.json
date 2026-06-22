@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/giuong-ngu-go-co-hoc-o-dien-moho-vienna",
+  "final_url": "https://moho.com.vn/products/giuong-ngu-go-co-hoc-o-dien-moho-vienna",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:44:50.645194+00:00",
+  "content_hash": "bb4d56ea887ca39958e0bfe81341aac67534c74ae6535571df8781cb29eabdd4",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:44:50 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "326682",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"6385a53b1e644a8db2e62f3342cd78e8\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:44:50 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1168",
+    "X-RequestId": "81b397c2fe3f6e48b934a22d1490927c",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_giuong-ngu-go-co-hoc-o-dien-moho-vienna-bb4d56ea887c.html"
+}

@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/combo-tu-quan-ao-canh-kinh-moho-astro",
+  "final_url": "https://moho.com.vn/products/combo-tu-quan-ao-canh-kinh-moho-astro",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:41:03.681997+00:00",
+  "content_hash": "0abfea2c4ef04191f247ace2604be461bd0270294a28040fd19eab6655564c43",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:41:03 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "351603",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"633dd69449ea4c1ca8f7cfc09be63238\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:41:03 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1239",
+    "X-RequestId": "8f0a56263f8b3ef51181352c25d5f5a4",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_combo-tu-quan-ao-canh-kinh-moho-astro-0abfea2c4ef0.html"
+}

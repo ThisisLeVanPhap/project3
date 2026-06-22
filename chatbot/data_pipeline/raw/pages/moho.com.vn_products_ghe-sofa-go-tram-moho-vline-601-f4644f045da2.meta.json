@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-sofa-go-tram-moho-vline-601",
+  "final_url": "https://moho.com.vn/products/ghe-sofa-go-tram-moho-vline-601",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:51:44.301116+00:00",
+  "content_hash": "f4644f045da2b93476e7293a91daeac7d53e018dfd24649a350c5a78300977f1",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:51:44 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "336166",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"c2393edd377b43db89f26040da1ef670\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:51:43 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82977",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1182",
+    "X-RequestId": "a377e385e67997e7f322fb00a3122eef",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-sofa-go-tram-moho-vline-601-f4644f045da2.html"
+}

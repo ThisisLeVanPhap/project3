@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/combo-basic-phong-an-narvik-201-mau-tu-nhien",
+  "final_url": "https://moho.com.vn/products/combo-basic-phong-an-narvik-201-mau-tu-nhien",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:32:44.090210+00:00",
+  "content_hash": "b9fad211a3202d965913757dcd1b010c0f58323692994aefc97583dc9ca1b932",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:32:43 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "326571",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"69a7e3ea3ff447bf96e01abecf1368f8\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:32:43 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1230",
+    "X-RequestId": "777d317eb00b1ee93ef567b8ce3744a6",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_combo-basic-phong-an-narvik-201-mau-tu-nhien-b9fad211a320.html"
+}

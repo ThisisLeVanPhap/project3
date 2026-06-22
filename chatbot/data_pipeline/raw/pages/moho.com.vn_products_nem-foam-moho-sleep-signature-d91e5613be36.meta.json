@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/nem-foam-moho-sleep-signature",
+  "final_url": "https://moho.com.vn/products/nem-foam-moho-sleep-signature",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:25:22.148210+00:00",
+  "content_hash": "d91e5613be367756f56463abb92ded4ae29fd1cfa0df9e8d227c978b028b1191",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:25:21 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "323603",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"c8a41db06daf4521ab84076d890844a5\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:25:21 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82975",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1093",
+    "X-RequestId": "29accba3e51dbc55418a82e14f827f2f",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_nem-foam-moho-sleep-signature-d91e5613be36.html"
+}

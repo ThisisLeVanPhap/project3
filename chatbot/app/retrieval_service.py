@@ -16,6 +16,7 @@ from .product_filters import (
     parse_product_categories,
 )
 from .product_reranker import is_complex_product_query, rerank_product_results
+from .sales_nlu import classify_sales_nlu
 
 
 PRODUCT_HINTS = [
@@ -99,17 +100,29 @@ def should_allow_retrieval(message: str, stage: str, slots: Dict[str, Any]) -> b
         hint in msg_low or fold_accents(hint) in msg_folded
         for hint in POLICY_OR_COMPARE_HINTS
     )
+    categories = parse_product_categories(message)
+    broad_product_marker = bool(re.search(r"\b(co .+ khong|tu van|goi y|tim|mua|can mua|mau|san pham|need help|recommend)\b", msg_folded))
+    product_signal = bool((categories and broad_product_marker) or slots.get("product_category") or slots.get("product_type"))
+    material_signal = bool(slots.get("material"))
+    try:
+        nlu = classify_sales_nlu(message, {"slots": slots})
+        product_signal = product_signal or (broad_product_marker and nlu.intent in {"DISCOVERY", "RECOMMENDATION", "PRODUCT_DETAIL"})
+        material_signal = material_signal or bool(nlu.entities.get("material"))
+    except Exception:
+        pass
     slot_count = len(slots or {})
 
     allow_rag = (
         has_link
         or mentions_specific
         or asks_policy_or_compare
+        or product_signal
+        or material_signal
         or stage in ("propose", "close")
         or slot_count >= 2
     )
 
-    if stage == "discover" and not (has_link or mentions_specific or asks_policy_or_compare) and slot_count < 2:
+    if stage == "discover" and not (has_link or mentions_specific or asks_policy_or_compare or product_signal or material_signal) and slot_count < 2:
         allow_rag = False
 
     return allow_rag

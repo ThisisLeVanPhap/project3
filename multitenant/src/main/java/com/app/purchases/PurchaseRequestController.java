@@ -57,6 +57,18 @@ public class PurchaseRequestController {
                 .toList();
     }
 
+    @GetMapping("/{id}")
+    public PurchaseRequestResponse detail(@PathVariable("id") Long id) {
+        AppPrincipal principal = principalAccessor.requireAnyRole(
+                AppRole.PLATFORM_ADMIN,
+                AppRole.TENANT_ADMIN,
+                AppRole.TENANT_MEMBER
+        );
+        String currentTenantId = resolveTenantId(null, principal);
+        PurchaseRequest purchaseRequest = purchaseRequestService.findByTenantAndId(currentTenantId, id);
+        return toResponse(purchaseRequest, purchaseRequestService.findMemberDisplayNames(currentTenantId));
+    }
+
     @PutMapping("/{id}/status")
     public PurchaseRequestResponse updateStatus(
             @PathVariable("id") Long id,

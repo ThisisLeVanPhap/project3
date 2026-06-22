@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/combo-phong-khach-kline-phong-cach-han",
+  "final_url": "https://moho.com.vn/products/combo-phong-khach-kline-phong-cach-han",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:03:12.206212+00:00",
+  "content_hash": "4b1003d6ee593f030b6bf0d3eddc8a1597a0df1f2b27db41fce292799fab89f6",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:03:11 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "331830",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"64c413b076b040c89e4df0af70c0c21a\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:03:11 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82974",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1070",
+    "X-RequestId": "ec7ebc5e2f02af87c213943eed7b35ac",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_combo-phong-khach-kline-phong-cach-han-4b1003d6ee59.html"
+}

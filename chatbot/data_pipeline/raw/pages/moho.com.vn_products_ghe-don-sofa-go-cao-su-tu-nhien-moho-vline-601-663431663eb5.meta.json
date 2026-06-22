@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/ghe-don-sofa-go-cao-su-tu-nhien-moho-vline-601",
+  "final_url": "https://moho.com.vn/products/ghe-don-sofa-go-cao-su-tu-nhien-moho-vline-601",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:34:25.879077+00:00",
+  "content_hash": "663431663eb5076c62a08fdd498abf3784a66e062de38fb50e1c857de4bad824",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:34:25 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "341902",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"5104a72f64c64778bac889d0ba9a9027\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:34:25 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1213",
+    "X-RequestId": "99411da617afab3f1193db11344acc8b",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_ghe-don-sofa-go-cao-su-tu-nhien-moho-vline-601-663431663eb5.html"
+}

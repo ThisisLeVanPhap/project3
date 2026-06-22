@@ -1,0 +1,32 @@
+{
+  "url": "https://moho.com.vn/products/combo-co-ban-phong-khach-moho-koster-mau-nau",
+  "final_url": "https://moho.com.vn/products/combo-co-ban-phong-khach-moho-koster-mau-nau",
+  "status_code": 200,
+  "fetched_at": "2026-06-21T17:31:51.267494+00:00",
+  "content_hash": "c93ce8eb5f867713e9d71391e776953b28e7e5ec4d409c42c406de50c94c364c",
+  "headers": {
+    "Server": "openresty",
+    "Date": "Sun, 21 Jun 2026 17:31:50 GMT",
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": "334999",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "no-cache, no-store",
+    "ETag": "W/\"52cfc817a73048569f317a659746feaf\"",
+    "Pragma": "no-cache",
+    "Set-Cookie": "shop_ref=; expires=Tue, 21 Jul 2026 17:31:50 GMT; path=/",
+    "Link": "<https://cdn.hstatic.net>; rel=\"preconnect\"; crossorigin",
+    "Strict-Transport-Security": "max-age=604800",
+    "X-ShopId": "200000065946",
+    "X-Cache": "miss",
+    "X-Cache-Ver": "82976",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-PIndex": "1195",
+    "X-RequestId": "21a5f10cfb0f818dd3a66092a6fa629a",
+    "P3P": "CP=\"NOI DSP COR NID ADMa OPTa OUR NOR\"",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "block-all-mixed-content; frame-ancestors 'self'; upgrade-insecure-requests",
+    "X-XSS-Protection": "1; mode=block"
+  },
+  "html_path": "data_pipeline/raw/pages/moho.com.vn_products_combo-co-ban-phong-khach-moho-koster-mau-nau-c93ce8eb5f86.html"
+}

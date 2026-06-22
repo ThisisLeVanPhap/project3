@@ -1,4 +1,0 @@
-﻿{
-    "status":  500,
-    "content":  "{\"timestamp\":\"2026-06-20T19:20:34.710+00:00\",\"status\":500,\"error\":\"Internal Server Error\",\"path\":\"/api/admin/product-datasets/kb-bindings/bind\"}"
-}

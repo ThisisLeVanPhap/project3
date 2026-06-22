@@ -1,9 +1,0 @@
-{
-  "success": true,
-  "message": "KB rebuilt successfully. The next tenant chat request will start with the updated KB.",
-  "rebuiltAt": "2026-06-16T17:34:22.425226400Z",
-  "lastRebuildStartedAt": "2026-06-16T17:34:18.997297800Z",
-  "lastRebuildFinishedAt": "2026-06-16T17:34:22.425226400Z",
-  "lastRebuildStatus": "SUCCESS",
-  "lastRebuildMessage": "KB rebuilt successfully. The next tenant chat request will start with the updated KB."
-}

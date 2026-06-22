@@ -40,6 +40,7 @@ CLAUDE.md
 # Test/runtime scratch data
 chatbot/tests/.tmp/
 chatbot/out/
+tmp/
 
 # Data pipeline generated artifacts
 data_pipeline/raw/**/*.html

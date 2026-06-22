@@ -71,4 +71,5 @@ id_rsa*
 *.jks
 
 #kb
-chatbot/kb/
+chatbot/kb/*
+!chatbot/kb/.gitkeep

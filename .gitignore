@@ -51,6 +51,15 @@ data_pipeline/output/tenants/**
 !data_pipeline/output/tenants/.gitkeep
 data_pipeline/output/reference/products.clean.jsonl
 data_pipeline/output/reference/knowledge_docs.clean.jsonl
+chatbot/data_pipeline/raw/**/*.html
+chatbot/data_pipeline/raw/**/*.json
+chatbot/data_pipeline/output/**/*.jsonl
+chatbot/data_pipeline/output/**/*.md
+chatbot/data_pipeline/output/tenants/**
+!chatbot/data_pipeline/output/tenants/
+!chatbot/data_pipeline/output/tenants/.gitkeep
+chatbot/data_pipeline/output/reference/products.clean.jsonl
+chatbot/data_pipeline/output/reference/knowledge_docs.clean.jsonl
 
 # Build outputs and deploy secrets
 target/

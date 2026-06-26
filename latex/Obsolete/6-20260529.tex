@@ -1,0 +1,48 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\section{Kết luận}
+
+Đồ án đã xây dựng một hệ thống Multi-tenant RAG chatbot hỗ trợ tư vấn bán hàng, so sánh và tham chiếu giá sản phẩm nội thất. Hệ thống được định hướng phục vụ nhiều cửa hàng trên cùng một nền tảng, trong đó mỗi cửa hàng có chatbot, dữ liệu tri thức, hội thoại, lead và yêu cầu mua hàng riêng. Bên cạnh luồng tư vấn bán hàng theo cửa hàng, hệ thống còn hỗ trợ các chế độ chat tổng quát và tham chiếu giá trong phạm vi dữ liệu tham chiếu của hệ thống.
+
+So với các chatbot kịch bản truyền thống, hệ thống trong đồ án có khả năng xử lý hội thoại linh hoạt hơn vì sử dụng mô hình ngôn ngữ kết hợp với truy xuất dữ liệu từ knowledge base. Chatbot không chỉ phản hồi theo các nhánh kịch bản cố định, mà có thể tiếp nhận nhu cầu bằng ngôn ngữ tự nhiên, duy trì ngữ cảnh hội thoại và đưa ra câu trả lời dựa trên dữ liệu đã được truy xuất. Tuy nhiên, so với các nền tảng AI agent thương mại hoàn chỉnh, hệ thống của đồ án có phạm vi hẹp hơn, tập trung vào bài toán tư vấn nội thất và quản lý nghiệp vụ cơ bản trong môi trường nhiều tenant.
+
+So với website bán hàng hoặc sàn thương mại điện tử thông thường, hệ thống không chỉ cung cấp thao tác tìm kiếm/lọc sản phẩm, mà hướng tới trải nghiệm tư vấn qua hội thoại. Người dùng có thể mô tả nhu cầu chưa rõ ràng, thay đổi tiêu chí trong quá trình trao đổi hoặc hỏi thêm về sản phẩm. Hệ thống sau đó sử dụng dữ liệu phù hợp để hỗ trợ tư vấn. Tuy nhiên, hệ thống chưa đặt mục tiêu thay thế toàn bộ chức năng của một nền tảng thương mại điện tử, ví dụ chưa xử lý thanh toán, tồn kho, vận chuyển hoặc đặt hàng hoàn chỉnh.
+
+Trong quá trình thực hiện, đồ án đã hoàn thành được một số nhóm chức năng chính. Thứ nhất, hệ thống đã có nền tảng multi-tenant với các dữ liệu quan trọng như tenant, thành viên, chatbot, hội thoại, tin nhắn, lead và yêu cầu mua hàng. Thứ hai, hệ thống đã tách backend nghiệp vụ và AI service, giúp phần xử lý nghiệp vụ và phần xử lý hội thoại có thể phát triển tương đối độc lập. Thứ ba, hệ thống đã hỗ trợ các chế độ hội thoại chính gồm \texttt{tenant\_sales}, \texttt{general\_compare} và \texttt{market\_price}, trong đó chỉ luồng \texttt{tenant\_sales} được phép tạo yêu cầu mua hàng. Thứ tư, hệ thống đã có khả năng tích hợp kênh ngoài như Messenger và Telegram thông qua webhook. Thứ năm, hệ thống đã được đóng gói bằng Docker Compose để triển khai thử nghiệm trên môi trường VPS.
+
+Đóng góp nổi bật của đồ án nằm ở việc kết hợp bài toán chatbot RAG với mô hình multi-tenant và nghiệp vụ bán hàng. Hệ thống không chỉ trả lời câu hỏi của người dùng, mà còn liên kết hội thoại với quy trình xử lý lead và yêu cầu mua hàng của cửa hàng. Ngoài ra, đồ án cũng đề xuất cách tách dữ liệu theo phạm vi sử dụng: dữ liệu riêng theo tenant phục vụ tư vấn bán hàng theo cửa hàng, còn dữ liệu tham chiếu công khai phục vụ chat tổng quát và tham chiếu giá. Cách tổ chức này giúp hệ thống giữ được nguyên tắc cô lập dữ liệu tenant, đồng thời vẫn hỗ trợ các chức năng tham khảo cho người dùng cuối.
+
+Bên cạnh các kết quả đã đạt được, hệ thống vẫn còn một số hạn chế. Thứ nhất, dữ liệu sản phẩm và dữ liệu tham chiếu còn phụ thuộc vào phạm vi thu thập trong quá trình demo, chưa đạt mức đầy đủ như một hệ thống thương mại thực tế. Thứ hai, chức năng tham chiếu giá mới dừng ở mức cơ bản trong phạm vi dữ liệu hệ thống, chưa phải là công cụ định giá thị trường toàn diện. Thứ ba, chất lượng câu trả lời của chatbot vẫn phụ thuộc vào chất lượng dữ liệu đầu vào, prompt và provider mô hình ngôn ngữ. Thứ tư, local model như Qwen được giữ cho mục đích thử nghiệm hoặc fallback kỹ thuật, nhưng cấu hình triển khai chính sử dụng Claude API để bảo đảm chất lượng phản hồi và giảm yêu cầu phần cứng. Thứ năm, hệ thống chưa triển khai đầy đủ các chức năng nâng cao như đánh giá tự động quy mô lớn, dashboard phân tích chuyên sâu hoặc xử lý giao dịch bán hàng hoàn chỉnh.
+
+% TODO_CH6_FINAL_METRICS: Nếu có số liệu thực tế cuối cùng, bổ sung vào đoạn này.
+% Ví dụ:
+% - số test pass/fail tại thời điểm nộp
+% - số tenant demo
+% - số sản phẩm/tài liệu crawl được
+% - URL triển khai VPS/domain
+% - kết quả health check hoặc log deploy chính
+
+Thông qua quá trình thực hiện đồ án, em rút ra một số bài học kinh nghiệm. Thứ nhất, với hệ thống sử dụng mô hình ngôn ngữ, chất lượng dữ liệu và cách tổ chức dữ liệu có ảnh hưởng rất lớn đến chất lượng phản hồi. Thứ hai, trong bài toán multi-tenant, việc kiểm soát phạm vi dữ liệu cần được đặt ở backend và trong thiết kế dữ liệu, không nên phụ thuộc hoàn toàn vào frontend hoặc prompt. Thứ ba, việc tách riêng backend nghiệp vụ và AI service giúp hệ thống dễ bảo trì hơn, nhưng cũng đòi hỏi contract giữa hai thành phần phải rõ ràng. Thứ tư, khi triển khai thực tế, cấu hình môi trường, bảo mật API key, Docker Compose, log vận hành và khả năng khởi động lại hệ thống là những yếu tố quan trọng không kém phần viết mã nguồn.
+
+Nhìn chung, đồ án đã hoàn thành mục tiêu xây dựng một hệ thống chatbot tư vấn nội thất theo mô hình multi-tenant ở mức demo thực nghiệm. Hệ thống thể hiện được các luồng chính từ quản lý tenant, cấu hình chatbot, xử lý hội thoại, truy xuất dữ liệu, tạo yêu cầu mua hàng đến triển khai thử nghiệm. Mặc dù vẫn còn những giới hạn về dữ liệu, đánh giá và mức độ hoàn thiện sản phẩm, kết quả đạt được cho thấy hướng tiếp cận multi-tenant RAG chatbot là phù hợp với bài toán hỗ trợ tư vấn bán hàng nội thất cho nhiều cửa hàng.
+
+\section{Hướng phát triển}
+
+Trong thời gian tiếp theo, hướng phát triển đầu tiên là hoàn thiện dữ liệu sản phẩm và dữ liệu knowledge base. Hệ thống cần mở rộng pipeline crawl và chuẩn hóa dữ liệu từ nhiều website/cửa hàng nội thất hơn. Dữ liệu sản phẩm nên được chuẩn hóa thành catalog có cấu trúc với các trường như tên sản phẩm, giá, chất liệu, kích thước, loại sản phẩm, phong cách, tên cửa hàng, đường dẫn nguồn và thời điểm thu thập. Dữ liệu chính sách, giới thiệu cửa hàng và bài viết tư vấn cũng cần được đưa vào knowledge base để chatbot trả lời tốt hơn các câu hỏi về bảo hành, vận chuyển, thanh toán và thông tin cửa hàng.
+
+Hướng phát triển thứ hai là cải thiện chức năng tham chiếu giá. Trong phiên bản hiện tại, tham chiếu giá chỉ có ý nghĩa trong phạm vi dữ liệu tham chiếu của hệ thống. Trong tương lai, có thể bổ sung các nguồn dữ liệu ngoài như API tìm kiếm sản phẩm hoặc dữ liệu từ các website thương mại để tăng độ bao phủ. Khi dữ liệu đủ lớn, hệ thống có thể tính các thống kê như khoảng giá, giá phổ biến, trung vị và phát hiện mức giá bất thường theo từng nhóm sản phẩm. Tuy nhiên, chức năng này cần tiếp tục giữ cảnh báo rõ ràng rằng kết quả chỉ mang tính tham khảo và phụ thuộc vào nguồn dữ liệu thu thập được.
+
+Hướng phát triển thứ ba là nâng cao chất lượng truy xuất dữ liệu và sinh câu trả lời. Hệ thống có thể cải thiện bước truy xuất bằng cách kết hợp tìm kiếm từ khóa, tìm kiếm ngữ nghĩa và bộ lọc theo metadata như loại sản phẩm, ngân sách, chất liệu hoặc phong cách. Ngoài ra, có thể bổ sung cơ chế đánh giá chất lượng context trước khi gửi cho mô hình ngôn ngữ, giúp giảm trường hợp chatbot trả lời khi dữ liệu chưa đủ. Ở tầng sinh câu trả lời, hệ thống có thể tiếp tục tối ưu prompt, ràng buộc format câu trả lời và kiểm soát việc chatbot trả lời ngoài phạm vi dữ liệu.
+
+Hướng phát triển thứ tư là hoàn thiện đánh giá hệ thống. Trong tương lai, cần xây dựng bộ test hội thoại có cấu trúc hơn, bao gồm các kịch bản tư vấn theo cửa hàng, tư vấn tổng quát, tham chiếu giá, tạo yêu cầu mua hàng, hỏi ngoài dữ liệu và lỗi AI service. Mỗi kịch bản cần có tiêu chí pass/fail rõ ràng, ví dụ đúng mode, đúng phạm vi dữ liệu, không tạo purchase request sai luồng, có hỏi làm rõ khi thiếu thông tin và không bịa dữ liệu khi nguồn không đủ. Nếu có đủ thời gian, có thể xây dựng dashboard hoặc báo cáo tự động để tổng hợp kết quả kiểm thử.
+
+Hướng phát triển thứ năm là mở rộng các kênh tích hợp và trải nghiệm vận hành cho cửa hàng. Hệ thống có thể bổ sung giao diện cấu hình webhook thân thiện hơn, hiển thị trạng thái kết nối Messenger/Telegram rõ ràng hơn và hỗ trợ thêm các kênh chat khác. Đối với cửa hàng, có thể bổ sung dashboard theo dõi số lượng hội thoại, số lead, số yêu cầu mua hàng, tỷ lệ chuyển đổi và các câu hỏi phổ biến của khách hàng. Các thông tin này giúp cửa hàng không chỉ sử dụng chatbot để trả lời tự động, mà còn hiểu hơn về nhu cầu của người mua.
+
+Hướng phát triển thứ sáu là hoàn thiện quy trình triển khai và vận hành. Hệ thống có thể bổ sung backup tự động cho PostgreSQL, health check chi tiết hơn, cảnh báo khi AI service lỗi, log truy vết theo conversation và hướng dẫn rollback khi cập nhật phiên bản mới. Với môi trường production, cần cấu hình domain, HTTPS, firewall, quản lý secret an toàn và cơ chế giám sát tài nguyên. Nếu sử dụng local model trong tương lai, có thể tách local model thành worker riêng hoặc triển khai trên máy có GPU thay vì chạy trực tiếp trong service chatbot chính.
+
+Hướng phát triển cuối cùng là mở rộng nghiệp vụ bán hàng. Hiện tại, hệ thống mới tập trung vào tư vấn, tạo lead và yêu cầu mua hàng. Trong tương lai, có thể bổ sung các chức năng như quản lý giỏ hàng, đơn hàng, tồn kho, thanh toán, vận chuyển hoặc tích hợp với hệ thống CRM. Khi đó, chatbot không chỉ hỗ trợ tư vấn trước bán hàng, mà còn có thể tham gia sâu hơn vào toàn bộ quy trình bán hàng và chăm sóc khách hàng sau bán hàng.
+
+Tóm lại, các hướng phát triển trong tương lai tập trung vào bốn nhóm chính: mở rộng và làm sạch dữ liệu, cải thiện chất lượng chatbot, hoàn thiện đánh giá và tăng mức độ sẵn sàng triển khai thực tế. Đây là các bước cần thiết để chuyển hệ thống từ mức demo đồ án sang một sản phẩm có thể thử nghiệm rộng hơn trong môi trường vận hành thực tế.
+
+\end{document}

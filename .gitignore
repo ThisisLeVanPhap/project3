@@ -17,7 +17,10 @@ __pycache__/
 
 # Logs
 *.log
-chatbot/logs/
+logs/*
+!logs/.gitkeep
+chatbot/logs/*
+!chatbot/logs/.gitkeep
 *.jsonl.tmp
 
 # Node / Frontend
@@ -39,28 +42,45 @@ CLAUDE.md
 
 # Test/runtime scratch data
 chatbot/tests/.tmp/
-chatbot/out/
+chatbot/out/*
+!chatbot/out/.gitkeep
 tmp/
+.codegraph/
+
+# Data pipeline input (source URLs là dữ liệu crawl)
+data_pipeline/input/
+!data_pipeline/input/.gitkeep
 
 # Data pipeline generated artifacts
-data_pipeline/raw/**/*.html
-data_pipeline/raw/**/*.json
-data_pipeline/output/**/*.jsonl
-data_pipeline/output/**/*.md
-data_pipeline/output/tenants/**
+data_pipeline/output/**
+!data_pipeline/output/
+!data_pipeline/output/.gitkeep
 !data_pipeline/output/tenants/
 !data_pipeline/output/tenants/.gitkeep
-data_pipeline/output/reference/products.clean.jsonl
-data_pipeline/output/reference/knowledge_docs.clean.jsonl
+!data_pipeline/output/reference/
+!data_pipeline/output/reference/.gitkeep
+data_pipeline/raw/**/*.html
+data_pipeline/raw/**/*.json
 chatbot/data_pipeline/raw/**/*.html
 chatbot/data_pipeline/raw/**/*.json
-chatbot/data_pipeline/output/**/*.jsonl
-chatbot/data_pipeline/output/**/*.md
-chatbot/data_pipeline/output/tenants/**
+chatbot/data_pipeline/output/**
+!chatbot/data_pipeline/output/
+!chatbot/data_pipeline/output/.gitkeep
 !chatbot/data_pipeline/output/tenants/
 !chatbot/data_pipeline/output/tenants/.gitkeep
-chatbot/data_pipeline/output/reference/products.clean.jsonl
-chatbot/data_pipeline/output/reference/knowledge_docs.clean.jsonl
+!chatbot/data_pipeline/output/reference/
+!chatbot/data_pipeline/output/reference/.gitkeep
+
+# Model/training/evaluation artifacts kept locally only
+chatbot/adapters/*
+!chatbot/adapters/.gitkeep
+chatbot/benchmarks/*_eval_report*.json
+chatbot/benchmarks/*_diagnostic_report*.json
+chatbot/benchmarks/*_outputs*.json
+chatbot/eval/results*.json
+chatbot/data/*.sqlite3
+*.bak
+*.bak.*
 
 # Build outputs and deploy secrets
 target/
@@ -69,6 +89,9 @@ target/
 id_rsa*
 *.p12
 *.jks
+
+# Cookies từ crawling
+cookies.txt
 
 #kb
 chatbot/kb/*

@@ -19,6 +19,8 @@ services:
     build:
       context: .
       dockerfile: multitenant/Dockerfile
+      args:
+        INSTALL_LOCAL_AI: ${INSTALL_LOCAL_AI:-false}
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,11 +50,13 @@ services:
     build:
       context: .
       dockerfile: chatbot/Dockerfile
+      args:
+        INSTALL_LOCAL_AI: ${INSTALL_LOCAL_AI:-false}
     init: true
     environment:
       KB_DIR: ${CHATBOT_KB_DIR:-/app/kb/article}
       LOCAL_MODEL_ENABLED: ${LOCAL_MODEL_ENABLED:-false}
-      LORA_ADAPTER: ${CHATBOT_LORA_ADAPTER:-}
+      BASE_MODEL: ${CHATBOT_BASE_MODEL:-}
       TOKENIZER_PATH: ${CHATBOT_TOKENIZER_PATH:-}
       RETRIEVAL_MODE: ${RETRIEVAL_MODE:-keyword}
       RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K:-4}
@@ -80,7 +84,6 @@ services:
       - "${CHATBOT_PORT:-8000}:8000"
     volumes:
       - ./chatbot/kb:/app/kb
-      - ./chatbot/adapters:/app/adapters
       - ./chatbot/out:/app/out
       - ./chatbot/logs:/app/logs
       - ${CHATBOT_MODELS_HOST_DIR:-./chatbot/models}:/models

@@ -45,7 +45,7 @@ const PRIMARY_GROUPS = {
     dashboard: ["overview", "monitor", "stats"],
     tenantManagement: ["tenants", "members", "onboarding"],
     chatbotChannels: ["chatbots", "bindings", "messenger-status", "telegram-status"],
-    knowledgeBase: ["kb-dirs", "kb-versions", "kb-rebuild", "product-datasets"],
+    knowledgeBase: ["product-datasets"],
     businessData: ["leads", "purchase-requests"],
     operations: ["runtime", "reset-conversation", "health", "benchmark", "dev-debug"]
 };
@@ -569,9 +569,8 @@ function renderProductDatasetsTable(emptyMessage="Click Load datasets to refresh
                     <th>Source</th>
                     <th>Status</th>
                     <th>Products</th>
-                    <th>RAG chunks</th>
-                    <th>Crawled/Created at</th>
-                    <th>Path preview</th>
+                    <th>Chunks</th>
+                    <th>Quality</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -579,7 +578,6 @@ function renderProductDatasetsTable(emptyMessage="Click Load datasets to refresh
                 ${datasets.map(dataset => {
                     const rowId = productDatasetRowId(dataset);
                     const datasetId = productDatasetBusinessId(dataset);
-                    const createdAt = dataset.created_at || dataset.createdAt || dataset.registered_at || dataset.registeredAt;
                     return `
                         <tr data-dataset-id="${escapeHtml(rowId)}">
                             <td><b>${escapeHtml(datasetId)}</b><div class="muted">${escapeHtml(dataset.version || "")}</div></td>
@@ -587,14 +585,14 @@ function renderProductDatasetsTable(emptyMessage="Click Load datasets to refresh
                             <td>${renderDatasetStatusBadge(dataset.status)}</td>
                             <td>${escapeHtml(displayValue(dataset.product_count ?? dataset.productCount))}</td>
                             <td>${escapeHtml(displayValue(dataset.rag_chunk_count ?? dataset.ragChunkCount))}</td>
-                            <td>${escapeHtml(fmtDateTime(createdAt) || "-")}</td>
-                            <td class="table-preview dataset-path-preview" title="${escapeHtml(dataset.path || "")}">${escapeHtml(shortPreview(dataset.path, 72))}</td>
+                            <td>${renderQualityBadge(dataset.quality_status || dataset.qualityStatus)}</td>
                             <td>
                                 <div class="table-actions dataset-actions">
-                                    <button class="secondary" data-action="dataset-view">View</button>
-                                    <button class="secondary" data-action="dataset-artifacts">Artifacts</button>
-                                    <button class="secondary" data-action="dataset-build-artifact">Build KB Artifact</button>
-                                    <button class="danger" data-action="dataset-delete">Delete record</button>
+                                    <button class="secondary btn-sm" data-action="dataset-view">View</button>
+                                    <button class="secondary btn-sm" data-action="dataset-artifacts">Artifacts</button>
+                                    <button class="secondary btn-sm" data-action="dataset-build-artifact">Build Artifact</button>
+                                    <button class="secondary btn-sm" onclick="navigator.clipboard.writeText('${escapeHtml(rowId)}')">Copy ID</button>
+                                    <button class="danger btn-sm" data-action="dataset-delete">Delete</button>
                                 </div>
                             </td>
                         </tr>
@@ -671,8 +669,6 @@ function renderProductDatasetArtifacts(datasetId, artifacts){
                             <th>Status</th>
                             <th>Chunks</th>
                             <th>Quality</th>
-                            <th>Artifact path</th>
-                            <th>Built at</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -680,20 +676,26 @@ function renderProductDatasetArtifacts(datasetId, artifacts){
                         ${items.map(artifact => {
                             const id = artifact.id || "";
                             const status = artifact.status || "-";
+                            const isReady = status === "READY";
                             return `
                                 <tr data-artifact-id="${escapeHtml(id)}">
-                                    <td><b>${escapeHtml(artifact.build_tag || artifact.buildTag || "-")}</b><div class="muted">${escapeHtml(id)}</div></td>
+                                    <td><b>${escapeHtml(artifact.build_tag || artifact.buildTag || "-")}</b><div class="muted table-preview">${escapeHtml(shortPreview(id, 24))}</div></td>
                                     <td>${renderDatasetStatusBadge(status)}</td>
                                     <td>${escapeHtml(displayValue(artifact.artifact_count ?? artifact.artifactCount))}</td>
-                                    <td>${escapeHtml(artifact.quality_status || artifact.qualityStatus || "-")}</td>
-                                    <td class="table-preview dataset-path-preview" title="${escapeHtml(artifact.artifact_path || artifact.artifactPath || "")}">${escapeHtml(shortPreview(artifact.artifact_path || artifact.artifactPath, 72))}</td>
-                                    <td>${escapeHtml(fmtDateTime(artifact.built_at || artifact.builtAt) || "-")}</td>
-                                    <td><button class="secondary" data-action="artifact-bind" ${status !== "READY" ? "disabled" : ""}>Bind to selected tenant</button></td>
+                                    <td>${renderQualityBadge(artifact.quality_status || artifact.qualityStatus || "-")}</td>
+                                    <td>
+                                        <div class="table-actions dataset-actions">
+                                            <button class="secondary btn-sm" data-action="artifact-bind" ${!isReady ? "disabled" : ""}>Bind</button>
+                                            <button class="secondary btn-sm" data-action="artifact-import-general" ${!isReady ? "disabled" : ""}>Import General</button>
+                                            <button class="secondary btn-sm" onclick="navigator.clipboard.writeText('${escapeHtml(id)}')">Copy ID</button>
+                                        </div>
+                                    </td>
                                 </tr>
                             `;
                         }).join("")}
                     </tbody>
                 </table>
+                <div class="muted" style="margin-top: 4px;"><em>Chi import vao general catalog voi du lieu GLOBAL_PUBLIC.</em></div>
             ` : `<div class="panel-state empty">No KB artifacts yet. Build an artifact first.</div>`}
         </div>
     `;
@@ -705,6 +707,228 @@ function clearProductDatasetForm(){
         if(el) el.value = "";
     });
     $("productDatasetsMsg").innerText = "";
+}
+
+// ─── Crawl/Materialize Jobs ───
+
+async function loadCrawlMaterializeJobs(){
+    const msgEl = $("cmJobsMsg");
+    const panel = $("crawlMaterializeJobsPanel");
+    if(!msgEl || !panel) return;
+    msgEl.innerText = "Loading jobs...";
+    panel.innerHTML = "";
+    try{
+        const r = await req("GET", "/api/admin/product-datasets/crawl-materialize-jobs", undefined, { tenantHeaders: false });
+        if(r.ok && Array.isArray(r.data)){
+            renderCrawlMaterializeJobs(r.data);
+            msgEl.innerText = `Loaded ${r.data.length} job(s)`;
+        } else {
+            panel.innerHTML = `<div class="panel-state error">${escapeHtml(r.data?.message || "Load jobs failed")}</div>`;
+            msgEl.innerText = r.data?.message || "Load jobs failed";
+        }
+    }catch(err){
+        panel.innerHTML = `<div class="panel-state error">${escapeHtml(err.message || "Load jobs failed")}</div>`;
+        msgEl.innerText = err.message || "Load jobs failed";
+    }
+}
+
+function renderCrawlMaterializeJobs(jobs){
+    const panel = $("crawlMaterializeJobsPanel");
+    if(!panel) return;
+    if(!jobs || jobs.length === 0){
+        panel.innerHTML = `<div class="panel-state empty">No crawl/materialize jobs yet. Start one above.</div>`;
+        return;
+    }
+    panel.innerHTML = `
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Created</th>
+                    <th>Source</th>
+                    <th>Dataset ID</th>
+                    <th>Status</th>
+                    <th>Stage</th>
+                    <th>Products</th>
+                    <th>Quality</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${jobs.map(job => `
+                    <tr>
+                        <td>${escapeHtml(fmtDateTime(job.createdAt))}</td>
+                        <td>${escapeHtml(displayValue(job.sourceCode))}</td>
+                        <td>${escapeHtml(displayValue(job.datasetId))}</td>
+                        <td>${renderJobStatusBadge(job.status)}</td>
+                        <td>${renderJobStage(job.stage)}</td>
+                        <td>${escapeHtml(displayValue(job.productCount))}</td>
+                        <td>${renderQualityBadge(job.qualityStatus)}</td>
+                        <td>
+                            <details>
+                                <summary>Detail</summary>
+                                ${renderJobDetail(job)}
+                            </details>
+                        </td>
+                    </tr>
+                `).join("")}
+            </tbody>
+        </table>`;
+}
+
+function renderJobStatusBadge(status){
+    if(!status) return `<span class="badge badge-provider">-</span>`;
+    const cls = status === "SUCCESS" ? "badge-status-active"
+        : status === "FAILED" ? "badge-status-inactive"
+        : status === "QUEUED" ? "badge-provider"
+        : "badge-provider";
+    return `<span class="badge ${cls}">${escapeHtml(status)}</span>`;
+}
+
+function renderJobStage(stage){
+    if(!stage) return `<span class="badge badge-provider">-</span>`;
+    const cls = stage === "SUCCESS" ? "badge-status-active"
+        : stage === "FAILED" ? "badge-status-inactive"
+        : "badge-provider";
+    return `<span class="badge ${cls}">${escapeHtml(stage)}</span>`;
+}
+
+function renderQualityBadge(qs){
+    if(!qs) return `<span class="badge badge-provider">-</span>`;
+    const cls = qs === "pass" ? "badge-status-active"
+        : qs === "warn" ? "badge-warn"
+        : qs === "fail" ? "badge-status-inactive"
+        : "badge-provider";
+    return `<span class="badge ${cls}">${escapeHtml(qs)}</span>`;
+}
+
+function renderJobDetail(job){
+    if(!job) return "";
+    const stageMsg = job.stageMessage || "";
+    const errMsg = job.errorMessage || "";
+    // Progress: count active stages
+    const allStages = ["CRAWL","ENRICH","RAG_EXPORT","DEDUPE","MATERIALIZE","QUALITY_AUDIT",
+                       "TAXONOMY_NORMALIZE","REGISTER","BUILD_ARTIFACT","BIND_TENANT","IMPORT_GENERAL"];
+    const curIdx = allStages.indexOf(job.stage);
+    const progress = curIdx >= 0 ? `${curIdx + 1} / ${allStages.length}` : "-";
+    return `
+        <div class="card2" style="padding: 8px; margin: 4px 0; font-size: 0.85em;">
+            <div class="dataset-detail-grid">
+                <div class="dataset-detail-row"><div class="muted">Stage progress</div><div>${progress}</div></div>
+                <div class="dataset-detail-row"><div class="muted">Stage message</div><div>${escapeHtml(stageMsg || "-")}</div></div>
+                <div class="dataset-detail-row"><div class="muted">Max URLs</div><div>${escapeHtml(displayValue(job.maxUrls))}</div></div>
+                <div class="dataset-detail-row"><div class="muted">Visibility</div><div>${escapeHtml(displayValue(job.visibility))}</div></div>
+                <div class="dataset-detail-row"><div class="muted">Build artifact</div><div>${boolLabel(job.buildArtifact)}</div></div>
+                <div class="dataset-detail-row"><div class="muted">Bind tenant</div><div>${boolLabel(job.bindTenant)}</div></div>
+                <div class="dataset-detail-row"><div class="muted">Import general</div><div>${boolLabel(job.importGeneral)}</div></div>
+                <div class="dataset-detail-row"><div class="muted">Dataset path</div><div class="table-preview">${escapeHtml(shortPreview(job.datasetPath, 48))}</div></div>
+                <div class="dataset-detail-row"><div class="muted">RAG chunks</div><div>${escapeHtml(displayValue(job.ragChunkCount))}</div></div>
+                ${job.artifactId ? `<div class="dataset-detail-row"><div class="muted">Artifact ID</div><div>${escapeHtml(job.artifactId)}</div></div>` : ""}
+                ${job.activeKbVersionId ? `<div class="dataset-detail-row"><div class="muted">Active KB version</div><div>${escapeHtml(job.activeKbVersionId)}</div></div>` : ""}
+                ${job.generalSourceId ? `<div class="dataset-detail-row"><div class="muted">General source</div><div>${escapeHtml(job.generalSourceId)}</div></div>` : ""}
+                ${errMsg ? `<div class="dataset-detail-row"><div class="muted" style="color:red;">Error</div><div style="color:red;">${escapeHtml(errMsg)}</div></div>` : ""}
+            </div>
+            <div class="row" style="margin-top: 4px;">
+                <button class="secondary btn-sm" onclick="navigator.clipboard.writeText('${escapeHtml(job.id)}')">Copy job ID</button>
+                ${job.datasetId ? `<button class="secondary btn-sm" onclick="navigator.clipboard.writeText('${escapeHtml(job.datasetId)}')">Copy dataset ID</button>` : ""}
+            </div>
+        </div>`;
+}
+
+async function startCrawlMaterializeJob(){
+    const msgEl = $("cmJobMsg");
+    if(!msgEl) return null;
+
+    const sourceCode = $("cmSourceCode")?.value?.trim();
+    if(!sourceCode){
+        msgEl.innerText = "Source code is required";
+        return null;
+    }
+    const sitemapUrl = $("cmSitemapUrl")?.value?.trim() || null;
+    const rootUrl = $("cmRootUrl")?.value?.trim() || null;
+    const productUrlsText = $("cmProductUrls")?.value?.trim();
+    const productUrls = productUrlsText ? productUrlsText.split("\n").map(s=>s.trim()).filter(Boolean) : [];
+    if(!sitemapUrl && !rootUrl && productUrls.length === 0){
+        msgEl.innerText = "Sitemap URL, root URL, or product URLs required";
+        return null;
+    }
+
+    const maxUrls = parseInt($("cmMaxUrls")?.value) || 1000;
+    if(maxUrls > 10000){
+        msgEl.innerText = "Max URLs cannot exceed 10000";
+        return null;
+    }
+
+    const visibility = $("cmVisibility")?.value || "TENANT_BOUND";
+    const buildArtifact = !!$("cmBuildArtifact")?.checked;
+    const importGeneral = !!$("cmImportGeneral")?.checked;
+
+    if(importGeneral && visibility !== "GLOBAL_PUBLIC"){
+        msgEl.innerText = "Import general requires GLOBAL_PUBLIC visibility";
+        return null;
+    }
+
+    const tenantSelect = $("cmTenantId");
+    const tenantId = tenantSelect?.value || null;
+    if(tenantId && !buildArtifact){
+        msgEl.innerText = "Bind tenant requires build artifact";
+        return null;
+    }
+
+    const body = {
+        sourceCode,
+        sourceName: $("cmSourceName")?.value?.trim() || null,
+        rootUrl,
+        sitemapUrl,
+        productUrls: productUrls.length > 0 ? productUrls : null,
+        maxUrls,
+        productOnly: true,
+        runQualityAudit: true,
+        runTaxonomyNormalize: true,
+        registerDataset: true,
+        visibility,
+        buildArtifact,
+        importGeneral,
+        bindTenantId: tenantId || null,
+    };
+
+    msgEl.innerText = "Starting job...";
+    try{
+        const r = await req("POST", "/api/admin/product-datasets/crawl-materialize-jobs", body, { tenantHeaders: false });
+        if(r.ok){
+            msgEl.innerText = `Job started: ${r.data?.id || ""} (QUEUED)`;
+            setTimeout(() => loadCrawlMaterializeJobs(), 1000);
+            return r;
+        }
+        msgEl.innerText = r.data?.message || "Start job failed";
+        return r;
+    }catch(err){
+        msgEl.innerText = err.message || "Start job failed";
+        return null;
+    }
+}
+
+async function loadCrawlMaterializeJobs(){
+    const msgEl = $("cmJobsMsg");
+    const panel = $("crawlMaterializeJobsPanel");
+    if(!msgEl || !panel) return;
+    msgEl.innerText = "Loading jobs...";
+    panel.innerHTML = `<div class="panel-state loading">Loading...</div>`;
+    try{
+        const r = await req("GET", "/api/admin/product-datasets/crawl-materialize-jobs", undefined, { tenantHeaders: false });
+        setJsonOutput("productDatasetsOut", r, true);
+        if(r.ok && Array.isArray(r.data)){
+            renderCrawlMaterializeJobs(r.data);
+            msgEl.innerText = `Loaded ${r.data.length} job(s)`;
+            return r;
+        }
+        panel.innerHTML = `<div class="panel-state error">${escapeHtml(r.data?.message || "Load jobs failed")}</div>`;
+        msgEl.innerText = r.data?.message || "Load jobs failed";
+        return r;
+    }catch(err){
+        panel.innerHTML = `<div class="panel-state error">${escapeHtml(err.message || "Load jobs failed")}</div>`;
+        msgEl.innerText = err.message || "Load jobs failed";
+        return null;
+    }
 }
 
 async function loadProductDatasets(){
@@ -802,18 +1026,48 @@ async function loadProductDatasetArtifacts(id){
 async function buildProductDatasetArtifact(id){
     const dataset = state.productDatasets.find(item => productDatasetRowId(item) === id) || state.selectedProductDataset;
     const datasetId = productDatasetBusinessId(dataset) || id;
-    if(!window.confirm(`Build tenant-independent KB artifact for dataset ${datasetId}? This will not change any tenant unless AUTO_USE_LATEST bindings exist.`)){
+    if(!window.confirm(`Build KB artifact for dataset ${datasetId}?\n\nSau khi build xong sẽ tự động Import General.`)){
         return null;
     }
     $("productDatasetsMsg").innerText = "Building KB artifact...";
     const r = await req("POST", `/api/admin/product-datasets/${encodeURIComponent(id)}/artifacts/build`, undefined, { tenantHeaders: false });
     setJsonOutput("productDatasetsOut", r, true);
     if(r.ok){
-        $("productDatasetsMsg").innerText = `Built KB artifact ${r.data?.build_tag || r.data?.buildTag || ""}`;
+        const artifact = r.data;
+        const artifactId = artifact?.id;
+        $("productDatasetsMsg").innerText = `Built KB artifact ${artifact?.build_tag || artifact?.buildTag || ""}`;
+        // Auto-load artifacts panel
         await Promise.allSettled([loadProductDatasetArtifacts(id), loadKbVersions(), loadActiveKbDirectory(), loadKbRuntimeStatus(), loadTenants(false)]);
+        // Auto-import general nếu artifact READY
+        if(artifactId && (artifact?.status === "READY")){
+            $("productDatasetsMsg").innerText = "Importing to General Data Layer...";
+            const ir = await req("POST", `/api/admin/product-datasets/artifacts/${encodeURIComponent(artifactId)}/import-general`, undefined, { tenantHeaders: false });
+            if(ir.ok){
+                $("productDatasetsMsg").innerText = `Import General: ${ir.data?.productsImported || ir.data?.products_imported || 0} products`;
+                await loadProductDatasetArtifacts(id);
+            } else {
+                $("productDatasetsMsg").innerText = `Build OK, Import General failed: ${ir.data?.message || ir.status}`;
+            }
+        }
         return r;
     }
     $("productDatasetsMsg").innerText = r.data?.message || `Build KB artifact failed (${r.status})`;
+    return r;
+}
+
+async function importArtifactToGeneral(artifactId){
+    if(!window.confirm(`Import artifact ${artifactId} into General Data Layer? This will add products to the public catalog.`)){
+        return null;
+    }
+    $("productDatasetsMsg").innerText = "Importing to general...";
+    const r = await req("POST", `/api/admin/product-datasets/artifacts/${encodeURIComponent(artifactId)}/import-general`, undefined, { tenantHeaders: false });
+    setJsonOutput("productDatasetsOut", r, true);
+    if(r.ok){
+        const data = r.data;
+        $("productDatasetsMsg").innerText = `Imported to general: ${data?.generalSourceId || data?.general_source_id || "OK"}`;
+        return r;
+    }
+    $("productDatasetsMsg").innerText = r.data?.message || `Import to general failed (${r.status})`;
     return r;
 }
 
@@ -1571,20 +1825,6 @@ function setTab(name, opts = {}){
     if(name === "monitor" && $("systemStatusSummary") && !$("systemStatusSummary").innerHTML.trim()){
         renderPanelState("systemStatusSummary", "Click Load platform ops to refresh status.", "empty");
     }
-    if(name === "kb-dirs" && $("activeKbDirectoryPanel") && !$("activeKbDirectoryPanel").innerHTML.trim()){
-        renderActiveKbDirectory(null);
-    }
-    if(name === "kb-versions" && $("kbVersionsTablePanel") && !$("kbVersionsTablePanel").innerHTML.trim()){
-        renderKbVersionsTable();
-    }
-    if(name === "kb-rebuild"){
-        if($("kbSourceUrlsPanel") && !$("kbSourceUrlsPanel").innerHTML.trim()){
-            renderKbSourceUrls(null);
-        }
-        if($("kbRebuildStatusPanel") && !$("kbRebuildStatusPanel").innerHTML.trim()){
-            renderKbRebuildResponse(null);
-        }
-    }
     if(name === "runtime" && $("kbRuntimeStatusPanel") && !$("kbRuntimeStatusPanel").innerHTML.trim()){
         renderKbRuntimeStatus(null);
     }
@@ -2053,7 +2293,7 @@ function botPayloadFromForm(){
     const channel = $("botChannel").value.trim();
     const personaJson = normalizePersonaInput($("botPersona").value);
     const responseStyle = $("botResponseStyle").value.trim() || "natural";
-    const provider = $("botProvider").value.trim() || "local";
+    const provider = $("botProvider").value.trim() || "claude";
 
     if(!name || !channel){
         throw new Error("Thiáº¿u bot name hoáº·c channel");
@@ -2081,7 +2321,7 @@ function populateBotForm(bot){
         $("botChannel").value = "telegram";
         $("botPersona").value = "";
         $("botResponseStyle").value = "natural";
-        $("botProvider").value = "local";
+        $("botProvider").value = "claude";
         return;
     }
 
@@ -2091,7 +2331,7 @@ function populateBotForm(bot){
     $("botChannel").value = bot.channel || "telegram";
     $("botPersona").value = bot.persona ? JSON.stringify(bot.persona) : "";
     $("botResponseStyle").value = bot.responseStyle || "natural";
-    $("botProvider").value = bot.provider || "local";
+    $("botProvider").value = bot.provider || "claude";
 }
 
 /* ---------------- Helpers ---------------- */
@@ -2740,7 +2980,76 @@ $("botSelect").addEventListener("change", (e)=>{
 
 // Provider toggle removed - Claude uses system-level env only
 
-$("createTgBinding").addEventListener("click", async ()=>{
+function wireQuickBind(){
+    // Populate tenant dropdown
+    const tenantSel = $("quickTenantSelect");
+    if(tenantSel && state.tenants.length > 0){
+        tenantSel.innerHTML = `<option value="">-- Select --</option>` +
+            state.tenants.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.code || t.name || t.id)}</option>`).join("");
+    }
+    $("quickBindChannel")?.addEventListener("click", async function(){
+        const msgEl = $("quickBindMsg");
+        if(!msgEl) return;
+        const channelVal = $("quickChannelSelect")?.value;
+        if(!channelVal){ msgEl.innerText = "Select a channel"; return; }
+        const tenantId = $("quickTenantSelect")?.value;
+        if(!tenantId){ msgEl.innerText = "Select a tenant"; return; }
+
+        const parts = channelVal.split(":", 3);
+        if(parts.length < 3){ msgEl.innerText = "Invalid channel config"; return; }
+        const channelType = parts[0];
+        const pageIdOrToken = parts[1];
+        const secretOrToken = parts[2];
+
+        // Build friendly name from channelVal
+        const opt = $("quickChannelSelect")?.querySelector(`option[value="${escapeHtml(channelVal)}"]`);
+        const displayName = opt ? opt.textContent : channelType;
+
+        const body = {
+            channelType: channelType,
+            channelName: displayName,
+            tenantId: tenantId,
+        };
+        if(channelType === "telegram"){
+            body.botToken = secretOrToken;
+        } else {
+            body.pageId = pageIdOrToken;
+            body.pageAccessToken = secretOrToken;
+        }
+
+        msgEl.innerText = "Binding...";
+        try{
+            const r = await req("POST", "/api/admin/quick-bind-channel", body, { tenantHeaders: false });
+            if(r.ok){
+                msgEl.innerText = r.data?.message || "Bind OK";
+                // Refresh chatbot & binding lists
+                if(typeof loadMessengerBindings === "function") loadMessengerBindings();
+                if(typeof loadTgBindings === "function") loadTgBindings();
+            } else {
+                msgEl.innerText = r.data?.message || "Bind failed";
+            }
+        }catch(err){
+            msgEl.innerText = err.message || "Bind failed";
+        }
+    });
+}
+
+// Populate quick channel tenant dropdown when tenants load
+function refreshQuickTenantSelect(){
+    const qs = $("quickTenantSelect");
+    if(!qs || state.tenants.length === 0) return;
+    qs.innerHTML = `<option value="">-- Select --</option>` +
+        state.tenants.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.code || t.name || t.id)}</option>`).join("");
+}
+// Intercept loadTenants to also refresh quick select
+const origLoadTenants = loadTenants;
+async function loadTenants(autoPickFirst, preferredTenantId){
+    const r = await origLoadTenants(autoPickFirst, preferredTenantId);
+    refreshQuickTenantSelect();
+    return r;
+}
+
+$("createTgBinding").addEventListener("click", async (event)=>{
     $("bindingsOut").innerText = "";
 
     if(!state.selectedTenant){ showMsg("cfgMsg", "Chưa chọn tenant"); return; }
@@ -2748,6 +3057,40 @@ $("createTgBinding").addEventListener("click", async ()=>{
 
     const botToken = $("tgToken").value.trim();
     if(!botToken){ showMsg("cfgMsg", "Thiếu bot token"); return; }
+
+    const publicBaseForServer = ($("tgPublicBase")?.value || "").trim().replace(/\/+$/,"");
+    const serverPayload = {
+        chatbotId: state.selectedBot.id,
+        botToken,
+        publicBaseUrl: publicBaseForServer
+    };
+
+    await withButtonLoading(event.currentTarget, "Creating...", async ()=>{
+        try{
+            const r = await req("POST", "/api/telegram/bindings", serverPayload);
+            setJsonOutput("bindingsOut", r, true);
+
+            if(!r.ok){
+                showMsg("cfgMsg", r.data?.message || `Create binding FAIL (${r.status})`, 2500);
+                return;
+            }
+
+            $("tgToken").value = "";
+            await loadTgBindings();
+
+            if(r.data?.webhookOk){
+                showMsg("cfgMsg", "Telegram binding + webhook OK", 2500);
+            } else if(r.data?.webhookUrl){
+                showMsg("cfgMsg", "Binding OK, setWebhook FAIL", 3000);
+            } else {
+                showMsg("cfgMsg", "Telegram binding created", 2500);
+            }
+        }catch(err){
+            $("bindingsOut").innerText = "";
+            showMsg("cfgMsg", err.message || "Create binding failed", 3000);
+        }
+    });
+    return;
 
     const payload = { chatbotId: state.selectedBot.id, botToken };
     const r = await req("POST", "/api/telegram/bindings", payload);
@@ -3212,7 +3555,266 @@ function wireRawOutputToggles(){
     wireRawOutputToggle("toggleProductDatasetsOut", "productDatasetsOut");
 }
 
+// ─── Source Registry ───
+
+async function loadSourceRegistry(){
+    const msgEl = $("srMsg");
+    const panel = $("sourceRegistryPanel");
+    if(!msgEl || !panel) return;
+    msgEl.innerText = "Loading...";
+    panel.innerHTML = `<div class="panel-state loading">Loading...</div>`;
+    try{
+        const r = await req("GET", "/api/admin/source-registry", undefined, { tenantHeaders: false });
+        setJsonOutput("productDatasetsOut", r, true);
+        if(r.ok && Array.isArray(r.data)){
+            renderSourceRegistry(r.data);
+            msgEl.innerText = `Loaded ${r.data.length} source(s)`;
+            return r;
+        }
+        panel.innerHTML = `<div class="panel-state error">${escapeHtml(r.data?.message || "Load failed")}</div>`;
+        msgEl.innerText = r.data?.message || "Load failed";
+        return r;
+    }catch(err){
+        panel.innerHTML = `<div class="panel-state error">${escapeHtml(err.message || "Load failed")}</div>`;
+        msgEl.innerText = err.message || "Load failed";
+        return null;
+    }
+}
+
+function renderSourceRegistry(sources){
+    const panel = $("sourceRegistryPanel");
+    if(!panel) return;
+    if(!sources || sources.length === 0){
+        panel.innerHTML = `<div class="panel-state empty">No registered sources. Add one above.</div>`;
+        return;
+    }
+    panel.innerHTML = `
+        <table class="table">
+            <thead><tr>
+                <th>Source code</th><th>Name</th><th>Visibility</th><th>Enabled</th><th>Updated</th><th>Actions</th>
+            </tr></thead>
+            <tbody>${sources.map(s => `
+                <tr data-source-id="${escapeHtml(s.id)}">
+                    <td><b>${escapeHtml(s.sourceCode)}</b></td>
+                    <td>${escapeHtml(displayValue(s.sourceName))}</td>
+                    <td>${renderQualityBadge(s.visibility)}</td>
+                    <td>${s.enabled ? `<span class="badge badge-status-active">ON</span>` : `<span class="badge badge-status-inactive">OFF</span>`}</td>
+                    <td>${escapeHtml(fmtDateTime(s.updatedAt) || "-")}</td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="secondary btn-sm" onclick="fillCrawlFormFromSource('${escapeHtml(s.id)}')">Use in crawl job</button>
+                            <button class="secondary btn-sm" onclick="toggleSourceEnabled('${escapeHtml(s.id)}', ${!s.enabled})">${s.enabled ? "Disable" : "Enable"}</button>
+                            <button class="danger btn-sm" onclick="deleteSourceRegistry('${escapeHtml(s.id)}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join("")}</tbody>
+        </table>`;
+    // Wire events for toggle/delete after render
+    panel.querySelectorAll("[data-action]").forEach(btn => {});
+}
+
+async function saveSourceRegistry(){
+    const msgEl = $("srMsg");
+    if(!msgEl) return;
+    const sourceCode = $("srSourceCode")?.value?.trim();
+    if(!sourceCode){ msgEl.innerText = "Source code required"; return null; }
+    const body = {
+        sourceCode,
+        sourceName: $("srSourceName")?.value?.trim() || null,
+        rootUrl: $("srRootUrl")?.value?.trim() || null,
+        sitemapUrl: $("srSitemapUrl")?.value?.trim() || null,
+        visibility: $("srVisibility")?.value || "TENANT_BOUND",
+        ownerTenantId: $("srOwnerTenant")?.value?.trim() || null,
+        notes: $("srNotes")?.value?.trim() || null,
+        enabled: true,
+    };
+    msgEl.innerText = "Saving...";
+    try{
+        const r = await req("POST", "/api/admin/source-registry", body, { tenantHeaders: false });
+        setJsonOutput("productDatasetsOut", r, true);
+        if(r.ok){
+            msgEl.innerText = `Saved source ${sourceCode}`;
+            $("srSourceCode").value = ""; $("srSourceName").value = "";
+            $("srRootUrl").value = ""; $("srSitemapUrl").value = "";
+            $("srOwnerTenant").value = ""; $("srNotes").value = "";
+            await loadSourceRegistry();
+            return r;
+        }
+        msgEl.innerText = r.data?.message || "Save failed";
+        return r;
+    }catch(err){
+        msgEl.innerText = err.message || "Save failed";
+        return null;
+    }
+}
+
+async function toggleSourceEnabled(id, enabled){
+    try{
+        const r = await req("PATCH", `/api/admin/source-registry/${encodeURIComponent(id)}/enabled`,
+            { enabled }, { tenantHeaders: false });
+        if(r.ok) await loadSourceRegistry();
+    }catch(err){ console.error(err); }
+}
+
+async function deleteSourceRegistry(id){
+    if(!window.confirm("Delete this source registry entry?")) return;
+    try{
+        const r = await req("DELETE", `/api/admin/source-registry/${encodeURIComponent(id)}`,
+            undefined, { tenantHeaders: false });
+        if(r.ok) await loadSourceRegistry();
+    }catch(err){ console.error(err); }
+}
+
+async function fillCrawlFormFromSource(id){
+    try{
+        const r = await req("GET", `/api/admin/source-registry/${encodeURIComponent(id)}`,
+            undefined, { tenantHeaders: false });
+        if(r.ok && r.data){
+            const s = r.data;
+            if($("cmSourceCode")) $("cmSourceCode").value = s.sourceCode || "";
+            if($("cmSourceName")) $("cmSourceName").value = s.sourceName || "";
+            if($("cmRootUrl")) $("cmRootUrl").value = s.rootUrl || "";
+            if($("cmSitemapUrl")) $("cmSitemapUrl").value = s.sitemapUrl || "";
+            if($("cmVisibility")) $("cmVisibility").value = s.visibility || "TENANT_BOUND";
+            $("cmJobMsg").innerText = "Form filled from source registry: " + s.sourceCode;
+        }
+    }catch(err){
+        $("cmJobMsg").innerText = "Failed to load source: " + (err.message || "");
+    }
+}
+
+// ─── Quality Dashboard ───
+
+async function loadQualitySummary(){
+    const msgEl = $("qsMsg");
+    const panel = $("qualitySummaryPanel");
+    if(!msgEl || !panel) return;
+    msgEl.innerText = "Loading...";
+    panel.innerHTML = `<div class="panel-state loading">Loading...</div>`;
+    try{
+        const sourceCode = $("qsSourceCode")?.value?.trim() || undefined;
+        const url = sourceCode
+            ? `/api/admin/general/quality-summary?sourceCode=${encodeURIComponent(sourceCode)}`
+            : "/api/admin/general/quality-summary";
+        const r = await req("GET", url, undefined, { tenantHeaders: false });
+        setJsonOutput("productDatasetsOut", r, true);
+        if(r.ok && r.data){
+            renderQualitySummary(r.data);
+            msgEl.innerText = `Quality summary loaded`;
+            return r;
+        }
+        panel.innerHTML = `<div class="panel-state error">${escapeHtml(r.data?.message || "Load quality summary failed")}</div>`;
+        msgEl.innerText = r.data?.message || "Load quality summary failed";
+        return r;
+    }catch(err){
+        panel.innerHTML = `<div class="panel-state error">${escapeHtml(err.message || "Load quality summary failed")}</div>`;
+        msgEl.innerText = err.message || "Load quality summary failed";
+        return null;
+    }
+}
+
+function renderQualitySummary(data){
+    const panel = $("qualitySummaryPanel");
+    if(!panel) return;
+    if(!data || !data.totalProducts){
+        panel.innerHTML = `<div class="panel-state empty">No data available.</div>`;
+        return;
+    }
+
+    const cov = data.coverage || {};
+    const makeCovCard = (label, key) => {
+        const c = cov[key];
+        if(!c) return "";
+        const pct = c.percent || 0;
+        const cls = pct >= 80 ? "badge-status-active" : pct >= 50 ? "badge-warn" : "badge-status-inactive";
+        return `<div class="card2" style="padding:8px;text-align:center;min-width:80px;">
+            <div class="big">${escapeHtml(pct.toFixed(1))}%</div>
+            <div class="muted">${escapeHtml(label)}</div>
+            <span class="badge ${cls}">${escapeHtml(c.count)}</span>
+        </div>`;
+    };
+
+    const qs = data.qualityStatus || "warn";
+    const qsCls = qs === "pass" ? "badge-status-active" : qs === "fail" ? "badge-status-inactive" : "badge-warn";
+
+    panel.innerHTML = `
+        <div class="grid2" style="gap:8px;">
+            <div class="card2" style="padding:8px;">
+                <div class="muted">Total products</div>
+                <div class="big">${escapeHtml(displayValue(data.totalProducts))}</div>
+            </div>
+            <div class="card2" style="padding:8px;">
+                <div class="muted">Sources</div>
+                <div class="big">${escapeHtml(displayValue(data.sourceCount))}</div>
+            </div>
+            <div class="card2" style="padding:8px;">
+                <div class="muted">Quality</div>
+                <span class="badge ${qsCls}" style="font-size:1em;">${escapeHtml(qs)}</span>
+            </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;">
+            ${["price","category","material","dimensions","imageUrl","sourceUrl"].map(k => makeCovCard(k, k)).join("")}
+        </div>
+        ${data.priceStats ? `
+            <div class="card2" style="padding:8px;margin:8px 0;">
+                <div class="muted">Price stats</div>
+                <div class="grid2">
+                    <div>Min: <b>${escapeHtml(displayValue(data.priceStats.min))}</b></div>
+                    <div>Median: <b>${escapeHtml(displayValue(data.priceStats.median))}</b></div>
+                </div>
+                <div class="grid2">
+                    <div>Avg: <b>${escapeHtml(displayValue(data.priceStats.avg))}</b></div>
+                    <div>Max: <b>${escapeHtml(displayValue(data.priceStats.max))}</b></div>
+                </div>
+            </div>
+        ` : ""}
+        ${(data.categoryDistribution || []).length ? `
+            <div class="card2" style="padding:8px;margin:8px 0;">
+                <div class="muted">Category distribution (top 15)</div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+                    ${data.categoryDistribution.map(c =>
+                        `<span class="badge badge-provider">${escapeHtml(c.category)}: ${escapeHtml(c.count)}</span>`
+                    ).join("")}
+                </div>
+            </div>
+        ` : ""}
+        ${(data.sourceBreakdown || []).length ? `
+            <div class="card2" style="padding:8px;margin:8px 0;">
+                <div class="muted">Source breakdown</div>
+                <table class="table">
+                    <thead><tr><th>Source</th><th>Products</th><th>Price</th><th>Category</th><th>Material</th><th>Dimensions</th></tr></thead>
+                    <tbody>${data.sourceBreakdown.map(s =>
+                        `<tr><td>${escapeHtml(s.sourceCode)}</td><td>${s.totalProducts}</td>
+                         <td>${(s.priceCoverage||0).toFixed(1)}%</td>
+                         <td>${(s.categoryCoverage||0).toFixed(1)}%</td>
+                         <td>${(s.materialCoverage||0).toFixed(1)}%</td>
+                         <td>${(s.dimensionsCoverage||0).toFixed(1)}%</td></tr>`
+                    ).join("")}</tbody>
+                </table>
+            </div>
+        ` : ""}
+        ${(data.warnings || []).length ? `
+            <div class="card2" style="padding:8px;margin:8px 0;border-left:3px solid #f59e0b;">
+                <div class="muted">Warnings</div>
+                <ul style="margin:4px 0;">${data.warnings.map(w => `<li>${escapeHtml(w)}</li>`).join("")}</ul>
+            </div>
+        ` : ""}
+    `;
+}
+
 function wireProductDatasetUi(){
+    $("loadCrawlMaterializeJobs")?.addEventListener("click", event =>
+        withButtonLoading(event.currentTarget, "Loading...", () => loadCrawlMaterializeJobs().catch(err => {
+            console.error(err);
+        }))
+    );
+    $("startCrawlMaterializeJob")?.addEventListener("click", event =>
+        withButtonLoading(event.currentTarget, "Starting...", () => startCrawlMaterializeJob().catch(err => {
+            console.error(err);
+            $("cmJobMsg").innerText = err.message || "Start job failed";
+        }))
+    );
     $("loadProductDatasets")?.addEventListener("click", event =>
         withButtonLoading(event.currentTarget, "Loading...", () => loadProductDatasets().catch(err => {
             console.error(err);
@@ -3222,6 +3824,21 @@ function wireProductDatasetUi(){
         withButtonLoading(event.currentTarget, "Registering...", () => registerProductDataset().catch(err => {
             console.error(err);
             $("productDatasetsMsg").innerText = err.message || "Register dataset failed";
+        }))
+    );
+    $("loadQualitySummary")?.addEventListener("click", event =>
+        withButtonLoading(event.currentTarget, "Loading...", () => loadQualitySummary().catch(err => {
+            console.error(err);
+        }))
+    );
+    $("loadSourceRegistry")?.addEventListener("click", event =>
+        withButtonLoading(event.currentTarget, "Loading...", () => loadSourceRegistry().catch(err => {
+            console.error(err);
+        }))
+    );
+    $("saveSourceRegistry")?.addEventListener("click", event =>
+        withButtonLoading(event.currentTarget, "Saving...", () => saveSourceRegistry().catch(err => {
+            console.error(err);
         }))
     );
     $("clearProductDatasetForm")?.addEventListener("click", clearProductDatasetForm);
@@ -3256,13 +3873,21 @@ function wireProductDatasetUi(){
     });
     $("productDatasetAssignPanel")?.addEventListener("click", event => {
         const button = event.target.closest("button");
-        if(!button || button.dataset.action !== "artifact-bind") return;
+        if(!button) return;
         const artifactId = button.closest("tr")?.dataset?.artifactId;
         if(!artifactId) return;
-        withButtonLoading(button, "Binding...", () => bindArtifactToSelectedTenant(artifactId).catch(err => {
-            console.error(err);
-            $("productDatasetsMsg").innerText = err.message || "Bind KB artifact failed";
-        }));
+        const action = button.dataset.action;
+        if(action === "artifact-bind"){
+            withButtonLoading(button, "Binding...", () => bindArtifactToSelectedTenant(artifactId).catch(err => {
+                console.error(err);
+                $("productDatasetsMsg").innerText = err.message || "Bind KB artifact failed";
+            }));
+        } else if(action === "artifact-import-general"){
+            withButtonLoading(button, "Importing...", () => importArtifactToGeneral(artifactId).catch(err => {
+                console.error(err);
+                $("productDatasetsMsg").innerText = err.message || "Import to general failed";
+            }));
+        }
     });
 }
 

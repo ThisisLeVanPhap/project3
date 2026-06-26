@@ -5,11 +5,8 @@ import com.app.bots.ChatbotInstanceRepository;
 import com.app.leads.Lead;
 import com.app.leads.LeadRepository;
 import com.app.leads.LeadService;
-import com.app.modelserver.ChatbotUpstreamException;
 import com.app.modelserver.ChatbotMode;
-import com.app.modelserver.LlmInstanceManager;
-import com.app.modelserver.PythonChatClient;
-import com.app.modelserver.PythonChatFallbacks;
+import com.app.modelserver.ChatRuntimeService;
 import com.app.modelserver.dto.ChatResponse;
 import com.app.purchases.PurchaseRequest;
 import com.app.purchases.PurchaseRequestService;
@@ -36,8 +33,7 @@ public class ChatController {
     private final ConversationRepository convRepo;
     private final MessageRepository msgRepo;
     private final ChatbotInstanceRepository botRepo;
-    private final PythonChatClient pythonChatClient;
-    private final LlmInstanceManager llmInstanceManager;
+    private final ChatRuntimeService chatRuntimeService;
     private final LeadService leadService;
     private final PurchaseRequestService purchaseRequestService;
     private final LeadRepository leadRepo;
@@ -248,26 +244,16 @@ public class ChatController {
             }
         }
 
-        String baseUrl = "";
-        ChatResponse resp;
-        try {
-            LlmInstanceManager.Session session = llmInstanceManager.getOrStartSession(tenantId, bot);
-            baseUrl = session.baseUrl();
-            resp = pythonChatClient.chat(
-                    baseUrl,
-                    userMsg,
-                    history,
-                    bot,
-                    convId.toString(),
-                    "web",
-                    tenantId.toString(),
-                    session.coldStart(),
-                    session.warmupWaited()
-            );
-        } catch (ChatbotUpstreamException ex) {
-            baseUrl = ex.getBaseUrl() == null ? "" : ex.getBaseUrl();
-            resp = PythonChatFallbacks.forFailure(bot.getBaseModel(), bot.getAdapterPath(), ex.getCategory());
-        }
+        ChatRuntimeService.Result runtimeResult = chatRuntimeService.chat(
+                tenantId,
+                bot,
+                userMsg,
+                history,
+                convId.toString(),
+                "web"
+        );
+        String baseUrl = runtimeResult.baseUrl();
+        ChatResponse resp = runtimeResult.response();
 
         String requestedMode = ChatbotMode.normalize(bot.getMode());
         String finalMode = ChatbotMode.finalMode(resp, requestedMode);
@@ -367,7 +353,7 @@ public class ChatController {
         mBot.setTenantId(tenantId);
         msgRepo.save(mBot);
 
-        llmInstanceManager.cleanupIdle();
+        chatRuntimeService.cleanupIdle();
 
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("reply", resp.reply() == null ? "" : resp.reply());

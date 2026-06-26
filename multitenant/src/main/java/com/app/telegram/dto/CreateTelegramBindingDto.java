@@ -4,5 +4,6 @@ import java.util.UUID;
 
 public record CreateTelegramBindingDto(
         UUID chatbotId,
-        String botToken
+        String botToken,
+        String publicBaseUrl
 ) {}

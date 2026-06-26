@@ -13,11 +13,9 @@ import com.app.customers.CustomerIdentityService;
 import com.app.leads.Lead;
 import com.app.leads.LeadRepository;
 import com.app.leads.LeadService;
-import com.app.modelserver.ChatbotUpstreamException;
 import com.app.modelserver.ChatbotMode;
+import com.app.modelserver.ChatRuntimeService;
 import com.app.modelserver.LlmInstanceManager;
-import com.app.modelserver.PythonChatClient;
-import com.app.modelserver.PythonChatFallbacks;
 import com.app.modelserver.dto.ChatResponse;
 import com.app.purchases.PurchaseRequestService;
 import com.app.tenant.TenantContext;
@@ -46,7 +44,7 @@ public class TelegramWebhookController {
     private final MessageRepository msgRepo;
     private final LeadRepository leadRepo;
 
-    private final PythonChatClient python;
+    private final ChatRuntimeService chatRuntimeService;
     private final LlmInstanceManager llmInstanceManager;
     private final TelegramSendService sendService;
 
@@ -214,22 +212,16 @@ public class TelegramWebhookController {
             List<String> history = new ArrayList<>();
             for (Message hm : historyMsgs) if ("user".equals(hm.getRole())) history.add(hm.getContent());
 
-            ChatResponse ai;
-            try {
-                LlmInstanceManager.Session session = llmInstanceManager.getOrStartSession(binding.getTenantId(), bot);
-                baseUrl = session.baseUrl();
-                ai = python.chat(
-                        baseUrl, text, history, bot,
-                        conv.getId().toString(),
-                        "telegram",
-                        binding.getTenantId().toString(),
-                        session.coldStart(),
-                        session.warmupWaited()
-                );
-            } catch (ChatbotUpstreamException ex) {
-                baseUrl = ex.getBaseUrl() == null ? "" : ex.getBaseUrl();
-                ai = PythonChatFallbacks.forFailure(bot.getBaseModel(), bot.getAdapterPath(), ex.getCategory());
-            }
+            ChatRuntimeService.Result runtimeResult = chatRuntimeService.chat(
+                    binding.getTenantId(),
+                    bot,
+                    text,
+                    history,
+                    conv.getId().toString(),
+                    "telegram"
+            );
+            baseUrl = runtimeResult.baseUrl();
+            ChatResponse ai = runtimeResult.response();
 
             String finalMode = ChatbotMode.finalMode(ai, requestedMode);
             log.info(

@@ -81,9 +81,6 @@
         <button class="sub-tab hidden" data-group="chatbotChannels" data-tab="messenger-status">Messenger Status</button>
         <button class="sub-tab hidden" data-group="chatbotChannels" data-tab="telegram-status">Telegram Status</button>
 
-        <button class="sub-tab hidden" data-group="knowledgeBase" data-tab="kb-dirs">KB Directories</button>
-        <button class="sub-tab hidden" data-group="knowledgeBase" data-tab="kb-versions">KB Versions</button>
-        <button class="sub-tab hidden" data-group="knowledgeBase" data-tab="kb-rebuild">KB Rebuild</button>
         <button class="sub-tab hidden" data-group="knowledgeBase" data-tab="product-datasets">Product Datasets</button>
 
         <button class="sub-tab hidden" data-group="businessData" data-tab="leads">Leads</button>
@@ -385,8 +382,8 @@
                 <div>
                     <label>Provider</label>
                     <select id="botProvider">
-                        <option value="local">Local (Hugging Face)</option>
                         <option value="claude">Claude API</option>
+                        <option value="local">Local base model fallback</option>
                     </select>
                     <div class="muted">local = sử dụng model local. claude = sử dụng Claude API với cấu hình hệ thống.</div>
                 </div>
@@ -432,6 +429,32 @@
                     <button class="secondary" id="useTenantBindings">Use tenant</button>
                 </div>
             </div>
+
+            <div class="note" style="margin-bottom:8px;">
+                <b>Quick channel bind</b> — chọn kênh + tenant + chatbot để bind nhanh.
+            </div>
+            <div class="grid3">
+                <div>
+                    <label>Channel</label>
+                    <select id="quickChannelSelect">
+                        <option value="">-- Select --</option>
+                        <option value="telegram:8476765941:AAHu8Zo_8AQoFe98JCIvrlAE3gUFTovkIM0">Telegram 1 - My wood shop</option>
+                        <option value="telegram:8860035251:AAGd_D0oQc4pOr6SoVwrPF8DnH6403Uq5Rk">Telegram 2 - Shop2</option>
+                        <option value="messenger:888907290975630:EAALyZAyMFfmcBQBMmFnMoOXZCmUQRZChcxJZCuSGUppslRgq5xd5FTmdtxICqf0431IAo407b4vuAlOZBg2QRZAVC5nr2KFk3rxY4oF7TKlRQVAZCdVJaENYg54M3QiStYBF4zZBK0R2xV8FEu5pJdlFNxfyZA4qsYa8tUVAYE1NgWv54KrkFrhyvZBzbDuPgcgrd3c9LYc8icKAZDZD">Messenger 1 - woodchatchat</option>
+                        <option value="messenger:876496542219517:EAALyZAyMFfmcBQXGPM0m3dp5enZC3YkeOu7KGbqlOgr1MUQSrOtRnoilFCe8sF2VbN0BscvSrZCUSjRwYBArIfxSnJrEExTFR7OkOcZByh7sVwwxm60bZA0eJWtGLWcMnMpS1NdpRT1qgrpc9UQJVGCEdHZAxEpKXSMlZBiOC8EbxsZAoVJa819f7ZC8ZA7ZBWsTAtJZBweYmMtvaQZDZD">Messenger 2 - woodchatdephap</option>
+                        <option value="messenger:462772883586069:EAALyZAyMFfmcBRGFo804Rk701RKUgA80mSqlbRRDTx0iMGW14RpdEgFoo9ZAVeZCeuVc0qGn8tkTEeZCGviSvxXpVjSprgJz4zi8ilsaFiqdKIJLvuiPcDqy7hqbuLcSrxgHJDb3VZAIMpimi5IB2ZBtvCRoZAl8bdJ0t88moYJWAltDItF6jDH0A1uTNmommkEBpZAHO4FamAZDZD">Messenger 3 - abcxyz</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Tenant</label>
+                    <select id="quickTenantSelect"></select>
+                </div>
+                <div style="align-self:flex-end;">
+                    <button id="quickBindChannel" class="btn btn-primary">Bind channel</button>
+                    <span class="muted" id="quickBindMsg"></span>
+                </div>
+            </div>
+            <hr/>
 
             <div class="grid2">
                 <div>
@@ -496,71 +519,6 @@
             </div>
         </section>
 
-        <section id="tab-kb-dirs" class="card hidden">
-            <div class="head">
-                <div>
-                    <h2>KB Directories</h2>
-                    <div class="muted">Resolved tenant KB directory from active KB version, legacy tenant kbDir, or default fallback.</div>
-                </div>
-                <div class="row">
-                    <button class="secondary" id="loadActiveKbDirectory">Load active KB directory</button>
-                </div>
-            </div>
-            <div class="note tenant-context-notice" id="kbDirsTenantNotice"></div>
-            <div id="activeKbDirectoryPanel" class="kb-panel"></div>
-            <span class="muted" id="kbDirsMsg"></span>
-        </section>
-
-        <section id="tab-kb-versions" class="card hidden">
-            <div class="head">
-                <div>
-                    <h2>KB Versions</h2>
-                    <div class="muted">Review build outputs and switch the selected tenant's active KB version.</div>
-                </div>
-                <div class="row">
-                    <button class="secondary" id="loadKbVersions">Load KB versions</button>
-                </div>
-            </div>
-            <div class="note tenant-context-notice" id="kbVersionsTenantNotice"></div>
-            <div id="kbVersionsTablePanel" class="table-wrap"></div>
-            <div id="kbVersionDetailPanel" class="dataset-detail-panel hidden"></div>
-            <span class="muted" id="kbVersionsMsg"></span>
-        </section>
-
-        <section id="tab-kb-rebuild" class="card hidden">
-            <div class="head">
-                <div>
-                    <h2>KB Rebuild</h2>
-                    <div class="muted">Manage tenant source URLs and trigger a tenant KB rebuild.</div>
-                </div>
-                <div class="row">
-                    <button class="secondary" id="loadKbSourceUrls">Load source URLs</button>
-                    <button id="rebuildKb">Rebuild KB</button>
-                    <button class="secondary" id="loadKbRebuildStatus">Load rebuild status</button>
-                </div>
-            </div>
-            <div class="note tenant-context-notice" id="kbRebuildTenantNotice"></div>
-            <div class="note">
-                Source URLs are read from the tenant KB directory <code>raw_urls.txt</code>. Rebuild status history is currently exposed through Monitoring snapshots only; there is no standalone KB rebuild-status endpoint.
-            </div>
-            <div class="grid2">
-                <div>
-                    <label>Add product URL</label>
-                    <input id="kbProductUrlInput" placeholder="https://example.com/products/item" />
-                </div>
-                <div>
-                    <label>Set sitemap/root URL</label>
-                    <input id="kbSitemapUrlInput" placeholder="https://example.com/sitemap.xml or https://example.com" />
-                </div>
-            </div>
-            <div class="row">
-                <button class="secondary" id="addKbProductUrl">Add product URL</button>
-                <button class="secondary" id="setKbSitemap">Set sitemap/root URL</button>
-            </div>
-            <div id="kbSourceUrlsPanel" class="kb-panel"></div>
-            <div id="kbRebuildStatusPanel" class="kb-panel"></div>
-            <span class="muted" id="kbRebuildMsg"></span>
-        </section>
 
         <section id="tab-product-datasets" class="card hidden">
             <div class="head">
@@ -574,6 +532,106 @@
             </div>
 
             <div class="note tenant-context-notice" id="productDatasetsTenantNotice"></div>
+
+            <details class="debug-details">
+                <summary>Crawl &amp; Materialize Job</summary>
+                <div class="card2" style="padding: 12px; margin: 8px 0;">
+                    <div class="note" style="margin-bottom: 8px;">
+                        Job chay nen. Reload/refresh de xem ket qua.
+                        TENANT_BOUND dung cho du lieu rieng tenant.
+                        GLOBAL_PUBLIC moi duoc import vao general catalog.
+                        tenant.kbDir la legacy fallback; rebuild moi dung activeKbVersionId sau khi bind artifact.
+                    </div>
+                    <div class="grid2">
+                        <div><label>Source code *</label><input id="cmSourceCode" placeholder="gotrangtri" /></div>
+                        <div><label>Source name</label><input id="cmSourceName" placeholder="Go Trang Tri" /></div>
+                    </div>
+                    <div class="grid2">
+                        <div><label>Root URL</label><input id="cmRootUrl" placeholder="https://gotrangtri.vn" /></div>
+                        <div><label>Sitemap URL</label><input id="cmSitemapUrl" placeholder="https://gotrangtri.vn/sitemap.xml" /></div>
+                    </div>
+                    <div><label>Product URLs (one per line, optional)</label><textarea id="cmProductUrls" rows="2" placeholder="https://example.com/product/1"></textarea></div>
+                    <div class="grid2">
+                        <div><label>Max URLs</label><input id="cmMaxUrls" type="number" value="1000" min="1" max="10000" /></div>
+                        <div>
+                            <label>Visibility</label>
+                            <select id="cmVisibility">
+                                <option value="TENANT_BOUND">TENANT_BOUND</option>
+                                <option value="GLOBAL_PUBLIC">GLOBAL_PUBLIC</option>
+                                <option value="PRIVATE">PRIVATE</option>
+                                <option value="ADMIN_ONLY">ADMIN_ONLY</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid2">
+                        <div><label>Build artifact</label><input id="cmBuildArtifact" type="checkbox" /></div>
+                        <div><label>Import general (requires GLOBAL_PUBLIC)</label><input id="cmImportGeneral" type="checkbox" /></div>
+                    </div>
+                    <div class="grid2">
+                        <div>
+                            <label>Bind tenant (optional)</label>
+                            <select id="cmTenantId"><option value="">-- None --</option></select>
+                        </div>
+                        <div style="align-self: flex-end;">
+                            <button id="startCrawlMaterializeJob" class="btn btn-primary">Start Job</button>
+                            <span class="muted" id="cmJobMsg"></span>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <div style="margin-top: 12px;">
+                <div class="row">
+                    <button class="secondary" id="loadCrawlMaterializeJobs">Load jobs</button>
+                    <span class="muted" id="cmJobsMsg"></span>
+                </div>
+                <div id="crawlMaterializeJobsPanel" class="table-wrap"></div>
+            </div>
+
+            <details class="debug-details" style="margin-top:12px;">
+                <summary>Source Registry</summary>
+                <div class="card2" style="padding:12px; margin:8px 0;">
+                    <div class="grid2">
+                        <div><label>Source code *</label><input id="srSourceCode" placeholder="moho" /></div>
+                        <div><label>Source name</label><input id="srSourceName" placeholder="MOHO" /></div>
+                    </div>
+                    <div class="grid2">
+                        <div><label>Root URL</label><input id="srRootUrl" placeholder="https://moho.com.vn" /></div>
+                        <div><label>Sitemap URL</label><input id="srSitemapUrl" placeholder="https://moho.com.vn/sitemap.xml" /></div>
+                    </div>
+                    <div class="grid2">
+                        <div>
+                            <label>Visibility</label>
+                            <select id="srVisibility">
+                                <option value="TENANT_BOUND">TENANT_BOUND</option>
+                                <option value="GLOBAL_PUBLIC">GLOBAL_PUBLIC</option>
+                                <option value="PRIVATE">PRIVATE</option>
+                                <option value="ADMIN_ONLY">ADMIN_ONLY</option>
+                            </select>
+                        </div>
+                        <div><label>Owner tenant ID (for TENANT_BOUND)</label><input id="srOwnerTenant" placeholder="UUID" /></div>
+                    </div>
+                    <div><label>Notes</label><input id="srNotes" placeholder="Optional notes" /></div>
+                    <div class="row">
+                        <button class="secondary" id="saveSourceRegistry">Save</button>
+                        <button class="secondary" id="loadSourceRegistry">Load sources</button>
+                        <span class="muted" id="srMsg"></span>
+                    </div>
+                    <div id="sourceRegistryPanel"></div>
+                </div>
+            </details>
+
+            <details class="debug-details" style="margin-top:12px;">
+                <summary>Data Quality Dashboard</summary>
+                <div class="card2" style="padding:12px; margin:8px 0;">
+                    <div class="row">
+                        <input id="qsSourceCode" placeholder="Filter source code (e.g. gotrangtri)" style="flex:1;" />
+                        <button class="secondary" id="loadQualitySummary">Refresh</button>
+                        <span class="muted" id="qsMsg"></span>
+                    </div>
+                    <div id="qualitySummaryPanel"></div>
+                </div>
+            </details>
 
             <div class="grid2">
                 <div>

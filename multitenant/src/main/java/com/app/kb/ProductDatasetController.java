@@ -1,6 +1,11 @@
 package com.app.kb;
 
 import com.app.auth.SessionPrincipalAccessor;
+import com.app.general.CrawlAndMaterializeRequest;
+import com.app.general.CrawlAndMaterializeService;
+import com.app.general.CrawlMaterializeJobResponse;
+import com.app.general.GeneralProductImportResponse;
+import com.app.general.GeneralProductImportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,6 +26,8 @@ import java.util.UUID;
 public class ProductDatasetController {
 
     private final ProductDatasetService productDatasetService;
+    private final GeneralProductImportService generalProductImportService;
+    private final CrawlAndMaterializeService crawlAndMaterializeService;
     private final SessionPrincipalAccessor principalAccessor;
 
     @GetMapping
@@ -58,6 +65,30 @@ public class ProductDatasetController {
     public ProductDatasetArtifactResponse buildArtifact(@PathVariable UUID id) {
         principalAccessor.requirePlatformAdmin();
         return productDatasetService.buildArtifact(id);
+    }
+
+    @PostMapping("/artifacts/{artifactId}/import-general")
+    public GeneralProductImportResponse importArtifactToGeneralProducts(@PathVariable UUID artifactId) {
+        principalAccessor.requirePlatformAdmin();
+        return generalProductImportService.importArtifact(artifactId);
+    }
+
+    @PostMapping("/crawl-materialize-jobs")
+    public CrawlMaterializeJobResponse startCrawlMaterializeJob(@RequestBody CrawlAndMaterializeRequest request) {
+        var principal = principalAccessor.requirePlatformAdmin();
+        return crawlAndMaterializeService.startJob(request, principal.userId());
+    }
+
+    @GetMapping("/crawl-materialize-jobs")
+    public List<CrawlMaterializeJobResponse> listCrawlMaterializeJobs() {
+        principalAccessor.requirePlatformAdmin();
+        return crawlAndMaterializeService.listJobs();
+    }
+
+    @GetMapping("/crawl-materialize-jobs/{jobId}")
+    public CrawlMaterializeJobResponse getCrawlMaterializeJob(@PathVariable UUID jobId) {
+        principalAccessor.requirePlatformAdmin();
+        return crawlAndMaterializeService.getJob(jobId);
     }
 
     @PostMapping("/kb-bindings/bind")

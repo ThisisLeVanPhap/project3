@@ -2,11 +2,8 @@ package com.app.chat;
 
 import com.app.bots.ChatbotInstance;
 import com.app.bots.ChatbotInstanceRepository;
-import com.app.modelserver.ChatbotUpstreamException;
 import com.app.modelserver.ChatbotMode;
-import com.app.modelserver.LlmInstanceManager;
-import com.app.modelserver.PythonChatClient;
-import com.app.modelserver.PythonChatFallbacks;
+import com.app.modelserver.ChatRuntimeService;
 import com.app.modelserver.dto.ChatResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,8 +25,7 @@ public class GeneralChatController {
     private final ConversationRepository convRepo;
     private final MessageRepository msgRepo;
     private final ChatbotInstanceRepository botRepo;
-    private final PythonChatClient pythonChatClient;
-    private final LlmInstanceManager llmInstanceManager;
+    private final ChatRuntimeService chatRuntimeService;
 
     private ChatbotInstance getGeneralChatbot() {
         return findPreferredActiveBot(ChatbotMode.GENERAL_COMPARE)
@@ -210,7 +206,7 @@ public class GeneralChatController {
                 requestedMode,
                 safe(bot.getProvider()),
                 safe(bot.getBaseModel()),
-                safe(bot.getAdapterPath())
+                "-"
         );
 
         Message mUser = new Message(
@@ -242,29 +238,18 @@ public class GeneralChatController {
             }
         }
 
-        String baseUrl = "";
-        String runtimeMode = "";
-        ChatResponse resp;
-        try {
-            LlmInstanceManager.Session session = llmInstanceManager.getOrStartSession(SYSTEM_TENANT_ID, bot);
-            baseUrl = session.baseUrl();
-            runtimeMode = session.runtimeMode();
-            resp = pythonChatClient.chat(
-                    baseUrl,
-                    userMsg,
-                    history,
-                    bot,
-                    convId.toString(),
-                    "web",
-                    SYSTEM_TENANT_ID.toString(),
-                    requestedMode,
-                    session.coldStart(),
-                    session.warmupWaited()
-            );
-        } catch (ChatbotUpstreamException ex) {
-            baseUrl = ex.getBaseUrl() == null ? "" : ex.getBaseUrl();
-            resp = PythonChatFallbacks.forFailure(bot.getBaseModel(), bot.getAdapterPath(), ex.getCategory());
-        }
+        ChatRuntimeService.Result runtimeResult = chatRuntimeService.chat(
+                SYSTEM_TENANT_ID,
+                bot,
+                userMsg,
+                history,
+                convId.toString(),
+                "web",
+                requestedMode
+        );
+        String baseUrl = runtimeResult.baseUrl();
+        String runtimeMode = runtimeResult.runtimeMode();
+        ChatResponse resp = runtimeResult.response();
 
         String finalMode = ChatbotMode.finalMode(resp, requestedMode);
         log.info(
@@ -276,7 +261,7 @@ public class GeneralChatController {
                 finalMode,
                 safe(bot.getProvider()),
                 safe(bot.getBaseModel()),
-                safe(bot.getAdapterPath()),
+                "-",
                 safe(runtimeMode),
                 safe(baseUrl),
                 resp.trigger_purchase_request()
@@ -300,7 +285,7 @@ public class GeneralChatController {
         mBot.setTenantId(SYSTEM_TENANT_ID);
         msgRepo.save(mBot);
 
-        llmInstanceManager.cleanupIdle();
+        chatRuntimeService.cleanupIdle();
 
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("reply", resp.reply() == null ? "" : resp.reply());

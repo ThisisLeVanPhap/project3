@@ -16,9 +16,8 @@ import com.app.leads.Lead;
 import com.app.leads.LeadRepository;
 import com.app.leads.LeadService;
 import com.app.modelserver.ChatbotMode;
-import com.app.modelserver.ChatbotUpstreamException;
+import com.app.modelserver.ChatRuntimeService;
 import com.app.modelserver.LlmInstanceManager;
-import com.app.modelserver.PythonChatClient;
 import com.app.modelserver.PythonChatFallbacks;
 import com.app.modelserver.UpstreamFailureCategory;
 import com.app.modelserver.dto.ChatResponse;
@@ -59,7 +58,7 @@ public class MessengerWebhookController {
     private final ChannelConversationService channelConversationService;
     private final MessageRepository msgRepo;
     private final LeadRepository leadRepo;
-    private final PythonChatClient python;
+    private final ChatRuntimeService chatRuntimeService;
     private final LlmInstanceManager llmInstanceManager;
     private final MessengerSendService sendService;
     private final LeadService leadService;
@@ -349,20 +348,14 @@ public class MessengerWebhookController {
         }
 
         try {
-            LlmInstanceManager.Session session = llmInstanceManager.getOrStartSession(binding.getTenantId(), bot);
-            return python.chat(
-                    session.baseUrl(),
+            return chatRuntimeService.chat(
+                    binding.getTenantId(),
+                    bot,
                     text,
                     history,
-                    bot,
                     conv.getId().toString(),
-                    "messenger",
-                    binding.getTenantId().toString(),
-                    session.coldStart(),
-                    session.warmupWaited()
-            );
-        } catch (ChatbotUpstreamException ex) {
-            return PythonChatFallbacks.forFailure(bot.getBaseModel(), bot.getAdapterPath(), ex.getCategory());
+                    "messenger"
+            ).response();
         } catch (Exception ex) {
             log.warn(
                     "Messenger AI call failed tenant={} conversationId={} psid={}",
@@ -373,7 +366,7 @@ public class MessengerWebhookController {
             );
             return PythonChatFallbacks.forFailure(
                     bot.getBaseModel(),
-                    bot.getAdapterPath(),
+                    null,
                     UpstreamFailureCategory.UNAVAILABLE
             );
         }
@@ -422,7 +415,7 @@ public class MessengerWebhookController {
                     psid
             );
             return PythonChatFallbacks
-                    .forFailure(bot.getBaseModel(), bot.getAdapterPath(), UpstreamFailureCategory.UPSTREAM_5XX)
+                    .forFailure(bot.getBaseModel(), null, UpstreamFailureCategory.UPSTREAM_5XX)
                     .reply();
         }
 

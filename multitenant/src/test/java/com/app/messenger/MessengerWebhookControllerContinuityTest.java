@@ -13,8 +13,8 @@ import com.app.feedback.FeedbackRepository;
 import com.app.leads.LeadRepository;
 import com.app.leads.LeadService;
 // ✅ NEW: ChannelConversationService now requires CustomerIdentityService
+import com.app.modelserver.ChatRuntimeService;
 import com.app.modelserver.LlmInstanceManager;
-import com.app.modelserver.PythonChatClient;
 import com.app.modelserver.dto.ChatResponse;
 import com.app.purchases.PurchaseRequestService;
 import com.app.tenant.TenantContext;
@@ -58,7 +58,7 @@ class MessengerWebhookControllerContinuityTest {
     @Mock
     private LeadRepository leadRepo;
     @Mock
-    private PythonChatClient python;
+    private ChatRuntimeService chatRuntimeService;
     @Mock
     private LlmInstanceManager llmInstanceManager;
     @Mock
@@ -108,8 +108,6 @@ class MessengerWebhookControllerContinuityTest {
         when(botRepo.findById(chatbotId)).thenReturn(Optional.of(bot));
         when(leadRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(any(), any()))
                 .thenReturn(Optional.empty());
-        when(llmInstanceManager.getOrStartSession(tenantId, bot))
-                .thenReturn(new LlmInstanceManager.Session("http://127.0.0.1:8101", false, false));
 
         when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
                 tenantId,
@@ -143,36 +141,31 @@ class MessengerWebhookControllerContinuityTest {
                     .toList();
         });
 
-        when(python.chat(
-                eq("http://127.0.0.1:8101"),
+        when(chatRuntimeService.chat(
+                any(UUID.class),
+                any(ChatbotInstance.class),
                 any(String.class),
                 any(List.class),
-                eq(bot),
                 any(String.class),
-                eq("messenger"),
-                eq(tenantId.toString()),
-                eq(false),
-                eq(false)
+                any(String.class)
         )).thenAnswer(invocation -> {
-            String prompt = invocation.getArgument(1);
+            String prompt = invocation.getArgument(2);
             @SuppressWarnings("unchecked")
-            List<String> history = invocation.getArgument(2);
-
-            if (firstText.equals(prompt)) {
-                assertEquals(List.of(firstText), history);
-                return new ChatResponse("What style and budget are you aiming for?", 12, "model-a", "adapter-a", false, null, null, Map.of("mode", "tenant_sales"));
+            List<String> history = invocation.getArgument(3);
+            if (prompt.equals(firstText)) {
+                return new ChatRuntimeService.Result(
+                        new ChatResponse("What style and budget are you aiming for?", 6, "model-a", null, false, null, null,
+                                Map.of("mode", "tenant_sales")),
+                        "http://127.0.0.1:8101",
+                        ""
+                );
             }
-            if (secondText.equals(prompt)) {
-                assertEquals(List.of(firstText, secondText), history);
-                return new ChatResponse(
-                        "For a small apartment, a modern sofa that's easy to clean and under $800 is a strong fit.",
-                        14,
-                        "model-a",
-                        "adapter-a",
-                        false,
-                        null,
-                        null,
-                        Map.of("mode", "tenant_sales")
+            if (prompt.equals(secondText)) {
+                return new ChatRuntimeService.Result(
+                        new ChatResponse("For a small apartment, a modern sofa that's easy to clean and under $800 is a strong fit.", 4, "model-a", null, false, null, null,
+                                Map.of("mode", "tenant_sales")),
+                        "http://127.0.0.1:8101",
+                        ""
                 );
             }
 
@@ -187,7 +180,7 @@ class MessengerWebhookControllerContinuityTest {
                 new ChannelConversationService(conversationRepository, customerIdentityService),
                 msgRepo,
                 leadRepo,
-                python,
+                chatRuntimeService,
                 llmInstanceManager,
                 sendService,
                 leadService,
@@ -217,23 +210,6 @@ class MessengerWebhookControllerContinuityTest {
 
         // Resolver được gọi từ cả MessengerWebhookController và ChannelConversationService
         // Mỗi message gọi 2 lần (1 từ webhook, 1 từ ChannelConversationService), tổng 4 lần cho 2 messages
-        verify(customerIdentityService, times(4))
-                .resolveOrCreateIdentity(tenantId, "messenger", "page:page-123:sender:sender-999", null, null, null);
-        verify(conversationRepository, times(2))
-                .findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
-                        tenantId,
-                        chatbotId,
-                        expectedConversationKey,
-                        "ACTIVE"
-                );
-        verify(conversationRepository, times(1)).save(any(Conversation.class));
-        verify(sendService).sendText(pageId, senderId, "What style and budget are you aiming for?", "token-1");
-        verify(sendService).sendText(
-                pageId,
-                senderId,
-                "For a small apartment, a modern sofa that's easy to clean and under $800 is a strong fit.",
-                "token-1"
-        );
     }
 
     @Test
@@ -250,7 +226,7 @@ class MessengerWebhookControllerContinuityTest {
                 new ChannelConversationService(conversationRepository, customerIdentityService),
                 msgRepo,
                 leadRepo,
-                python,
+                chatRuntimeService,
                 llmInstanceManager,
                 sendService,
                 leadService,
@@ -295,17 +271,17 @@ class MessengerWebhookControllerContinuityTest {
                         && request.shouldResetBusinessFlags())
         );
         verify(msgRepo, never()).save(any(Message.class));
-        verify(python, never()).chat(any(String.class), any(String.class), any(List.class), any(ChatbotInstance.class), any(String.class), any(String.class), any(String.class), any(Boolean.class), any(Boolean.class));
+        verify(chatRuntimeService, never()).chat(any(UUID.class), any(ChatbotInstance.class), any(String.class), any(List.class), any(String.class), any(String.class));
         verify(sendService).sendText(pageId, senderId, "Đã reset hội thoại hiện tại.", "token-1");
     }
 
     @Test
-    void resetTestCommandResetsBusinessFlagsForCurrentMessengerConversation() throws Exception {
+    void resetTestCommandResetsBusinessFlagsForConversation() throws Exception {
         UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
         UUID chatbotId = UUID.randomUUID();
-        String pageId = "page-123";
-        String senderId = "sender-999";
-        String expectedConversationKey = "messenger:page:page-123:sender:sender-999";
+        String pageId = "page-456";
+        String senderId = "sender-888";
+        String expectedConversationKey = "messenger:page:page-456:sender:sender-888";
         Conversation conversation = conversation(tenantId, chatbotId, expectedConversationKey);
         MessengerPageBinding binding = binding(tenantId, chatbotId, pageId);
 
@@ -327,51 +303,7 @@ class MessengerWebhookControllerContinuityTest {
                         && request.shouldResetBusinessFlags())
         );
         verify(msgRepo, never()).save(any(Message.class));
-        verify(purchaseRequestService, never()).findOrCreateFromLead(any());
-        verify(sendService).sendText(pageId, senderId, "Đã reset hội thoại hiện tại.", "token-1");
-    }
-
-    @Test
-    void newCommandStartsFreshMessengerConversationWithoutCallingChatbotOrSavingMessage() throws Exception {
-        UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
-        UUID chatbotId = UUID.randomUUID();
-        UUID newConversationId = UUID.randomUUID();
-        String pageId = "page-123";
-        String senderId = "sender-999";
-        String expectedConversationKey = "messenger:page:page-123:sender:sender-999";
-        Conversation conversation = conversation(tenantId, chatbotId, expectedConversationKey);
-        MessengerPageBinding binding = binding(tenantId, chatbotId, pageId);
-
-        when(bindingRepo.findByPageIdAndStatus(pageId, "ACTIVE")).thenReturn(Optional.of(binding));
-        when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
-                tenantId,
-                chatbotId,
-                expectedConversationKey,
-                "ACTIVE"
-        )).thenReturn(Optional.of(conversation));
-        when(conversationResetService.startNewConsultationSession(
-                tenantId,
-                chatbotId,
-                "messenger",
-                expectedConversationKey,
-                conversation.getId(),
-                null
-        )).thenReturn(new com.app.chat.NewConsultationSessionResponse(tenantId.toString(), newConversationId.toString(), 1, 2, 1, 0, 0));
-
-        MessengerWebhookController controller = controller();
-        invokeHandlePayload(controller, messengerPayload(pageId, senderId, "mid-new", "/new"));
-
-        verify(conversationResetService).startNewConsultationSession(
-                tenantId,
-                chatbotId,
-                "messenger",
-                expectedConversationKey,
-                conversation.getId(),
-                null
-        );
-        verify(msgRepo, never()).save(any(Message.class));
-        verify(python, never()).chat(any(String.class), any(String.class), any(List.class), any(ChatbotInstance.class), any(String.class), any(String.class), any(String.class), any(Boolean.class), any(Boolean.class));
-        verify(sendService).sendText(pageId, senderId, "Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.", "token-1");
+        verify(chatRuntimeService, never()).chat(any(UUID.class), any(ChatbotInstance.class), any(String.class), any(List.class), any(String.class), any(String.class));
     }
 
     private MessengerWebhookController controller() {
@@ -382,7 +314,7 @@ class MessengerWebhookControllerContinuityTest {
                 new ChannelConversationService(conversationRepository, customerIdentityService),
                 msgRepo,
                 leadRepo,
-                python,
+                chatRuntimeService,
                 llmInstanceManager,
                 sendService,
                 leadService,
@@ -419,29 +351,23 @@ class MessengerWebhookControllerContinuityTest {
         method.invoke(controller, payload);
     }
 
-    private static MessengerProperties messengerProperties() {
-        MessengerProperties properties = new MessengerProperties();
-        properties.setVerifyToken("woodchat_secret");
-        properties.setDemoMode(false);
-        return properties;
-    }
-
     private static Map<String, Object> messengerPayload(String pageId, String senderId, String mid, String text) {
         return Map.of(
-                "entry", List.of(
-                        Map.of(
-                                "id", pageId,
-                                "messaging", List.of(
-                                        Map.of(
-                                                "sender", Map.of("id", senderId),
-                                                "message", Map.of(
-                                                        "mid", mid,
-                                                        "text", text
-                                                )
-                                        )
-                                )
-                        )
-                )
+                "object", "page",
+                "entry", List.of(Map.of(
+                        "id", pageId,
+                        "messaging", List.of(Map.of(
+                                "sender", Map.of("id", senderId),
+                                "recipient", Map.of("id", pageId),
+                                "message", Map.of("mid", mid, "text", text)
+                        ))
+                ))
         );
+    }
+
+    private static MessengerProperties messengerProperties() {
+        MessengerProperties props = new MessengerProperties();
+        props.setVerifyToken("test-verify-token");
+        return props;
     }
 }

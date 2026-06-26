@@ -140,7 +140,7 @@ public class PythonChatClient {
         // Key/model/base URL are resolved from env in Python.
         GenerationConfig gen = new GenerationConfig(
                 cfg.getBaseModel(),
-                cfg.getAdapterPath(),
+                null,
                 cfg.getTokenizerPath(),
                 cfg.getSystemPrompt(),
                 cfg.getMaxNewTokens(),

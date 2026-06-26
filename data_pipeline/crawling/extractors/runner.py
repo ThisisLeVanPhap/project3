@@ -1,6 +1,7 @@
 from typing import Optional
 
 from data_pipeline.crawling.extractors.base import BaseProductExtractor
+from data_pipeline.crawling.extractors.haravan import HaravanProductExtractor
 from data_pipeline.crawling.extractors.hydration import HydrationProductExtractor
 from data_pipeline.crawling.extractors.json_ld import JsonLdProductExtractor
 from data_pipeline.crawling.extractors.selector import SelectorProductExtractor
@@ -17,6 +18,7 @@ class ProductExtractorRunner:
     ):
         self.extractors = extractors or [
             JsonLdProductExtractor(),
+            HaravanProductExtractor(),
             HydrationProductExtractor(),
             SelectorProductExtractor(),
         ]

@@ -74,13 +74,11 @@ export async function render(container, params) {
             '<input type="text" class="form-input" id="bot-name" value="' + (bot ? bot.name : '') + '" placeholder="e.g. Sales Bot">' +
             '<label style="margin-top: 12px;">Provider</label>' +
             '<select class="form-input" id="bot-provider">' +
-            '<option value="OPENAI"' + (bot && bot.provider === 'OPENAI' ? ' selected' : '') + '>OpenAI</option>' +
-            '<option value="ANTHROPIC"' + (bot && bot.provider === 'ANTHROPIC' ? ' selected' : '') + '>Anthropic</option>' +
-            '<option value="GEMINI"' + (bot && bot.provider === 'GEMINI' ? ' selected' : '') + '>Gemini</option>' +
-            '<option value="HUGGINGFACE"' + (bot && bot.provider === 'HUGGINGFACE' ? ' selected' : '') + '>HuggingFace</option>' +
+            '<option value="claude"' + (!bot || bot.provider === 'claude' ? ' selected' : '') + '>Claude API</option>' +
+            '<option value="local"' + (bot && bot.provider === 'local' ? ' selected' : '') + '>Local base model fallback</option>' +
             '</select>' +
             '<label style="margin-top: 12px;">Model ID</label>' +
-            '<input type="text" class="form-input" id="bot-model" value="' + (bot ? (bot.modelId || '') : '') + '" placeholder="e.g. gpt-4o">' +
+            '<input type="text" class="form-input" id="bot-model" value="' + (bot ? (bot.baseModel || '') : '') + '" placeholder="Optional local base model">' +
             '<label style="margin-top: 12px;">System Prompt</label>' +
             '<textarea class="form-input" id="bot-prompt" rows="4" style="min-height: 100px;">' + (bot ? (bot.systemPrompt || '') : '') + '</textarea>' +
             (isEdit ? '<label style="margin-top: 12px;"><input type="checkbox" id="bot-enabled" ' + (bot.enabled ? 'checked' : '') + '> Enabled</label>' : '') +
@@ -99,9 +97,17 @@ export async function render(container, params) {
             var systemPrompt = body.querySelector('#bot-prompt').value;
 
             if (!name) { window.showToast('Name is required', 'warning'); return; }
-            if (!modelId) { window.showToast('Model ID is required', 'warning'); return; }
+            if (provider === 'local' && !modelId) { window.showToast('Local provider requires a base model', 'warning'); return; }
 
-            var payload = { name: name, provider: provider, modelId: modelId, systemPrompt: systemPrompt };
+            var payload = {
+                name: name,
+                channel: 'web',
+                provider: provider,
+                personaJson: '{}',
+                responseStyle: 'natural',
+                baseModel: modelId,
+                systemPrompt: systemPrompt
+            };
             if (isEdit) {
                 payload.enabled = body.querySelector('#bot-enabled').checked;
                 window.api.put('/api/chatbots/' + bot.id, payload)

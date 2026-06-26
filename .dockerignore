@@ -19,3 +19,20 @@ chatbot/out
 out
 datasetv2
 diagram
+latex
+newscope.md
+tmp
+**/*.md
+
+# data pipeline — chỉ cần code, không cần raw/output/input
+data_pipeline/raw/**
+data_pipeline/output/**
+data_pipeline/input/**
+data_pipeline/raw
+data_pipeline/output
+data_pipeline/input
+data_pipeline/**/raw/**
+data_pipeline/**/output/**
+data_pipeline/**/input/**
+data_pipeline/**/*.jsonl
+data_pipeline/**/*.csv

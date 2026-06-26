@@ -33,7 +33,7 @@ public class ChatbotInstance extends TenantScoped {
     private String baseModel;              // local model id/path when local provider is explicitly enabled
 
     @Column(name = "adapter_path")
-    private String adapterPath;            // vd: "out/lora_tenant1_styleA"
+    private String adapterPath;            // Deprecated; adapter runtime is disabled.
 
     @Column(name = "tokenizer_path")
     private String tokenizerPath;          // vd: "out/tokenizer"

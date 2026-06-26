@@ -68,12 +68,13 @@ class GoTrangTriAdapter(SiteAdapter):
             allowed_domains=list(self.allowed_domains),
             selectors={key: list(value) for key, value in self.default_selectors.items()},
             output_path=output_path or "data_pipeline/output/gotrangtri_products.jsonl",
+            max_pages=len(start_urls),
         )
 
     def discover_product_urls(
         self,
         sitemap_url: str = "https://gotrangtri.vn/sitemap.xml",
-        max_urls: int = 100,
+        max_urls: int = 1000,
     ) -> list[str]:
         return SitemapProductUrlDiscoverer().discover(
             sitemap_url=sitemap_url,
@@ -84,7 +85,7 @@ class GoTrangTriAdapter(SiteAdapter):
     def build_source_from_sitemap(
         self,
         sitemap_url: str = "https://gotrangtri.vn/sitemap.xml",
-        max_urls: int = 100,
+        max_urls: int = 1000,
         tenant_id: Optional[str] = None,
         output_path: Optional[str] = None,
     ) -> CrawlSource:

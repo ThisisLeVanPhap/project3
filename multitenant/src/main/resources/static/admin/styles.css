@@ -142,6 +142,15 @@ button.is-loading{opacity:.7}
 .table td[data-role="status-text"]{
     min-width:110px;
 }
+.badge, .badge-status-active, .badge-status-inactive, .badge-provider, .badge-warn {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 0.8em; font-weight: 500; white-space: nowrap;
+}
+.badge-status-active { background: #d1fae5; color: #065f46; }
+.badge-status-inactive { background: #fee2e2; color: #991b1b; }
+.badge-provider { background: #dbeafe; color: #1e40af; }
+.badge-warn { background: #fef3c7; color: #92400e; }
+
 .status-badge{
     display:inline-block;
     padding:4px 8px;

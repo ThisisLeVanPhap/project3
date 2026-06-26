@@ -8,6 +8,7 @@ from typing import Any, Callable, Optional
 from urllib.parse import urlsplit, urlunsplit
 
 from data_pipeline.crawling.adapters.gotrangtri import GoTrangTriAdapter
+from data_pipeline.crawling.adapters.moho import MohoAdapter
 from data_pipeline.crawling.job import ProductCrawlJob
 
 
@@ -345,6 +346,8 @@ def repair_state_from_output(
 def _adapter_for_site(site: str) -> Any:
     if site == "gotrangtri":
         return GoTrangTriAdapter()
+    if site == "moho":
+        return MohoAdapter()
     raise ValueError(f"Unsupported site: {site}")
 
 

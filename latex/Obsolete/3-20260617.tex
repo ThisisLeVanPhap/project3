@@ -1,0 +1,142 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Chương này trình bày cơ sở lý thuyết và công nghệ được sử dụng để xây dựng hệ thống \textit{multi-tenant RAG chatbot hỗ trợ tư vấn bán hàng, so sánh và tham chiếu giá sản phẩm nội thất}. Nội dung chương được chia thành hai nhóm: cơ sở lý thuyết phục vụ bài toán và các công nghệ dùng để triển khai hệ thống.
+
+\section{Cơ sở lý thuyết}
+\label{section:3.1}
+
+\subsection{Mô hình multi-tenant}
+\label{subsection:3.1.1}
+
+Hệ thống trong đồ án phục vụ nhiều cửa hàng nội thất trên cùng một nền tảng. Mỗi cửa hàng có dữ liệu sản phẩm, chatbot, knowledge base, hội thoại, lead, yêu cầu mua hàng và thành viên riêng. Vì vậy, hệ thống sử dụng mô hình multi-tenant để nhiều cửa hàng cùng dùng chung một hệ thống nhưng vẫn tách biệt dữ liệu và quyền truy cập.
+
+Multi-tenant là mô hình kiến trúc trong đó một ứng dụng phục vụ nhiều tenant khác nhau. Trong phạm vi đồ án, mỗi tenant tương ứng với một cửa hàng nội thất. Microsoft Learn trình bày multi-tenancy như một hướng kiến trúc quan trọng trong các hệ thống SaaS, trong đó cần lựa chọn cách tách biệt tài nguyên, dữ liệu và cấu hình giữa các tenant\footnote{Microsoft Learn, \textit{Tenancy models for a multitenant solution}, \url{https://learn.microsoft.com/en-us/azure/architecture/guide/multitenant/considerations/tenancy-models}, truy cập lần cuối ngày 29/05/2026}.
+
+Trong hệ thống này, dữ liệu nghiệp vụ quan trọng được gắn với \texttt{tenant\_id}. Backend sử dụng thông tin tenant để giới hạn dữ liệu khi quản lý chatbot, knowledge base, hội thoại, lead và yêu cầu mua hàng. Cách tổ chức này giúp người dùng của cửa hàng này không truy cập được dữ liệu của cửa hàng khác.
+
+\subsection{Retrieval-Augmented Generation và knowledge base}
+\label{subsection:3.1.2}
+
+Chatbot tư vấn bán hàng cần trả lời dựa trên dữ liệu sản phẩm của cửa hàng, không chỉ sinh câu trả lời chung chung từ mô hình ngôn ngữ. Vì vậy, hệ thống sử dụng hướng Retrieval-Augmented Generation (RAG).
+
+RAG kết hợp giữa truy xuất thông tin và sinh văn bản. Hệ thống truy xuất dữ liệu liên quan từ nguồn tri thức bên ngoài, sau đó đưa dữ liệu đó vào ngữ cảnh để mô hình ngôn ngữ tạo câu trả lời. Bài báo của Lewis và cộng sự giới thiệu RAG như một hướng kết hợp giữa bộ nhớ tham số của mô hình sinh ngôn ngữ và bộ nhớ phi tham số từ nguồn tri thức bên ngoài\footnote{Lewis và cộng sự, \textit{Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks}, \url{https://arxiv.org/abs/2005.11401}, truy cập lần cuối ngày 29/05/2026}.
+
+Trong đồ án, knowledge base là tập dữ liệu mà chatbot sử dụng khi tư vấn. Dữ liệu này gồm thông tin sản phẩm, mô tả sản phẩm, giá, loại sản phẩm, chất liệu, kích thước, phong cách và các tài liệu liên quan do cửa hàng cung cấp. Knowledge base được tổ chức theo tenant, nên chatbot của cửa hàng nào chỉ truy xuất dữ liệu của cửa hàng đó.
+
+Quy trình RAG trong hệ thống gồm các bước chính: nhận câu hỏi của người dùng, xác định tenant và ngữ cảnh hội thoại, truy xuất dữ liệu liên quan từ knowledge base, gửi dữ liệu truy xuất sang AI Service, sau đó tạo câu trả lời bằng Claude Sonnet.
+
+\subsection{Dữ liệu sản phẩm, so sánh sản phẩm và tham chiếu giá}
+\label{subsection:3.1.3}
+
+Ngoài tư vấn bán hàng, hệ thống còn hỗ trợ so sánh sản phẩm và tham chiếu giá sản phẩm. Vì vậy, dữ liệu sản phẩm cần được tổ chức đủ rõ để phục vụ các chức năng này.
+
+Dữ liệu sản phẩm trong hệ thống gồm các thuộc tính chính như tên sản phẩm, loại sản phẩm, giá, chất liệu, kích thước, phong cách, mô tả và cửa hàng cung cấp. Các thuộc tính này được sử dụng để chatbot trả lời câu hỏi tư vấn, đồng thời giúp hệ thống so sánh nhiều sản phẩm theo cùng một nhóm tiêu chí.
+
+Với chức năng so sánh sản phẩm, hệ thống tổng hợp thông tin của các sản phẩm được người dùng nhắc đến và trình bày điểm giống, điểm khác theo các tiêu chí như giá, chất liệu, kích thước, loại sản phẩm, phong cách và mức độ phù hợp với nhu cầu. Khi một sản phẩm thiếu dữ liệu ở tiêu chí nào, hệ thống cần nêu rõ phần dữ liệu bị thiếu.
+
+Với chức năng tham chiếu giá sản phẩm, hệ thống chỉ cung cấp thông tin tham khảo trong phạm vi dữ liệu hiện có. Chức năng này không nhằm định giá toàn bộ thị trường nội thất. Ví dụ, khi người dùng hỏi một mẫu bàn làm việc có giá cao hay thấp, hệ thống có thể so sánh mức giá đó với các sản phẩm cùng loại trong dữ liệu của hệ thống.
+
+\section{Công nghệ sử dụng}
+\label{section:3.2}
+
+\subsection{Claude Sonnet}
+\label{subsection:3.2.1}
+
+Claude Sonnet được sử dụng để xử lý ngôn ngữ tự nhiên và sinh câu trả lời tư vấn. Anthropic cung cấp Claude API và tài liệu tích hợp cho các ứng dụng cần gọi mô hình Claude từ hệ thống bên ngoài\footnote{Anthropic, \textit{Claude API Documentation}, \url{https://platform.claude.com/docs/en/home}, truy cập lần cuối ngày 29/05/2026}. Tài liệu của Anthropic cũng trình bày Claude như một họ mô hình ngôn ngữ lớn với nhiều lựa chọn mô hình khác nhau\footnote{Anthropic, \textit{Claude Models Overview}, \url{https://platform.claude.com/docs/en/about-claude/models/overview}, truy cập lần cuối ngày 29/05/2026}.
+
+Trong hệ thống, Claude Sonnet không được gọi trực tiếp từ frontend. AI Service chuẩn bị prompt, dữ liệu truy xuất và ngữ cảnh hội thoại trước khi gọi Claude Sonnet. Cách tổ chức này giúp hệ thống kiểm soát dữ liệu đưa vào mô hình và đảm bảo câu trả lời bám theo knowledge base.
+
+Claude Sonnet được dùng trong các tác vụ: tạo câu trả lời tư vấn, diễn giải kết quả so sánh sản phẩm, giải thích kết quả tham chiếu giá và xử lý hội thoại nhiều lượt.
+
+\subsection{Spring Boot}
+\label{subsection:3.2.2}
+
+Spring Boot được sử dụng để xây dựng backend nghiệp vụ. Tài liệu chính thức của Spring Boot mô tả framework này giúp tạo các ứng dụng Spring độc lập, có thể chạy trực tiếp và giảm cấu hình thủ công\footnote{Spring, \textit{Spring Boot Documentation}, \url{https://docs.spring.io/spring-boot/index.html}, truy cập lần cuối ngày 29/05/2026}.
+
+Trong hệ thống, Spring Boot xử lý các nghiệp vụ chính như đăng nhập, phân quyền, quản lý tenant, quản lý thành viên cửa hàng, quản lý chatbot, quản lý nguồn dữ liệu knowledge base, lưu hội thoại, quản lý lead và quản lý yêu cầu mua hàng. Spring Boot cũng là lớp kiểm soát tenant trước khi dữ liệu được truy vấn hoặc cập nhật.
+
+\subsection{FastAPI}
+\label{subsection:3.2.3}
+
+FastAPI được sử dụng để xây dựng AI Service. Tài liệu chính thức mô tả FastAPI là framework hiện đại, hiệu năng cao, dùng Python type hints để xây dựng API\footnote{FastAPI, \textit{FastAPI Documentation}, \url{https://fastapi.tiangolo.com/}, truy cập lần cuối ngày 29/05/2026}.
+
+Trong đồ án, FastAPI nhận yêu cầu từ backend, thực hiện truy xuất dữ liệu liên quan, chuẩn bị prompt và gọi Claude Sonnet. Việc tách AI Service khỏi backend nghiệp vụ giúp hệ thống dễ phát triển, kiểm thử và thay đổi phần xử lý AI hơn.
+
+\subsection{PostgreSQL}
+\label{subsection:3.2.4}
+
+PostgreSQL được sử dụng làm hệ quản trị cơ sở dữ liệu chính. PostgreSQL là hệ quản trị cơ sở dữ liệu quan hệ mã nguồn mở, có tài liệu chính thức đầy đủ và được sử dụng rộng rãi cho các hệ thống ứng dụng web\footnote{PostgreSQL Global Development Group, \textit{PostgreSQL Documentation}, \url{https://www.postgresql.org/docs/}, truy cập lần cuối ngày 29/05/2026}.
+
+Hệ thống sử dụng PostgreSQL để lưu các dữ liệu như tenant, người dùng, chatbot, nguồn dữ liệu knowledge base, hội thoại, tin nhắn, lead, yêu cầu mua hàng và sản phẩm. Các bảng nghiệp vụ quan trọng được gắn với \texttt{tenant\_id} để phục vụ yêu cầu tách biệt dữ liệu giữa các cửa hàng.
+
+\subsection{React}
+\label{subsection:3.2.5}
+
+React được sử dụng để xây dựng frontend. Tài liệu chính thức mô tả React là thư viện xây dựng giao diện bằng các component có thể kết hợp với nhau\footnote{Meta, \textit{React Documentation}, \url{https://react.dev/}, truy cập lần cuối ngày 29/05/2026}.
+
+Trong hệ thống, React được dùng cho giao diện quản trị và giao diện chat. Giao diện quản trị gồm các màn hình quản lý tenant, thành viên cửa hàng, chatbot, knowledge base, hội thoại, lead và yêu cầu mua hàng. Giao diện chat phục vụ người dùng cuối trong quá trình tư vấn sản phẩm.
+
+\subsection{JWT}
+\label{subsection:3.2.6}
+
+Hệ thống có nhiều nhóm người dùng như quản trị hệ thống, quản trị cửa hàng, nhân viên cửa hàng và người dùng cuối. Vì vậy, hệ thống cần cơ chế xác thực và phân quyền rõ ràng. Đồ án sử dụng hướng xác thực dựa trên token, trong đó JWT là một chuẩn phổ biến để biểu diễn các claim giữa hai bên dưới dạng gọn nhẹ\footnote{IETF, \textit{RFC 7519: JSON Web Token (JWT)}, \url{https://datatracker.ietf.org/doc/html/rfc7519}, truy cập lần cuối ngày 29/05/2026}.
+
+Sau khi đăng nhập, người dùng nhận token cho phiên làm việc. Frontend gửi token trong các request tiếp theo để backend kiểm tra danh tính, vai trò và tenant hiện tại. Với các API nghiệp vụ, backend kết hợp kiểm tra token và \texttt{tenant\_id} để đảm bảo người dùng chỉ thao tác trong phạm vi được phép.
+
+\subsection{Webhook}
+\label{subsection:3.2.7}
+
+Webhook được sử dụng để tích hợp các kênh chat ngoài như Messenger hoặc Telegram. Meta mô tả webhook là cơ chế nhận thông báo HTTP theo thời gian thực khi có sự kiện trên nền tảng\footnote{Meta for Developers, \textit{Graph API Webhooks}, \url{https://developers.facebook.com/docs/graph-api/webhooks/}, truy cập lần cuối ngày 29/05/2026}. Telegram Bot API cũng hỗ trợ cơ chế webhook để bot nhận cập nhật từ Telegram\footnote{Telegram, \textit{Telegram Bot API}, \url{https://core.telegram.org/bots/api}, truy cập lần cuối ngày 29/05/2026}.
+
+Trong hệ thống, webhook tiếp nhận tin nhắn từ kênh ngoài, xác định chatbot hoặc tenant tương ứng, sau đó chuyển nội dung vào luồng xử lý hội thoại. Câu trả lời được tạo thông qua AI Service và gửi lại cho người dùng qua API của nền tảng chat.
+
+\subsection{Docker và Docker Compose}
+\label{subsection:3.2.8}
+
+Hệ thống gồm nhiều thành phần như frontend, backend, AI Service và PostgreSQL. Docker và Docker Compose được sử dụng để đóng gói và khởi chạy các thành phần này trong môi trường demo. Docker Compose cho phép định nghĩa và chạy ứng dụng gồm nhiều container thông qua một tệp cấu hình\footnote{Docker, \textit{Docker Compose Documentation}, \url{https://docs.docker.com/compose/}, truy cập lần cuối ngày 29/05/2026}.
+
+Việc sử dụng Docker Compose giúp quá trình chạy thử hệ thống ổn định hơn, giảm lỗi do khác biệt môi trường và thuận tiện khi demo.
+
+\section{Tổng hợp lựa chọn công nghệ}
+\label{section:3.3}
+
+Bảng~\ref{table:technology-summary} tổng hợp ngắn gọn vai trò của các công nghệ chính được sử dụng trong đồ án.
+
+\begin{table}[H]
+\centering
+\caption{Tổng hợp công nghệ sử dụng trong hệ thống}
+\label{table:technology-summary}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|p{3.5cm}|p{4.2cm}|p{7cm}|}
+\hline
+\textbf{Thành phần} & \textbf{Công nghệ sử dụng} & \textbf{Vai trò trong hệ thống} \\
+\hline
+Backend nghiệp vụ & Spring Boot & Xử lý API, phân quyền, tenant, chatbot, knowledge base, hội thoại, lead và yêu cầu mua hàng. \\
+\hline
+AI Service & FastAPI, Claude Sonnet & Truy xuất dữ liệu, chuẩn bị prompt, sinh câu trả lời tư vấn, so sánh và tham chiếu giá. \\
+\hline
+Cơ sở dữ liệu & PostgreSQL & Lưu dữ liệu tenant, người dùng, sản phẩm, hội thoại, lead và yêu cầu mua hàng. \\
+\hline
+Frontend & React & Xây dựng giao diện quản trị và giao diện chat. \\
+\hline
+Xác thực/phân quyền & JWT & Xác thực người dùng, truyền thông tin vai trò và tenant trong request. \\
+\hline
+Tích hợp kênh ngoài & Webhook & Nhận tin nhắn từ Messenger/Telegram và đưa vào luồng xử lý chatbot. \\
+\hline
+Triển khai demo & Docker Compose & Khởi chạy các service của hệ thống trong môi trường thống nhất. \\
+\hline
+\end{tabular}
+}
+\end{table}
+
+\section{Kết chương}
+\label{section:3.ket_chuong}
+
+Chương này đã trình bày các cơ sở lý thuyết và công nghệ chính được sử dụng trong đồ án. Về lý thuyết, hệ thống dựa trên mô hình multi-tenant để phục vụ nhiều cửa hàng, sử dụng RAG và knowledge base để chatbot tư vấn theo dữ liệu riêng, đồng thời tổ chức dữ liệu sản phẩm để hỗ trợ so sánh và tham chiếu giá.
+
+Về công nghệ, hệ thống sử dụng Spring Boot cho backend nghiệp vụ, FastAPI cho AI Service, Claude Sonnet cho sinh câu trả lời, PostgreSQL cho lưu trữ dữ liệu, React cho frontend, JWT cho xác thực/phân quyền, webhook cho tích hợp kênh chat ngoài và Docker Compose cho môi trường demo.
+
+Các nội dung trong chương này là cơ sở để trình bày thiết kế kiến trúc, mô hình dữ liệu và luồng xử lý hệ thống ở các chương tiếp theo.
+
+\end{document}

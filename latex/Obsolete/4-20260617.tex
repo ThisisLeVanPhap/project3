@@ -1,0 +1,631 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\section{Thiết kế kiến trúc}
+
+\subsection{Lựa chọn kiến trúc phần mềm}
+
+Hệ thống trong đồ án là một ứng dụng web có nhiều nhóm chức năng khác nhau, bao gồm quản lý tenant, quản lý chatbot, quản lý knowledge base, xử lý hội thoại, tạo lead, tạo yêu cầu mua hàng, tích hợp kênh chat ngoài và xử lý các tác vụ AI. Các nhóm chức năng này có tính chất khác nhau: một phần thuộc nghiệp vụ quản trị và lưu trữ dữ liệu, một phần thuộc xử lý hội thoại và truy xuất tri thức, một phần thuộc giao diện người dùng. Vì vậy, hệ thống cần một kiến trúc có khả năng tách biệt các thành phần theo trách nhiệm, giúp dễ phát triển, kiểm thử và mở rộng.
+
+Trong phạm vi đồ án, kiến trúc được lựa chọn là kiến trúc phân lớp kết hợp tách service theo chức năng. Cụ thể, hệ thống được chia thành các thành phần chính gồm frontend, backend nghiệp vụ, AI service và cơ sở dữ liệu. Frontend chịu trách nhiệm hiển thị giao diện và tiếp nhận thao tác của người dùng. Backend nghiệp vụ chịu trách nhiệm xử lý xác thực, phân quyền, quản lý tenant, chatbot, knowledge base, hội thoại, lead và yêu cầu mua hàng. AI service chịu trách nhiệm xử lý hội thoại, truy xuất knowledge base và sinh câu trả lời tư vấn. Cơ sở dữ liệu lưu trữ các dữ liệu nghiệp vụ chính của hệ thống.
+
+Cách tổ chức này có điểm gần với kiến trúc ba lớp truyền thống, trong đó lớp giao diện tương ứng với frontend, lớp xử lý nghiệp vụ tương ứng với backend và AI service, còn lớp dữ liệu tương ứng với cơ sở dữ liệu và knowledge base. Tuy nhiên, do hệ thống có thành phần AI tương đối độc lập, phần xử lý AI được tách riêng thành một service thay vì đặt trực tiếp trong backend nghiệp vụ. Cách tách này giúp backend tập trung vào nghiệp vụ quản lý và phân quyền, còn AI service tập trung vào xử lý ngôn ngữ tự nhiên, truy xuất tri thức và sinh phản hồi.
+
+Một số kiến trúc khác cũng có thể được cân nhắc. Kiến trúc nguyên khối có ưu điểm là đơn giản khi triển khai ban đầu, nhưng nếu đặt toàn bộ giao diện, nghiệp vụ, AI và lưu trữ trong một ứng dụng duy nhất thì hệ thống sẽ khó bảo trì khi số lượng chức năng tăng. Kiến trúc microservice đầy đủ cho phép tách rất nhiều service nhỏ, nhưng làm tăng độ phức tạp về triển khai, giao tiếp và giám sát, chưa thật sự cần thiết trong phạm vi đồ án. Kiến trúc MVC phù hợp để tổ chức một ứng dụng web đơn lẻ, nhưng chưa thể hiện rõ việc tách riêng AI service và pipeline RAG. Vì vậy, phương án phân lớp kết hợp tách AI service được lựa chọn vì cân bằng giữa tính rõ ràng, khả năng mở rộng và mức độ phức tạp phù hợp với đồ án tốt nghiệp.
+
+Trong hệ thống cụ thể của đồ án, frontend cung cấp các màn hình đăng nhập, quản trị hệ thống, quản trị cửa hàng, quản lý chatbot, quản lý knowledge base, giao diện chat, danh sách hội thoại, lead và yêu cầu mua hàng. Backend cung cấp các API cho frontend và các webhook từ kênh chat ngoài. Backend cũng là nơi kiểm soát xác thực, phân quyền và tenant isolation trước khi truy cập dữ liệu. AI service nhận yêu cầu hội thoại từ backend, thực hiện truy xuất knowledge base tương ứng với tenant và trả về câu trả lời tư vấn. Cơ sở dữ liệu lưu thông tin tenant, người dùng, chatbot, hội thoại, tin nhắn, lead, yêu cầu mua hàng và trạng thái xử lý dữ liệu.
+
+Với kiến trúc này, dữ liệu và cấu hình của từng cửa hàng được gắn với tenant tương ứng. Khi người dùng chat với chatbot của một cửa hàng, backend xác định tenant và chatbot liên quan, sau đó chuyển yêu cầu sang AI service cùng với thông tin ngữ cảnh cần thiết. AI service chỉ sử dụng knowledge base phù hợp với tenant đó để phục vụ quá trình tư vấn. Cách tổ chức này giúp hệ thống đáp ứng yêu cầu multi-tenant đã xác định ở Chương 2, đồng thời vẫn giữ được sự tách biệt giữa phần nghiệp vụ và phần xử lý AI.
+
+\subsection{Thiết kế tổng quan}
+
+Về tổng quan, hệ thống được tổ chức thành các nhóm thành phần chính gồm frontend, backend API, các module nghiệp vụ, AI service, tầng lưu trữ dữ liệu và các thành phần tích hợp bên ngoài. Các thành phần này được sắp xếp theo hướng phụ thuộc một chiều: frontend gửi yêu cầu đến backend; backend điều phối các module nghiệp vụ, truy cập cơ sở dữ liệu và gọi AI service khi cần; AI service xử lý truy xuất tri thức và sinh phản hồi; các kênh chat ngoài giao tiếp với hệ thống thông qua webhook do backend tiếp nhận.
+
+Frontend là tầng giao diện của hệ thống. Thành phần này bao gồm các màn hình phục vụ người dùng cuối, nhân viên cửa hàng, quản trị cửa hàng và quản trị hệ thống. Các chức năng giao diện chính gồm đăng nhập, quản lý tenant, quản lý thành viên, quản lý chatbot, quản lý knowledge base, giao diện chat, quản lý hội thoại, quản lý lead, quản lý yêu cầu mua hàng và xem trạng thái vận hành. Frontend không truy cập trực tiếp cơ sở dữ liệu hoặc AI service, mà gửi yêu cầu đến backend thông qua API.
+
+Backend API là điểm tiếp nhận các yêu cầu từ frontend và các kênh chat ngoài. Thành phần này chịu trách nhiệm định tuyến yêu cầu đến các module nghiệp vụ phù hợp, kiểm tra xác thực, kiểm tra quyền truy cập và chuẩn hóa dữ liệu đầu vào. Backend API phụ thuộc vào các module nghiệp vụ như quản lý tenant, quản lý chatbot, quản lý knowledge base, quản lý hội thoại, quản lý lead và quản lý yêu cầu mua hàng.
+
+Thành phần xác thực và phân quyền phụ trách xác thực người dùng và phân quyền theo vai trò. Thành phần này giúp hệ thống phân biệt quản trị hệ thống, quản trị cửa hàng và nhân viên cửa hàng. Ngoài ra, thành phần này cũng hỗ trợ kiểm soát phạm vi tenant, bảo đảm người dùng thuộc tenant nào chỉ được truy cập dữ liệu thuộc tenant đó, trừ các chức năng dành riêng cho quản trị hệ thống.
+
+Module quản lý tenant phụ trách thông tin cửa hàng và thành viên cửa hàng. Đây là module quan trọng đối với yêu cầu multi-tenant, vì các dữ liệu như chatbot, knowledge base, hội thoại, lead và yêu cầu mua hàng đều cần gắn với tenant tương ứng. Việc quản lý tenant rõ ràng giúp hệ thống tách biệt dữ liệu giữa các cửa hàng và hỗ trợ mở rộng thêm cửa hàng mới trong tương lai.
+
+Module quản lý chatbot phụ trách tạo và cập nhật chatbot của từng cửa hàng. Các thông tin như tên chatbot, kênh sử dụng, persona, chế độ hoạt động và các cấu hình liên quan được quản lý trong module này. Mỗi chatbot thuộc về một tenant cụ thể, do đó mọi thao tác với chatbot đều cần được kiểm tra theo phạm vi tenant.
+
+Module quản lý knowledge base quản lý các nguồn dữ liệu dùng để xây dựng knowledge base. Module này cho phép quản trị cửa hàng thêm nguồn dữ liệu, xóa nguồn dữ liệu, kích hoạt rebuild knowledge base và xem trạng thái xử lý. Đây là thành phần trung gian giữa dữ liệu của cửa hàng và quá trình tư vấn của chatbot, giúp chatbot có thể trả lời dựa trên dữ liệu riêng của từng tenant.
+
+Module quản lý hội thoại lưu trữ và quản lý các phiên hội thoại giữa người dùng và chatbot. Module này lưu tin nhắn của người dùng, phản hồi của chatbot và các thông tin ngữ cảnh cần thiết. Dữ liệu hội thoại có vai trò quan trọng vì nó không chỉ phục vụ việc xem lại nội dung tư vấn, mà còn có thể được sử dụng để tạo lead hoặc yêu cầu mua hàng.
+
+Module quản lý lead và yêu cầu mua hàng quản lý các thông tin phát sinh từ hội thoại tư vấn. Khi người dùng thể hiện ý định mua hàng hoặc cung cấp thông tin liên hệ, hệ thống có thể tạo lead hoặc yêu cầu mua hàng. Nhân viên cửa hàng sau đó có thể xem danh sách, xem chi tiết, claim, phân công và cập nhật trạng thái xử lý. Module này giúp kết nối quá trình tư vấn tự động với nghiệp vụ bán hàng của cửa hàng.
+
+AI service phụ trách các chức năng xử lý ngôn ngữ tự nhiên. Thành phần này nhận yêu cầu từ backend, truy xuất dữ liệu liên quan trong knowledge base, sử dụng mô hình ngôn ngữ để sinh câu trả lời và trả kết quả về backend. Việc tách AI service thành một thành phần riêng giúp hệ thống dễ thay đổi mô hình, chiến lược truy xuất hoặc prompt mà không ảnh hưởng lớn đến phần nghiệp vụ.
+
+Thành phần tích hợp kênh ngoài xử lý giao tiếp với các kênh như Messenger và Telegram. Thành phần này nhận webhook, chuẩn hóa tin nhắn về định dạng nội bộ, xác định tenant hoặc chatbot tương ứng và chuyển nội dung vào luồng xử lý hội thoại. Sau khi có câu trả lời, hệ thống gửi phản hồi lại kênh tương ứng.
+
+Tầng lưu trữ dữ liệu làm việc với cơ sở dữ liệu để lưu tenant, người dùng, chatbot, nguồn dữ liệu knowledge base, hội thoại, tin nhắn, lead, yêu cầu mua hàng và các trạng thái vận hành. Các module nghiệp vụ không nên thao tác trực tiếp với cơ sở dữ liệu mà thông qua tầng truy cập dữ liệu để đảm bảo tính tổ chức, dễ kiểm soát và dễ thay đổi khi cần.
+
+\subsection{Thiết kế chi tiết gói}
+
+Trong phạm vi thiết kế chi tiết gói, đồ án tập trung vào ba nhóm package quan trọng nhất: nhóm quản lý chatbot và knowledge base, nhóm xử lý hội thoại tư vấn, và nhóm quản lý lead/yêu cầu mua hàng. Đây là các nhóm package gắn trực tiếp với các use case chính đã đặc tả ở Chương 2.
+
+\subsubsection{Thiết kế gói Quản lý chatbot và knowledge base}
+
+Gói quản lý chatbot và knowledge base chịu trách nhiệm cho các chức năng tạo chatbot, cập nhật cấu hình chatbot, quản lý nguồn dữ liệu knowledge base và rebuild knowledge base. Đây là nhóm chức năng được sử dụng bởi quản trị cửa hàng để chuẩn bị dữ liệu và cấu hình trước khi chatbot được đưa vào sử dụng.
+
+Trong gói này, thành phần tiếp nhận yêu cầu có nhiệm vụ nhận các thao tác từ giao diện quản trị, chẳng hạn tạo chatbot mới, cập nhật cấu hình chatbot, thêm nguồn dữ liệu knowledge base hoặc kích hoạt rebuild. Các yêu cầu này được chuyển tới thành phần xử lý nghiệp vụ để kiểm tra dữ liệu đầu vào, kiểm tra quyền theo tenant và thực hiện thao tác tương ứng.
+
+Thành phần xử lý nghiệp vụ chatbot chịu trách nhiệm quản lý các thông tin liên quan đến chatbot. Một chatbot cần được gắn với một tenant cụ thể để bảo đảm nó chỉ hoạt động trong phạm vi cửa hàng tương ứng. Các thông tin cấu hình của chatbot có thể bao gồm tên chatbot, kênh hoạt động, persona, chế độ hoạt động và các thông tin phục vụ việc kết nối với mô hình ngôn ngữ hoặc AI service nếu có.
+
+Đối với knowledge base, thành phần xử lý nghiệp vụ cần quản lý danh sách nguồn dữ liệu của từng tenant. Khi quản trị cửa hàng thêm hoặc xóa nguồn dữ liệu, hệ thống cập nhật danh sách nguồn tương ứng. Khi quản trị cửa hàng yêu cầu rebuild, hệ thống ghi nhận yêu cầu xử lý, gọi thành phần AI service hoặc thành phần xử lý dữ liệu để xây dựng lại knowledge base, sau đó cập nhật trạng thái xử lý cho người dùng theo dõi.
+
+Dữ liệu chính của gói này gồm chatbot, nguồn dữ liệu knowledge base và lịch sử rebuild. Chatbot biểu diễn cấu hình chatbot của một tenant. Nguồn dữ liệu knowledge base biểu diễn các tài nguyên được sử dụng để xây dựng tri thức cho chatbot. Lịch sử rebuild biểu diễn các lần xử lý dữ liệu, trạng thái thành công hoặc thất bại và thông tin lỗi nếu có. Cách tổ chức này giúp cửa hàng theo dõi được knowledge base đã sẵn sàng hay chưa trước khi đưa chatbot vào sử dụng.
+
+\subsubsection{Thiết kế gói Xử lý hội thoại tư vấn}
+
+Gói xử lý hội thoại tư vấn chịu trách nhiệm tiếp nhận tin nhắn từ người dùng, lưu hội thoại, gọi AI service để sinh câu trả lời và trả kết quả về giao diện hoặc kênh chat ngoài. Đây là gói trung tâm của hệ thống, vì nó trực tiếp phục vụ chức năng tư vấn sản phẩm theo cửa hàng.
+
+Khi người dùng gửi tin nhắn, thành phần tiếp nhận yêu cầu chat xác định hội thoại hiện tại, chatbot tương ứng và tenant liên quan. Nếu người dùng bắt đầu một phiên mới, hệ thống tạo hội thoại mới. Nếu người dùng tiếp tục phiên cũ, hệ thống lấy lại thông tin hội thoại trước đó để duy trì ngữ cảnh. Tin nhắn của người dùng được lưu lại trước khi chuyển sang bước xử lý tư vấn.
+
+Thành phần xử lý hội thoại chịu trách nhiệm điều phối toàn bộ quá trình tư vấn. Thành phần này lưu tin nhắn người dùng, gửi yêu cầu sang AI service, nhận câu trả lời từ AI service và lưu phản hồi của chatbot. Việc lưu cả tin nhắn người dùng và phản hồi của chatbot giúp hệ thống có lịch sử hội thoại đầy đủ, phục vụ việc xem lại, đánh giá chất lượng tư vấn và xử lý lead hoặc yêu cầu mua hàng.
+
+AI service nhận thông tin hội thoại, tenant và chatbot từ backend. Dựa trên tenant tương ứng, AI service truy xuất dữ liệu liên quan từ knowledge base của cửa hàng, sau đó sử dụng kết quả truy xuất để sinh câu trả lời. Kết quả trả về có thể là câu trả lời tư vấn, gợi ý sản phẩm, câu hỏi làm rõ hoặc thông tin liên quan đến ý định mua hàng của người dùng.
+
+Trong trường hợp người dùng thể hiện ý định mua hàng hoặc để lại thông tin liên hệ, gói xử lý hội thoại có thể phối hợp với gói quản lý lead hoặc gói quản lý yêu cầu mua hàng. Tuy nhiên, việc tạo và quản lý lead/yêu cầu mua hàng được tách sang gói nghiệp vụ riêng để tránh làm gói hội thoại trở nên quá lớn. Gói hội thoại chỉ đóng vai trò phát hiện bối cảnh và chuyển dữ liệu cần thiết sang module tương ứng.
+
+Dữ liệu chính của gói này gồm hội thoại và tin nhắn. Hội thoại biểu diễn một phiên trao đổi giữa người dùng và chatbot. Tin nhắn biểu diễn từng lượt trao đổi trong hội thoại, bao gồm tin nhắn của người dùng và phản hồi của chatbot. Mỗi hội thoại cần gắn với tenant và chatbot để bảo đảm dữ liệu được quản lý đúng phạm vi.
+
+\subsubsection{Thiết kế gói Quản lý lead và yêu cầu mua hàng}
+
+Gói quản lý lead và yêu cầu mua hàng chịu trách nhiệm lưu trữ, hiển thị và cập nhật trạng thái các thông tin phát sinh từ hội thoại tư vấn. Gói này giúp kết nối chatbot với quy trình bán hàng của cửa hàng, thay vì để hội thoại chỉ dừng lại ở mức hỏi đáp.
+
+Lead là thông tin khách hàng tiềm năng được tạo ra khi người dùng thể hiện nhu cầu mua hàng hoặc cung cấp thông tin liên hệ. Một lead cần lưu các thông tin như tenant, hội thoại liên quan, nhu cầu của khách hàng, sản phẩm quan tâm nếu có, thông tin liên hệ và trạng thái xử lý. Nhân viên cửa hàng có thể xem danh sách lead, xem chi tiết lead, xem lại hội thoại liên quan và cập nhật trạng thái xử lý.
+
+Yêu cầu mua hàng là bản ghi thể hiện nhu cầu mua hàng rõ ràng hơn, cần được cửa hàng tiếp nhận và xử lý. Một yêu cầu mua hàng có thể được tạo trực tiếp từ hội thoại hoặc từ lead. Yêu cầu này cần lưu thông tin khách hàng, sản phẩm quan tâm, ghi chú, trạng thái xử lý và nhân viên phụ trách nếu đã được claim hoặc phân công.
+
+Thành phần xử lý nghiệp vụ của gói này cần kiểm tra quyền truy cập theo tenant trước khi cho phép nhân viên xem hoặc cập nhật dữ liệu. Nhân viên cửa hàng chỉ được xem lead và yêu cầu mua hàng thuộc tenant của mình. Quản trị cửa hàng có thể có thêm quyền phân công lại yêu cầu mua hàng cho nhân viên khác trong cùng tenant.
+
+Gói này có quan hệ chặt chẽ với gói xử lý hội thoại vì lead và yêu cầu mua hàng được sinh ra từ các phiên tư vấn. Khi nhân viên cần xử lý một lead hoặc yêu cầu mua hàng, hệ thống cần cho phép xem lại hội thoại liên quan để hiểu bối cảnh tư vấn trước đó. Gói này cũng có quan hệ với gói quản lý tenant và thành viên vì việc claim hoặc phân công yêu cầu mua hàng cần xác định nhân viên thuộc đúng cửa hàng.
+
+Việc tách lead và yêu cầu mua hàng thành một gói riêng giúp hệ thống tổ chức rõ ràng các nghiệp vụ sau hội thoại. Chatbot chịu trách nhiệm tư vấn và ghi nhận nhu cầu, còn nhân viên cửa hàng chịu trách nhiệm xử lý các cơ hội bán hàng đã được hệ thống ghi nhận. Cách thiết kế này giúp hệ thống phù hợp hơn với quy trình vận hành thực tế của cửa hàng nội thất.
+
+\section{Thiết kế chi tiết}
+
+Ở mức thiết kế chi tiết, hệ thống được chia thành hai khối xử lý chính: backend nghiệp vụ và dịch vụ AI chatbot. Backend nghiệp vụ được xây dựng bằng Spring Boot, chịu trách nhiệm tiếp nhận yêu cầu từ giao diện web và các kênh chat ngoài, kiểm soát xác thực, phân quyền, tenant isolation, quản lý chatbot, knowledge base, hội thoại, lead và yêu cầu mua hàng. Dịch vụ AI chatbot được xây dựng bằng Python FastAPI, chịu trách nhiệm tiếp nhận ngữ cảnh hội thoại, truy xuất dữ liệu từ knowledge base hoặc kho dữ liệu tham chiếu, xây dựng prompt và gọi mô hình ngôn ngữ để sinh câu trả lời.
+
+Thiết kế chi tiết của hệ thống tập trung vào bốn vấn đề chính: xử lý dữ liệu theo tenant, luồng gọi chatbot, luồng tạo yêu cầu mua hàng và tích hợp kênh ngoài. Các vấn đề này là các luồng nghiệp vụ quan trọng nhất, đồng thời thể hiện rõ đặc trưng của hệ thống multi-tenant RAG chatbot trong phạm vi đồ án.
+
+\subsection{Thiết kế xử lý theo tenant}
+
+Hệ thống được tổ chức theo mô hình multi-tenant, trong đó mỗi cửa hàng là một tenant riêng. Các dữ liệu nghiệp vụ như chatbot, knowledge base, hội thoại, tin nhắn, lead và yêu cầu mua hàng đều cần được gắn với tenant tương ứng. Khi người dùng nội bộ đăng nhập, backend xác định người dùng thuộc tenant nào và chỉ cho phép truy cập dữ liệu trong phạm vi tenant đó, trừ các chức năng dành riêng cho quản trị hệ thống.
+
+Với các API nghiệp vụ, backend đóng vai trò là điểm kiểm soát tenant isolation. Các controller chỉ tiếp nhận yêu cầu và chuyển dữ liệu xuống service; việc kiểm tra quyền, xác định tenant hiện hành và truy vấn dữ liệu theo tenant được thực hiện trong tầng service và repository. Cách tổ chức này giúp tránh việc frontend hoặc client tự quyết định phạm vi dữ liệu được truy cập.
+
+Đối với luồng chat theo cửa hàng, chế độ \texttt{tenant\_sales} chỉ được sử dụng dữ liệu của tenant đang phục vụ. Khi người dùng chat với chatbot của một cửa hàng, backend xác định \texttt{tenant\_id}, \texttt{chatbot\_id} và conversation tương ứng, sau đó gửi thông tin này sang AI service. AI service chỉ truy xuất knowledge base gắn với tenant đó để sinh câu trả lời. Quy tắc này giúp chatbot của cửa hàng này không sử dụng nhầm dữ liệu riêng của cửa hàng khác.
+
+Đối với các luồng không đại diện cho một cửa hàng cụ thể như \texttt{general\_compare} và \texttt{market\_price}, hệ thống sử dụng kho dữ liệu tham chiếu công khai. Kho dữ liệu này được tách khỏi dữ liệu riêng của tenant và chỉ phục vụ mục đích tư vấn tổng quát hoặc tham chiếu giá trong phạm vi dữ liệu hệ thống. Hai chế độ này không tạo lead hoặc yêu cầu mua hàng, kể cả khi người dùng có nội dung giống hành vi xác nhận mua. Cách tách này giúp hệ thống vừa duy trì nguyên tắc cô lập dữ liệu tenant, vừa hỗ trợ được các chức năng tham khảo cho người dùng cuối.
+
+\subsection{Thiết kế luồng gọi chatbot}
+
+Luồng gọi chatbot bắt đầu khi người dùng gửi tin nhắn từ giao diện web, Messenger hoặc Telegram. Backend tiếp nhận tin nhắn, xác định chatbot và tenant tương ứng, tạo conversation mới nếu cần, sau đó lưu tin nhắn người dùng vào cơ sở dữ liệu. Việc lưu tin nhắn trước khi gọi AI service giúp hệ thống có lịch sử hội thoại đầy đủ, phục vụ việc xem lại, kiểm thử, tạo lead hoặc xử lý lỗi khi AI service không phản hồi.
+
+Sau khi lưu tin nhắn, backend xây dựng yêu cầu gửi sang Python chatbot service. Yêu cầu này bao gồm nội dung tin nhắn, lịch sử hội thoại cần thiết, định danh conversation, tenant, kênh chat và cấu hình sinh câu trả lời. Backend gọi Python service thông qua biến môi trường \texttt{PYTHON\_LLM\_BASE\_URL}. Trong môi trường Docker Compose, biến này trỏ tới service \texttt{chatbot-api} trong mạng nội bộ.
+
+Python service tiếp nhận yêu cầu tại endpoint \texttt{/chat}. Tùy theo chế độ hội thoại, service xác định cách truy xuất dữ liệu phù hợp. Với \texttt{tenant\_sales}, service sử dụng dữ liệu knowledge base của tenant. Với \texttt{general\_compare} và \texttt{market\_price}, service sử dụng dữ liệu tham chiếu công khai nếu được cấu hình. Sau khi có ngữ cảnh, service xây dựng prompt và gọi provider mô hình ngôn ngữ. Trong cấu hình triển khai chính, provider được sử dụng là Claude API. Qwen local được giữ lại như một lựa chọn thử nghiệm hoặc fallback kỹ thuật, nhưng không được load mặc định trên VPS.
+
+Kết quả trả về từ Python service gồm nội dung trả lời, tên model/provider, trạng thái debug nếu bật, và một số cờ nghiệp vụ. Backend nhận kết quả này, lưu phản hồi của chatbot vào bảng tin nhắn, sau đó trả nội dung về giao diện web hoặc gửi lại qua kênh Messenger/Telegram. Python service không ghi trực tiếp vào các bảng nghiệp vụ như lead hoặc purchase request; các thao tác này vẫn được thực hiện ở backend để bảo đảm phân quyền, tính toàn vẹn dữ liệu và tenant isolation.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{Hinhve/ch4_sequence_chat_flow.png}
+    \caption{Biểu đồ trình tự luồng xử lý tin nhắn chat}
+    \label{fig:ch4-sequence-chat-flow}
+\end{figure}
+
+\subsection{Thiết kế luồng tạo yêu cầu mua hàng}
+
+Yêu cầu mua hàng chỉ được tạo trong chế độ \texttt{tenant\_sales}. Đây là quy tắc quan trọng để phân biệt giữa chatbot tư vấn bán hàng theo cửa hàng và các chế độ tham khảo chung. Khi người dùng đang chat với một cửa hàng cụ thể, hệ thống có thể ghi nhận nhu cầu mua hàng nếu người dùng thể hiện ý định mua và cung cấp đủ thông tin cần thiết như tên, số điện thoại, địa chỉ hoặc sản phẩm quan tâm.
+
+Trong luồng này, AI service hỗ trợ nhận diện trạng thái hội thoại và trả về tín hiệu cho backend khi hội thoại đã đủ điều kiện tạo yêu cầu mua hàng. Backend sau đó kiểm tra lại chế độ chatbot, tenant, conversation và trạng thái hiện tại trước khi tạo bản ghi. Nếu conversation đã có yêu cầu mua hàng trước đó, hệ thống không tạo bản ghi mới để tránh trùng lặp. Thay vào đó, hệ thống có thể giữ nguyên yêu cầu cũ hoặc cập nhật thêm thông tin nếu chức năng hiện tại hỗ trợ.
+
+Thông tin yêu cầu mua hàng được lưu trong bảng \texttt{purchase\_requests}. Bản ghi này có thể bao gồm tenant, conversation, thông tin khách hàng, số điện thoại, địa chỉ, sản phẩm quan tâm, ghi chú, trạng thái xử lý và nhân viên phụ trách nếu đã được claim hoặc phân công. Nhân viên cửa hàng hoặc quản trị cửa hàng có thể xem danh sách yêu cầu, lọc theo trạng thái, nhận xử lý và cập nhật trạng thái trong giao diện quản trị.
+
+Thiết kế này giúp tách rõ hai trách nhiệm: chatbot hỗ trợ tư vấn và ghi nhận tín hiệu mua hàng, còn backend chịu trách nhiệm tạo và quản lý dữ liệu nghiệp vụ. Cách tách này phù hợp với yêu cầu quản lý lead và yêu cầu mua hàng trong môi trường nhiều tenant.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{Hinhve/ch4_sequence_purchase_request.png}
+    \caption{Biểu đồ trình tự tạo yêu cầu mua hàng từ hội thoại}
+    \label{fig:ch4-sequence-purchase-request}
+\end{figure}
+
+\subsection{Thiết kế tích hợp kênh ngoài}
+
+Hệ thống hỗ trợ tích hợp Messenger và Telegram thông qua webhook. Với mỗi kênh, backend cần có thông tin ánh xạ giữa tài khoản/kênh bên ngoài và chatbot trong hệ thống. Ví dụ, một Facebook Page hoặc Telegram Bot cần được liên kết với một tenant và một chatbot cụ thể. Khi nhận webhook, backend dựa vào thông tin binding để xác định tenant và chatbot tương ứng.
+
+Sau khi xác định được tenant và chatbot, backend chuẩn hóa tin nhắn từ kênh ngoài về định dạng hội thoại nội bộ. Từ thời điểm này, luồng xử lý tin nhắn tương tự như web chat: tạo hoặc lấy conversation, lưu tin nhắn người dùng, gọi Python service, lưu phản hồi và gửi câu trả lời ngược lại kênh tương ứng. Việc dùng chung luồng xử lý hội thoại giúp giảm trùng lặp logic giữa web chat và các kênh chat ngoài.
+
+Các xử lý đặc thù của từng nền tảng như xác thực webhook, kiểm tra verify token, gửi phản hồi về API của Messenger hoặc Telegram được đặt trong các package riêng. Nhờ đó, khi cần bổ sung một kênh chat khác trong tương lai, hệ thống có thể thêm module tích hợp mới mà không cần thay đổi lớn trong lõi xử lý hội thoại.
+
+\section{Thiết kế giao diện}
+
+Giao diện của hệ thống được triển khai dưới dạng các trang web tĩnh được phục vụ bởi Spring Boot. Thiết kế giao diện tập trung vào tính rõ ràng và dễ thao tác, phù hợp với phạm vi đồ án. Các màn hình chính bao gồm trang đăng nhập, giao diện quản trị hệ thống, giao diện quản trị cửa hàng, giao diện chat, giao diện chat tổng quát, giao diện khảo giá và giao diện quản lý yêu cầu mua hàng.
+
+Do hệ thống phục vụ nhiều nhóm người dùng khác nhau, giao diện được tổ chức theo vai trò. Quản trị hệ thống tập trung vào quản lý tenant và trạng thái vận hành. Quản trị cửa hàng tập trung vào quản lý chatbot, knowledge base, kênh tích hợp và dữ liệu phát sinh từ hội thoại. Người dùng cuối chủ yếu thao tác trên giao diện chat hoặc các kênh Messenger/Telegram.
+
+Các giao diện cần có phản hồi rõ ràng khi người dùng thực hiện thao tác. Ví dụ, khi gửi tin nhắn, giao diện cần hiển thị trạng thái đang xử lý để người dùng biết hệ thống đang chờ phản hồi từ AI service. Khi tạo, cập nhật hoặc xóa dữ liệu, giao diện cần thông báo thành công hoặc thất bại. Với các chức năng có thể mất thời gian như rebuild knowledge base hoặc chờ phản hồi chatbot, trạng thái chờ là cần thiết để tránh người dùng hiểu nhầm hệ thống bị treo.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/ch4_ui_main.png}
+    \caption{Landing page}
+    \label{fig:ch4-ui-main}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/ch4_ui_login.png}
+    \caption{Giao diện đăng nhập hệ thống}
+    \label{fig:ch4-ui-login}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/ch4_ui_platform_admin.png}
+    \caption{Giao diện platform admin quản lý tenant và trạng thái vận hành}
+    \label{fig:ch4-ui-platform-admin}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/ch4_ui_tenant_admin.png}
+    \caption{Giao diện tenant admin quản lý chatbot, cơ sở tri thức và kênh tích hợp}
+    \label{fig:ch4-ui-tenant-admin}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/ch4_ui_tenant_member.png}
+    \caption{Giao diện tenant member quản lý các lead}
+    \label{fig:ch4-ui-tenant-member}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/ch4_ui_general_compare.png}
+    \caption{Giao diện chat tư vấn và so sánh sản phẩm chung}
+    \label{fig:ch4-ui-general-compare}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/ch4_ui_price_check.png}
+    \caption{Giao diện khảo giá sản phẩm}
+    \label{fig:ch4-ui-price-check}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Các giao diện chính của hệ thống}
+\label{tab:ch4-ui-main}
+\begin{tabular}{|p{0.24\textwidth}|p{0.30\textwidth}|p{0.36\textwidth}|}
+\hline
+\textbf{Giao diện} & \textbf{Đối tượng sử dụng} & \textbf{Chức năng chính} \\
+\hline
+Trang đăng nhập & Quản trị hệ thống, quản trị cửa hàng, nhân viên cửa hàng & Đăng nhập, tạo phiên làm việc và điều hướng theo vai trò. \\
+\hline
+Platform admin & Quản trị hệ thống & Quản lý tenant, tài khoản, yêu cầu onboarding và theo dõi trạng thái vận hành. \\
+\hline
+Tenant admin & Quản trị cửa hàng & Quản lý chatbot, nguồn dữ liệu, trạng thái knowledge base, binding Messenger/Telegram và hội thoại. \\
+\hline
+Tenant member & Nhân viên cửa hàng & Quản lý lead và xử lý purchase request \\
+\hline
+Chat tổng quát & Người dùng cuối hoặc người kiểm thử & Hỏi tư vấn và so sánh sản phẩm theo dữ liệu tham chiếu công khai. \\
+\hline
+Khảo giá & Người dùng cuối hoặc người kiểm thử & Hỏi khoảng giá tham chiếu hoặc đánh giá một mức giá cụ thể trong phạm vi dữ liệu hệ thống. \\
+\hline
+Landing page & Quản trị hệ thống, quản trị cửa hàng, nhân viên cửa hàng, người dùng cuối & Xem và chọn chức năng cần sử dụng của hệ thống \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Thiết kế lớp}
+
+Thiết kế lớp của backend được tổ chức theo các package nghiệp vụ. Mỗi nhóm chức năng thường có controller để tiếp nhận request, service để xử lý nghiệp vụ, repository để truy cập dữ liệu và entity để biểu diễn bảng dữ liệu tương ứng. Cách tổ chức này giúp phân tách trách nhiệm giữa các tầng, đồng thời làm cho mã nguồn dễ kiểm thử và bảo trì hơn.
+
+\subsection{Các nhóm lớp chính trong backend}
+
+Các nhóm lớp chính trong backend gồm nhóm xác thực và tenant, nhóm quản lý chatbot, nhóm quản lý knowledge base, nhóm xử lý hội thoại, nhóm gọi AI service, nhóm quản lý lead/yêu cầu mua hàng và nhóm tích hợp kênh ngoài. Bảng \ref{tab:ch4-backend-classes} mô tả vai trò của các nhóm lớp chính.
+
+\begin{table}[H]
+\centering
+\caption{Các nhóm lớp chính trong backend}
+\label{tab:ch4-backend-classes}
+\begin{tabular}{|p{0.30\textwidth}|p{0.60\textwidth}|}
+\hline
+\textbf{Nhóm lớp/package} & \textbf{Vai trò} \\
+\hline
+\texttt{auth} & Xử lý đăng nhập, session, principal và quyền truy cập theo vai trò. \\
+\hline
+\texttt{tenants} hoặc \texttt{tenant} & Quản lý tenant, tenant context và kiểm soát phạm vi dữ liệu theo tenant. \\
+\hline
+\texttt{bots} & Quản lý chatbot instance, mode, provider, persona, channel và cấu hình liên quan. \\
+\hline
+\texttt{kb} & Quản lý nguồn dữ liệu knowledge base, trạng thái rebuild và lịch sử xử lý dữ liệu. \\
+\hline
+\texttt{chat} & Tạo conversation, lưu message, gọi Python chatbot service và trả phản hồi về UI. \\
+\hline
+\texttt{modelserver} & Đóng gói request/response khi backend giao tiếp với Python AI service. \\
+\hline
+\texttt{leads} và \texttt{purchases} & Quản lý lead và yêu cầu mua hàng phát sinh từ hội thoại. \\
+\hline
+\texttt{messenger} và \texttt{telegram} & Nhận webhook, ánh xạ kênh ngoài với tenant/chatbot và gửi phản hồi qua nền tảng tương ứng. \\
+\hline
+\texttt{ops} & Cung cấp thông tin vận hành, trạng thái service, thống kê và health check nếu có. \\
+\hline
+\end{tabular}
+\end{table}
+
+% TODO_CH4_CLASS_BACKEND: Chèn class diagram tổng quan backend Spring Boot.
+% Gợi ý tên file: Hinhve/ch4_class_backend_overview.png
+%
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.95\textwidth]{Hinhve/ch4_class_backend_overview.png}
+%     \caption{Biểu đồ lớp tổng quan backend}
+%     \label{fig:ch4-class-backend-overview}
+% \end{figure}
+
+\subsection{Các module chính trong Python chatbot service}
+
+Ở phía Python, các module được tổ chức theo chức năng xử lý hội thoại. Module định nghĩa FastAPI endpoint chịu trách nhiệm nhận request, kiểm tra dữ liệu đầu vào và gọi các thành phần xử lý bên dưới. Các module truy xuất dữ liệu, xây prompt, xử lý trạng thái hội thoại, guardrail và provider mô hình được tách riêng để dễ thay đổi khi cần.
+
+Dịch vụ Python không quản lý dữ liệu nghiệp vụ như tenant member, lead hoặc purchase request. Thay vào đó, service chỉ trả về kết quả xử lý hội thoại cho backend. Backend là thành phần quyết định cuối cùng đối với các thao tác ghi dữ liệu nghiệp vụ.
+
+\begin{table}[H]
+\centering
+\caption{Các module chính trong Python chatbot service}
+\label{tab:ch4-python-modules}
+\begin{tabular}{|p{0.30\textwidth}|p{0.60\textwidth}|}
+\hline
+\textbf{Module} & \textbf{Vai trò} \\
+\hline
+\texttt{server.py} & Định nghĩa FastAPI endpoint, nhận request chat, health check và điều phối xử lý. \\
+\hline
+\texttt{retrieval\_service.py} & Truy xuất dữ liệu liên quan từ knowledge base hoặc dữ liệu đã chuẩn bị. \\
+\hline
+\texttt{prompt.py}, \texttt{prompt\_builder.py} & Xây dựng system prompt, ngữ cảnh và tin nhắn gửi tới mô hình ngôn ngữ. \\
+\hline
+\texttt{state.py}, \texttt{sales\_flow.py} & Quản lý trạng thái hội thoại và các bước trong luồng tư vấn bán hàng. \\
+\hline
+\texttt{market\_data.py} & Định nghĩa provider dữ liệu phục vụ so sánh và tham chiếu giá. \\
+\hline
+\texttt{guardrails.py} & Kiểm soát một số quy tắc an toàn và phạm vi trả lời. \\
+\hline
+\end{tabular}
+\end{table}
+
+% TODO_CH4_CLASS_PYTHON: Chèn sơ đồ module Python chatbot service nếu cần.
+% Gợi ý tên file: Hinhve/ch4_python_modules.png
+
+\section{Thiết kế cơ sở dữ liệu}
+
+Cơ sở dữ liệu của hệ thống sử dụng PostgreSQL. Schema được quản lý bằng Flyway migration để bảo đảm các thay đổi cấu trúc dữ liệu có thể được theo dõi và áp dụng nhất quán giữa môi trường phát triển và triển khai. Các bảng nghiệp vụ dùng chung một database nhưng có trường liên kết tenant để phân tách dữ liệu giữa các cửa hàng.
+
+Các nhóm bảng chính gồm bảng tenant và thành viên, bảng chatbot và knowledge base, bảng hội thoại và tin nhắn, bảng lead và purchase request, bảng cấu hình kênh ngoài, bảng feedback và bảng trạng thái vận hành. Những bảng có dữ liệu thuộc cửa hàng đều cần liên kết trực tiếp hoặc gián tiếp với tenant để phục vụ tenant isolation.
+
+% TODO_CH4_ERD: Chèn ERD phiên bản cuối cùng của cơ sở dữ liệu.
+% Gợi ý tên file: Hinhve/ch4_erd_database.png
+%
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.98\textwidth]{Hinhve/ch4_erd_database.png}
+%     \caption{Biểu đồ thực thể liên kết của cơ sở dữ liệu}
+%     \label{fig:ch4-erd-database}
+% \end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Các bảng dữ liệu chính}
+\label{tab:ch4-database-main}
+\begin{tabular}{|p{0.30\textwidth}|p{0.60\textwidth}|}
+\hline
+\textbf{Bảng} & \textbf{Nội dung lưu trữ} \\
+\hline
+\texttt{tenants} & Thông tin tenant/cửa hàng, mã tenant, trạng thái và một số cấu hình liên quan. \\
+\hline
+\texttt{tenant\_members} & Tài khoản thuộc tenant, email, tên hiển thị, mật khẩu đã mã hóa, vai trò và trạng thái. \\
+\hline
+\texttt{chatbot\_instances} & Cấu hình chatbot, tenant sở hữu, channel, persona, mode, provider và response style. \\
+\hline
+\texttt{conversations} & Phiên hội thoại theo tenant, chatbot, người dùng ngoài, trạng thái, tiêu đề và cờ nghiệp vụ nếu có. \\
+\hline
+\texttt{messages} & Tin nhắn trong hội thoại, bao gồm vai trò gửi, nội dung và thời điểm tạo. \\
+\hline
+\texttt{leads} & Thông tin khách hàng tiềm năng và snapshot hội thoại sau khi có nhu cầu mua hàng. \\
+\hline
+\texttt{purchase\_requests} & Yêu cầu mua hàng, thông tin liên hệ, địa chỉ, ghi chú, sản phẩm quan tâm, trạng thái và người phụ trách. \\
+\hline
+\texttt{tenant\_kb\_rebuild\_status} & Trạng thái rebuild knowledge base, thời điểm xử lý, trạng thái thành công/thất bại và thông báo lỗi nếu có. \\
+\hline
+\texttt{messenger\_page\_bindings} & Ánh xạ Facebook Page với tenant và chatbot tương ứng. \\
+\hline
+\texttt{telegram\_bot\_bindings} & Ánh xạ Telegram Bot với tenant và chatbot tương ứng. \\
+\hline
+\texttt{feedback} & Phản hồi hoặc đánh giá câu trả lời chatbot nếu người dùng thực hiện. \\
+\hline
+\texttt{tenant\_onboarding\_requests} & Yêu cầu đăng ký hoặc onboarding cửa hàng mới nếu chức năng này được bật. \\
+\hline
+\end{tabular}
+\end{table}
+
+Một số ràng buộc được sử dụng để bảo đảm tính đúng đắn của dữ liệu. Bảng tenant cần có mã tenant duy nhất để định danh cửa hàng. Bảng thành viên tenant cần ràng buộc email theo tenant để tránh tạo trùng tài khoản trong cùng một cửa hàng. Các bảng hội thoại, tin nhắn, lead và purchase request cần lưu hoặc suy ra được tenant để đảm bảo người dùng chỉ truy cập dữ liệu thuộc phạm vi được phép. Với yêu cầu mua hàng, hệ thống cần tránh tạo nhiều bản ghi trùng lặp từ cùng một hội thoại, do đó cần có ràng buộc hoặc kiểm tra ở tầng nghiệp vụ dựa trên tenant và conversation.
+
+\section{Xây dựng ứng dụng}
+
+Quá trình xây dựng ứng dụng được thực hiện theo hướng tách riêng backend nghiệp vụ và dịch vụ AI chatbot. Backend Spring Boot cung cấp REST API, giao diện tĩnh, phân quyền và lưu trữ dữ liệu nghiệp vụ. Python FastAPI cung cấp các endpoint như health check và xử lý chat. Hai thành phần giao tiếp qua HTTP nội bộ; trong Docker Compose, backend gọi Python service bằng biến môi trường \texttt{PYTHON\_LLM\_BASE\_URL}.
+
+Knowledge base được tổ chức thành các file dữ liệu phục vụ truy xuất. Dữ liệu theo tenant được sử dụng cho chế độ tư vấn bán hàng theo cửa hàng. Dữ liệu tham chiếu công khai được sử dụng cho chế độ tư vấn tổng quát và tham chiếu giá. Việc chuẩn bị dữ liệu được tách khỏi runtime chatbot thông qua pipeline riêng, giúp quá trình crawl, làm sạch và validate dữ liệu không ảnh hưởng trực tiếp đến service đang chạy.
+
+Claude API được sử dụng làm provider chính trong cấu hình triển khai. API key được cấu hình bằng biến môi trường như \texttt{ANTHROPIC\_API\_KEY} hoặc \texttt{CLAUDE\_API\_KEY}, không lưu key thật trong mã nguồn hoặc cơ sở dữ liệu. Qwen local được giữ lại cho mục đích thử nghiệm hoặc fallback kỹ thuật, nhưng không được load mặc định khi \texttt{FALLBACK\_TO\_LOCAL\_ENABLED=false}. Cách cấu hình này giúp hệ thống có thể chạy trên VPS CPU-only mà không cần GPU.
+
+\subsection{Thư viện và công cụ sử dụng}
+
+Bảng \ref{tab:ch4-tools-libraries} liệt kê các công cụ và thư viện chính sử dụng trong quá trình xây dựng hệ thống. Một số phiên bản cần được kiểm tra lại theo file cấu hình cuối cùng của project tại thời điểm nộp báo cáo.
+
+\begin{table}[H]
+\centering
+\caption{Thư viện và công cụ sử dụng trong project}
+\label{tab:ch4-tools-libraries}
+\begin{tabular}{|p{0.28\textwidth}|p{0.22\textwidth}|p{0.40\textwidth}|}
+\hline
+\textbf{Thành phần} & \textbf{Phiên bản} & \textbf{Mục đích sử dụng} \\
+\hline
+Java & 21 & Xây dựng backend Spring Boot. \\
+\hline
+Spring Boot & 3.5.7 & Framework backend, REST API và cấu hình ứng dụng. \\
+\hline
+Spring Framework & 6.2.12 & Nền tảng cho các thành phần Spring trong backend. \\
+\hline
+Spring Security & 6.5.6 & Hỗ trợ xác thực, session và phân quyền. \\
+\hline
+Spring Data JPA & Theo Spring Boot 3.5.7 & Truy cập dữ liệu PostgreSQL qua repository/entity. \\
+\hline
+Hibernate & 6.6.33.Final & ORM được sử dụng thông qua Spring Data JPA. \\
+\hline
+WebClient/WebFlux & Theo Spring Boot 3.5.7 & Gọi Python chatbot service qua HTTP. \\
+\hline
+Flyway & 11.7.2 & Quản lý migration cơ sở dữ liệu. \\
+\hline
+PostgreSQL & 16.13 & Lưu dữ liệu tenant, chatbot, hội thoại, lead và purchase request. \\
+\hline
+Python & 3.11 & Chạy chatbot FastAPI service. \\
+\hline
+FastAPI & 0.115.0 & Xây dựng API cho chatbot service. \\
+\hline
+Uvicorn & 0.30.6 & ASGI server cho FastAPI. \\
+\hline
+Requests & 2.32.3 & Gọi API bên ngoài và thực hiện HTTP request trong Python. \\
+\hline
+BeautifulSoup4, lxml & 4.12.3, 5.3.0 & Hỗ trợ xử lý HTML trong quá trình chuẩn bị dữ liệu. \\
+\hline
+Transformers, PEFT, Accelerate & 4.44.2, 0.12.0, 0.34.2 & Hỗ trợ local model khi bật fallback hoặc thử nghiệm. \\
+\hline
+PyTorch CPU & 2.3.1+cpu & Runtime local model trong Docker khi được bật rõ ràng. \\
+\hline
+Docker & 28.3.3 & Đóng gói và chạy các container của hệ thống. \\
+\hline
+Docker Compose & v2.39.2 & Điều phối các service app, chatbot-api và postgres. \\
+\hline
+Claude API & claude-sonnet-4-6 & Provider chính để sinh câu trả lời trong môi trường triển khai. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Kết quả đạt được}
+
+Hệ thống đã xây dựng được nền tảng chatbot tư vấn nội thất theo mô hình multi-tenant. Ở phía backend, hệ thống hỗ trợ quản lý tenant, tài khoản, chatbot, hội thoại, tin nhắn, lead, yêu cầu mua hàng, trạng thái knowledge base và kênh tích hợp ngoài. Ở phía AI service, hệ thống hỗ trợ xử lý hội thoại, truy xuất dữ liệu, xây prompt và gọi provider mô hình ngôn ngữ.
+
+Về chức năng chat, hệ thống hỗ trợ ba chế độ chính. Chế độ \texttt{tenant\_sales} phục vụ tư vấn bán hàng theo cửa hàng và có thể tạo yêu cầu mua hàng khi đủ điều kiện. Chế độ \texttt{general\_compare} phục vụ tư vấn hoặc so sánh chung dựa trên dữ liệu tham chiếu công khai. Chế độ \texttt{market\_price} phục vụ tham chiếu khoảng giá trong phạm vi dữ liệu hệ thống. Hai chế độ \texttt{general\_compare} và \texttt{market\_price} không tạo lead hoặc purchase request.
+
+Về vận hành, hệ thống đã có cấu hình Docker Compose với các service chính gồm \texttt{app}, \texttt{chatbot-api} và \texttt{postgres}. Backend gọi Python service qua biến môi trường \texttt{PYTHON\_LLM\_BASE\_URL}. API key Claude được cấu hình ở cấp môi trường, không lưu trong code hoặc database. Local model được giữ như thành phần thử nghiệm hoặc fallback, nhưng không chạy mặc định trong cấu hình VPS CPU-only.
+
+\begin{table}[H]
+\centering
+\caption{Một số thống kê mã nguồn tại thời điểm rà soát}
+\label{tab:ch4-source-stats}
+\begin{tabular}{|p{0.42\textwidth}|p{0.42\textwidth}|}
+\hline
+\textbf{Hạng mục} & \textbf{Giá trị} \\
+\hline
+Số file Java trong \texttt{multitenant/src/main/java} & 111 \\
+\hline
+Số file Python trong \texttt{chatbot/app} & 24 \\
+\hline
+Số migration Flyway & 27 \\
+\hline
+Dung lượng thư mục project & 987.64 MiB \\
+\hline
+Kết quả test tại lượt rà soát này & Chưa chạy trong lượt thống kê này \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Minh họa các chức năng chính}
+
+Phần này trình bày một số chức năng chính của hệ thống. Các hình minh họa cần được chụp từ sản phẩm chạy thực tế hoặc từ dữ liệu demo được ghi rõ là dữ liệu minh họa giao diện. Không sử dụng dữ liệu cá nhân thật hoặc API key thật trong các ảnh chụp.
+
+\subsection{Quản trị tenant và chatbot}
+
+Quản trị hệ thống có thể quản lý các tenant và tài khoản liên quan. Quản trị cửa hàng có thể quản lý chatbot, cấu hình chế độ hoạt động, nguồn dữ liệu knowledge base và binding kênh ngoài. Đây là nhóm chức năng nền tảng để chuẩn bị chatbot trước khi đưa vào sử dụng.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/ch4_ui_platform_admin.png}
+    \caption{Screenshot trang platform admin}
+    \label{fig:ch4-ui-platform-admin}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/ch4_ui_tenant_admin.png}
+    \caption{Screenshot trang tenant admin cấu hình chatbot và KB}
+    \label{fig:ch4-ui-tenant-admin}
+\end{figure}
+
+\subsection{Chat tư vấn theo cửa hàng}
+
+Trong chế độ \texttt{tenant\_sales}, người dùng chat với chatbot của một cửa hàng cụ thể. Backend xác định tenant, lưu tin nhắn, gọi AI service và hiển thị câu trả lời. Khi người dùng cung cấp đủ thông tin và xác nhận nhu cầu mua hàng, hệ thống có thể tạo yêu cầu mua hàng để cửa hàng xử lý tiếp.
+
+% TODO_CH4_SCREENSHOT_TENANT_SALES_CHAT: Chèn screenshot hội thoại tenant_sales có tư vấn sản phẩm.
+% TODO_CH4_SCREENSHOT_PURCHASE_CREATED: Chèn screenshot hội thoại hoặc trang admin sau khi tạo purchase request thành công.
+
+\subsection{Tư vấn tổng quát và tham chiếu giá}
+
+Chế độ \texttt{general\_compare} phục vụ các câu hỏi tư vấn hoặc so sánh chung. Chế độ \texttt{market\_price} phục vụ các câu hỏi về khoảng giá tham chiếu hoặc nhận xét một mức giá cụ thể trong phạm vi dữ liệu hệ thống. Hai chế độ này không tạo yêu cầu mua hàng và không đại diện cho một cửa hàng cụ thể.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/ch4_ui_general_compare.png}
+    \caption{Screenshot màn hình \texttt{general\_compare}}
+    \label{fig:ch4-ui-general-compare}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/ch4_ui_price_check.png}
+    \caption{Screenshot màn hình /price-check/}
+    \label{fig:ch4-ui-price-check}
+\end{figure}
+
+\subsection{Quản lý yêu cầu mua hàng}
+
+Sau khi yêu cầu mua hàng được tạo từ hội thoại bán hàng, nhân viên cửa hàng hoặc quản trị cửa hàng có thể xem danh sách yêu cầu, lọc theo trạng thái, nhận xử lý, phân công và cập nhật trạng thái. Dữ liệu yêu cầu mua hàng được quản lý theo tenant, do đó cửa hàng chỉ xử lý các yêu cầu thuộc phạm vi của mình.
+
+% TODO_CH4_SCREENSHOT_PURCHASE_LIST: Chèn screenshot danh sách purchase request.
+% TODO_CH4_SCREENSHOT_PURCHASE_DETAIL: Chèn screenshot chi tiết hoặc thao tác cập nhật trạng thái purchase request.
+
+\section{Kiểm thử}
+
+Kiểm thử tập trung vào các luồng nghiệp vụ chính và các ràng buộc an toàn dữ liệu. Các nhóm kiểm thử gồm kiểm thử backend, kiểm thử Python chatbot service, kiểm thử tích hợp giữa backend và AI service, kiểm thử thủ công trên giao diện và kiểm thử webhook nếu kênh ngoài được cấu hình.
+
+Các kỹ thuật kiểm thử được sử dụng gồm kiểm thử đơn vị cho một số hàm xử lý, kiểm thử tích hợp cho các API quan trọng, kiểm thử hồi quy hội thoại bằng kịch bản cố định và kiểm thử thủ công trên các luồng giao diện chính. Với các luồng liên quan đến AI, kiểm thử không chỉ kiểm tra HTTP status mà còn cần kiểm tra đúng chế độ hội thoại, không tạo purchase request sai mode và không trả lời vượt ngoài phạm vi dữ liệu.
+
+\begin{table}[H]
+\centering
+\caption{Các test case quan trọng}
+\label{tab:ch4-test-cases-main}
+\begin{tabular}{|p{0.16\textwidth}|p{0.34\textwidth}|p{0.32\textwidth}|p{0.10\textwidth}|}
+\hline
+\textbf{Mã} & \textbf{Mục tiêu} & \textbf{Kỳ vọng} & \textbf{Kết quả} \\
+\hline
+TC-01 & Health check backend, Python service và PostgreSQL & Các service khởi động và endpoint health trả trạng thái hợp lệ. & TODO \\
+\hline
+TC-02 & Tạo conversation và gửi tin nhắn tenant chat & Message được lưu, backend gọi Python service và trả reply về UI. & TODO \\
+\hline
+TC-03 & Kiểm soát dữ liệu tenant & Tenant chỉ xem được chatbot, conversation, message và purchase request thuộc phạm vi của mình. & TODO \\
+\hline
+TC-04 & Rebuild knowledge base & Hệ thống ghi nhận trạng thái xử lý và sử dụng dữ liệu mới sau khi rebuild thành công. & TODO \\
+\hline
+TC-05 & Tư vấn bán hàng \texttt{tenant\_sales} & Chatbot tư vấn theo dữ liệu tenant và chỉ tạo purchase request khi đủ điều kiện. & TODO \\
+\hline
+TC-06 & Luồng \texttt{general\_compare} & Trả lời so sánh/tư vấn chung và không tạo purchase request. & TODO \\
+\hline
+TC-07 & Luồng \texttt{market\_price} & Trả lời trong phạm vi dữ liệu tham chiếu và không tạo purchase request. & TODO \\
+\hline
+TC-08 & Messenger/Telegram webhook & Binding đúng tenant/chatbot, nhận webhook và gửi phản hồi qua kênh tương ứng. & TODO \\
+\hline
+TC-09 & Quản lý purchase request & Xem, lọc, nhận xử lý, phân công và cập nhật trạng thái theo quyền tenant. & TODO \\
+\hline
+TC-10 & Cấu hình Claude và local fallback & Claude dùng biến môi trường; local model không load mặc định khi tắt fallback. & TODO \\
+\hline
+\end{tabular}
+\end{table}
+
+% TODO_CH4_TEST_RESULTS: Điền kết quả thực tế sau khi chạy kiểm thử.
+% Cần ghi rõ:
+% - ngày chạy test
+% - môi trường chạy test
+% - lệnh chạy test backend
+% - lệnh chạy test Python
+% - số test pass/fail
+% - lỗi còn lại nếu có
+%
+% Gợi ý lệnh cần lấy output:
+% Backend:
+% cd multitenant && mvn test
+%
+% Python:
+% cd chatbot && python -m pytest -q
+%
+% Docker:
+% docker compose ps
+% curl http://127.0.0.1:8000/healthz
+%
+% Không tự bịa số test nếu chưa chạy.
+
+\section{Triển khai}
+
+Hệ thống được triển khai thử nghiệm trên VPS Ubuntu bằng Docker Compose. Mô hình triển khai gồm ba service chính: \texttt{postgres}, \texttt{chatbot-api} và \texttt{app}. Service \texttt{postgres} lưu dữ liệu nghiệp vụ. Service \texttt{chatbot-api} chạy Python FastAPI để xử lý chatbot. Service \texttt{app} chạy Spring Boot backend, phục vụ API và giao diện web.
+
+Trong môi trường Docker Compose, backend gọi AI service thông qua địa chỉ nội bộ \texttt{http://chatbot-api:8000}. Người dùng truy cập giao diện web thông qua cổng của service \texttt{app}. Khi cấu hình domain và HTTPS, có thể sử dụng reverse proxy như Caddy hoặc Nginx để chuyển tiếp request từ cổng 80/443 về service \texttt{app}.
+
+Cấu hình nhạy cảm được đặt trong file \texttt{.env} hoặc biến môi trường của server. Claude API key được cấu hình bằng \texttt{ANTHROPIC\_API\_KEY} hoặc \texttt{CLAUDE\_API\_KEY}; không lưu key thật trong mã nguồn, tài liệu hoặc cơ sở dữ liệu. Trên VPS CPU-only, cấu hình mặc định đặt \texttt{FALLBACK\_TO\_LOCAL\_ENABLED=false} để Qwen local không được load khi khởi động. Cấu hình này giúp hệ thống phù hợp với môi trường triển khai demo không có GPU.
+
+\begin{table}[H]
+\centering
+\caption{Các service triển khai bằng Docker Compose}
+\label{tab:ch4-deploy-services}
+\begin{tabular}{|p{0.22\textwidth}|p{0.24\textwidth}|p{0.44\textwidth}|}
+\hline
+\textbf{Service} & \textbf{Cổng} & \textbf{Vai trò} \\
+\hline
+\texttt{postgres} & 5432 nội bộ & Lưu dữ liệu nghiệp vụ và schema Flyway. \\
+\hline
+\texttt{chatbot-api} & 8000 nội bộ & Cung cấp FastAPI endpoint như \texttt{/healthz} và \texttt{/chat}. \\
+\hline
+\texttt{app} & 8080 hoặc qua reverse proxy & Chạy Spring Boot backend, phục vụ API và giao diện web. \\
+\hline
+\end{tabular}
+\end{table}
+
+Các bước triển khai chính gồm cài Docker và Docker Compose trên VPS, clone mã nguồn, tạo file \texttt{.env} từ \texttt{.env.example}, điền thông tin PostgreSQL và Claude API key, sau đó chạy lệnh \texttt{docker compose up -d --build}. Sau khi khởi động, cần kiểm tra trạng thái container, health check của Python service, log của Spring Boot và khả năng truy cập giao diện web.
+
+Hệ thống được triển khai thử nghiệm trên VPS của Vietnix với hệ điều hành Ubuntu 24.04.3 LTS. Máy chủ sử dụng kiến trúc x86\_64, 4 CPU ảo Intel Xeon E5-2690 v4 @ 2.60GHz, RAM 5.8 GiB và ổ đĩa 58 GiB. Tại thời điểm kiểm tra, hệ thống có 4.7 GiB bộ nhớ khả dụng, swap 4.0 GiB và dung lượng ổ đĩa còn trống 47 GiB. Cấu hình này được sử dụng cho môi trường demo theo hướng Claude API là provider chính, không load local model mặc định.
+
+\begin{table}[H]
+\centering
+\caption{Trạng thái các container trên VPS}
+\label{tab:ch4-deploy-container-status}
+\begin{tabular}{|p{0.26\textwidth}|p{0.24\textwidth}|p{0.22\textwidth}|p{0.18\textwidth}|}
+\hline
+\textbf{Container} & \textbf{Image} & \textbf{Trạng thái} & \textbf{Cổng} \\
+\hline
+\texttt{project3-app-1} & \texttt{project3-app} & Up 13 hours & \texttt{8080->8080} \\
+\hline
+\texttt{project3-chatbot-api-1} & \texttt{project3-chatbot-api} & Up 13 hours, healthy & \texttt{8000->8000} \\
+\hline
+\texttt{project3-postgres-1} & \texttt{postgres:16} & Up 13 hours, healthy & \texttt{5432->5432} \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{verbatim}
+{
+  "status": "ready",
+  "ready": true,
+  "cached_pipelines": 0,
+  "local_model_enabled": false,
+  "fallback_to_local_enabled": false,
+  "kb_loaded": true,
+  "retrieval_mode": "keyword"
+}
+\end{verbatim}
+
+URL triển khai của giao diện web là \url{https://adolescently-unblinding-kellan.ngrok-free.dev/}.
+
+Ở giai đoạn demo, hệ thống sử dụng VPS để chạy các service chính và dùng ngrok để cung cấp URL HTTPS public khi cần tích hợp webhook Messenger/Telegram. Cách triển khai này giúp hệ thống có endpoint HTTPS mà chưa cần cấu hình domain riêng và reverse proxy.
+
+Trong quá trình vận hành, dữ liệu quan trọng cần được sao lưu định kỳ, đặc biệt là cơ sở dữ liệu PostgreSQL. Với môi trường demo, có thể sử dụng \texttt{pg\_dump} để tạo file backup trước khi cập nhật mã nguồn hoặc trước các buổi demo quan trọng. Khi cập nhật phiên bản mới, quy trình cơ bản là pull mã nguồn mới, rebuild Docker image và kiểm tra lại trạng thái các service.
+
+% TODO_CH4_BACKUP_COMMAND: Chèn lệnh backup thực tế đã dùng nếu cần.
+% Ví dụ:
+% docker compose exec -T postgres pg_dump -U postgres global_admin > backup_YYYYMMDD.sql
+
+\end{document}

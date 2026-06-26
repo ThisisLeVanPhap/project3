@@ -104,11 +104,7 @@ public class ChatbotController {
         }
 
         // Provider
-        if (dto.provider() != null && !dto.provider().isBlank()) {
-            chatbot.setProvider(dto.provider());
-        } else {
-            chatbot.setProvider("claude");
-        }
+        chatbot.setProvider(normalizeProvider(dto.provider()));
         // Claude config is system-level only (env-based). Do not persist per-chatbot API fields.
         if ("claude".equalsIgnoreCase(chatbot.getProvider())) {
             chatbot.setApiModel(null);
@@ -136,5 +132,17 @@ public class ChatbotController {
             throw new IllegalArgumentException("Unsupported responseStyle: " + responseStyle);
         }
         return normalized;
+    }
+
+    private String normalizeProvider(String provider) {
+        if (provider == null || provider.isBlank()) {
+            return "claude";
+        }
+        String normalized = provider.trim().toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "anthropic", "claude" -> "claude";
+            case "huggingface", "local" -> "local";
+            default -> "claude";
+        };
     }
 }

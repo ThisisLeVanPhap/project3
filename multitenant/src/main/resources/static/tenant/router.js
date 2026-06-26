@@ -61,7 +61,8 @@
 
         app.innerHTML = '<div class="page"><h1>Loading...</h1></div>';
 
-        import(route.module)
+        var cacheBuster = '?v=' + (new Date()).getTime();
+        import(route.module + cacheBuster)
             .then(function(module) {
                 if (module && module.render) {
                     return module.render(app, parsed.params);

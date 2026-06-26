@@ -1,3 +1,4 @@
+import json
 import os
 import time
 import re
@@ -30,9 +31,27 @@ from .sales_state import (
     update_recommended_products,
 )
 
+from .claude_provider import call_claude_api as _call_claude_api
+from .market_price_insight_provider import (
+    BackendMarketPriceInsightProvider,
+    build_market_price_insight_provider,
+)
+from .market_price_reply import (
+    build_market_price_insight_reply as _market_price_insight_reply,
+    build_market_price_reply as _market_price_reply,
+    extract_price_values_from_context as _extract_price_values_from_context,
+)
 from .prompt import build_messages, DEFAULT_SYSTEM, is_vietnamese_text
+from .response_guards import BAD_FACTS, apply_grounding_guard as _apply_grounding_guard
+from .runtime_config import TRUE_VALUES, load_runtime_config
 from .modes import ChatMode, mode_system_instruction, normalize_chat_mode
 from .product_answer_renderer import render_product_answer
+from .general_catalog_provider import (
+    BackendGeneralCatalogProvider,
+    build_backend_catalog_provider,
+    format_backend_catalog_items,
+)
+from .general_compare_renderer import render_general_compare
 from .market_data import (
     build_internal_catalog_provider,
     build_price_provider,
@@ -88,204 +107,30 @@ def _handle_topic_change(existing_slots: Dict[str, Any], new_slots: Dict[str, An
         # No other product-specific slots need reset currently.
         pass
 
+_CONFIG = load_runtime_config()
 
+LOCAL_MODEL_ENABLED = _CONFIG.local_model_enabled
+BASE_MODEL_DEFAULT = _CONFIG.base_model_default
+TOKENIZER_DEFAULT = _CONFIG.tokenizer_default
+DISABLED_LOCAL_MODELS = _CONFIG.disabled_local_models
 
-def _call_claude_api(
-    prompt: str,
-    api_key: str,
-    api_model: str,
-    api_base_url: str,
-    max_tokens: int,
-    temperature: float,
-    top_p: float,
-    timeout_seconds: float = 120.0,
-) -> Tuple[str, Optional[str], Optional[str]]:
-    """Call Anthropic Claude API and return (text, error_code, error_preview)."""
-    if not api_key:
-        return "", "missing_api_key", "Claude API key was not provided"
+MAX_NEW_TOKENS_DEFAULT = _CONFIG.max_new_tokens_default
+CLAUDE_MAX_NEW_TOKENS = _CONFIG.claude_max_new_tokens
+LOCAL_FALLBACK_MAX_TOKENS = _CONFIG.local_fallback_max_tokens
 
-    import requests
+TEMPERATURE_DEFAULT = _CONFIG.temperature_default
+TOP_P_DEFAULT = _CONFIG.top_p_default
+TOP_K_DEFAULT = _CONFIG.top_k_default
+RETRIEVAL_MODE_DEFAULT = _CONFIG.retrieval_mode_default
+RETRIEVAL_TOP_K_DEFAULT = _CONFIG.retrieval_top_k_default
+PRODUCT_TEMPLATE_ANSWERS_DEFAULT = _CONFIG.product_template_answers_default
 
-    cleaned_prompt = prompt.rstrip()
-    if "Response:" in cleaned_prompt:
-        cleaned_prompt = cleaned_prompt.split("Response:")[0].rstrip()
+FALLBACK_TO_LOCAL_ENABLED = _CONFIG.fallback_to_local_enabled
+LOCAL_FALLBACK_TIMEOUT_SECONDS = _CONFIG.local_fallback_timeout_seconds
 
-    headers = {
-        "Content-Type": "application/json",
-        "x-api-key": api_key,
-        "anthropic-version": "2023-06-01",
-    }
-
-    data = {
-        "model": api_model,
-        "messages": [{"role": "user", "content": cleaned_prompt}],
-        "max_tokens": max_tokens,
-    }
-    # Only send temperature or top_p, not both (Claude API requirement)
-    if temperature is not None:
-        data["temperature"] = temperature
-    if top_p is not None and temperature is None:
-        data["top_p"] = top_p
-
-    try:
-        resp = requests.post(
-            f"{api_base_url.rstrip('/')}/v1/messages",
-            headers=headers,
-            json=data,
-            timeout=timeout_seconds,
-        )
-        if resp.status_code != 200:
-            body_preview = resp.text[:500].replace("\n", "\\n")
-            return "", "non_200", f"status={resp.status_code} body={body_preview}"
-
-        result = resp.json()
-        content = result.get("content")
-        if not isinstance(content, list) or not content:
-            return "", "parse_fail", (
-                f"top_keys={list(result.keys())[:20]} content_type={type(content).__name__}"
-            )
-
-        first_block = content[0]
-        if not isinstance(first_block, dict):
-            preview = str(first_block)[:500]
-            return "", "parse_fail", f"first_block_type={type(first_block).__name__} first_block={preview}"
-
-        text = first_block.get("text")
-        if first_block.get("type") != "text" or text is None:
-            preview = str(first_block)[:500]
-            return "", "parse_fail", f"first_block={preview}"
-        if not text.strip():
-            return "", "empty_text", "Claude returned an empty text block"
-        return text, None, None
-    except Exception as exc:
-        message = str(exc).replace("\n", "\\n")[:300]
-        return "", "exception", f"class={exc.__class__.__name__} message={message}"
-
-
-# --- Output guardrail: block unverified payment/refund/timing claims ---
-BAD_FACTS = re.compile(
-    r"\b(within\s+\d+\s+(day|days|business\s+days)|refund|complete payment|receive the item)\b",
-    re.I,
-)
-
-UNSUPPORTED_PAYMENT_FACTS = re.compile(
-    r"\b(visa|credit\s+card|debit\s+card|card payment|the tin dung|tra gop)\b",
-    re.I,
-)
-GENERIC_GROUNDED_INTRO = re.compile(
-    r"\b(from the verified store data|i can confirm|store policy is available)\b",
-    re.I,
-)
-PAYMENT_POLICY_QUERY = re.compile(
-    r"\b(payment|pay|policy|thanh toan|dat coc|chuyen khoan|chinh sach)\b",
-    re.I,
-)
-CLEANING_COMPARISON_QUERY = re.compile(
-    r"\b(clean|cleaning|wipe|lau chui|ve sinh|de lau|de ve sinh)\b",
-    re.I,
-)
-
-
-def _apply_grounding_guard(user_msg: str, context: str, response: str) -> str:
-    """Keep replies inside verified KB facts for high-risk policy/comparison answers."""
-    user_msg = user_msg or ""
-    context = context or ""
-    response = response or ""
-    vietnamese = is_vietnamese_text(user_msg)
-
-    if PAYMENT_POLICY_QUERY.search(user_msg):
-        has_supported_payment_context = re.search(
-            r"\b(thanh toan|dat coc|chuyen khoan|sau khi giao hang|0-50km)\b",
-            context,
-            re.I,
-        )
-        has_bad_payment_claim = (
-            UNSUPPORTED_PAYMENT_FACTS.search(response)
-            or GENERIC_GROUNDED_INTRO.search(response)
-            or BAD_FACTS.search(response)
-        )
-        if has_supported_payment_context and has_bad_payment_claim:
-            if vietnamese:
-                return (
-                    "Theo thong tin cua hang, khach co the thanh toan hoac "
-                    "\u0111\u1eb7t c\u1ecdc truc tiep voi nhan vien ban hang. "
-                    "Cua hang co ho tro chuyen khoan; thanh toan sau khi giao hang "
-                    "ap dung trong pham vi 0-50km neu thong tin nay co trong chinh sach."
-                )
-            return (
-                "According to the store information, customers can pay or place a deposit "
-                "directly with sales staff. Bank transfer is supported; payment after delivery "
-                "applies within the 0-50km range when stated by the store policy."
-            )
-
-    if CLEANING_COMPARISON_QUERY.search(user_msg):
-        response_makes_cleaning_claim = re.search(
-            r"\b(easier to clean|de lau chui|de ve sinh|lau chui hon|cleaner)\b",
-            response,
-            re.I,
-        )
-        context_supports_cleaning = re.search(
-            r"\b(easier to clean|de lau chui|de ve sinh|lau chui|ve sinh)\b",
-            context,
-            re.I,
-        )
-        if response_makes_cleaning_claim and not context_supports_cleaning:
-            if vietnamese:
-                return (
-                    "Minh \u0063\u0068\u01b0\u0061 \u0111\u1ee7 du lieu tu kho tri thuc "
-                    "de ket luan chat lieu nao de ve sinh hon. Theo thong tin hien co, "
-                    "chi co the xac nhan sofa go co the duoc boc nem da hoac ni."
-                )
-            return (
-                "I do not have enough verified knowledge-base data to say which material "
-                "is easier to clean. The available context only supports that the wooden "
-                "sofa can be upholstered with leather or fabric cushions."
-            )
-
-    return response
-
-
-TRUE_VALUES = {"1", "true", "yes", "on"}
-
-LOCAL_MODEL_ENABLED = os.getenv("LOCAL_MODEL_ENABLED", "false").lower() in TRUE_VALUES
-BASE_MODEL_DEFAULT = os.getenv("BASE_MODEL") or None
-ADAPTER_DEFAULT = os.getenv("LORA_ADAPTER") or None
-TOKENIZER_DEFAULT = os.getenv("TOKENIZER_PATH") or None
-DISABLED_LOCAL_MODELS = {"qwen/qwen2.5-1.5b-instruct"}
-
-# Token limits: Claude uses higher default, local fallback uses lower if explicitly enabled.
-MAX_NEW_TOKENS_DEFAULT = int(os.getenv("MAX_NEW_TOKENS", "256"))
-CLAUDE_MAX_NEW_TOKENS = int(os.getenv("CLAUDE_MAX_NEW_TOKENS", "768"))
-LOCAL_FALLBACK_MAX_TOKENS = int(os.getenv("LOCAL_FALLBACK_MAX_TOKENS", "128"))
-
-TEMPERATURE_DEFAULT = float(os.getenv("TEMPERATURE", "0.7"))
-TOP_P_DEFAULT = float(os.getenv("TOP_P", "0.9"))
-TOP_K_DEFAULT = int(os.getenv("TOP_K", "50"))
-RETRIEVAL_MODE_DEFAULT = os.getenv("RETRIEVAL_MODE", "keyword")
-RETRIEVAL_TOP_K_DEFAULT = int(os.getenv("RETRIEVAL_TOP_K", "4"))
-PRODUCT_TEMPLATE_ANSWERS_DEFAULT = os.getenv("PRODUCT_TEMPLATE_ANSWERS", "false").lower() in TRUE_VALUES
-
-# Local fallback settings
-FALLBACK_TO_LOCAL_ENABLED = os.getenv("FALLBACK_TO_LOCAL_ENABLED", "false").lower() in TRUE_VALUES
-LOCAL_FALLBACK_TIMEOUT_SECONDS = int(os.getenv("LOCAL_FALLBACK_TIMEOUT_SECONDS", "45"))
-
-
-def _int_env(name: str, default: int, minimum: int = 1) -> int:
-    raw = os.getenv(name, str(default))
-    try:
-        value = int(raw)
-    except (TypeError, ValueError):
-        print(f"[local_pipeline_cache] invalid_env={name} using_default={default}")
-        return default
-    if value < minimum:
-        print(f"[local_pipeline_cache] invalid_env={name} minimum={minimum} using_default={default}")
-        return default
-    return value
-
-
-LOCAL_PIPELINE_MAX_CACHE = _int_env("LOCAL_PIPELINE_MAX_CACHE", 2, minimum=1)
-LOCAL_PIPELINE_IDLE_TTL_SECONDS = _int_env("LOCAL_PIPELINE_IDLE_TTL_SECONDS", 180, minimum=1)
-LOCAL_PIPELINE_CLEANUP_INTERVAL_SECONDS = _int_env("LOCAL_PIPELINE_CLEANUP_INTERVAL_SECONDS", 30, minimum=1)
+LOCAL_PIPELINE_MAX_CACHE = _CONFIG.local_pipeline_max_cache
+LOCAL_PIPELINE_IDLE_TTL_SECONDS = _CONFIG.local_pipeline_idle_ttl_seconds
+LOCAL_PIPELINE_CLEANUP_INTERVAL_SECONDS = _CONFIG.local_pipeline_cleanup_interval_seconds
 
 app = FastAPI(title="Multi-tenant Chatbot Model Server")
 
@@ -329,6 +174,8 @@ if KB is not None:
     KB_BY_MODE[KB_RETRIEVAL_MODE] = KB
 
 INTERNAL_CATALOG_PROVIDER = build_internal_catalog_provider(KB_DIR)
+BACKEND_CATALOG_PROVIDER = build_backend_catalog_provider()
+BACKEND_MARKET_PRICE_PROVIDER = build_market_price_insight_provider()
 PRICE_PROVIDER = build_price_provider()
 
 SALES_MODES = {"off", "shadow", "active"}
@@ -404,7 +251,12 @@ def _select_provider(cfg: GenerationConfig) -> str:
     if _is_test_mode():
         return "stub"
     if cfg.provider:
-        return cfg.provider.strip().lower()
+        provider = cfg.provider.strip().lower()
+        if provider in {"anthropic", "claude"}:
+            return "claude"
+        if provider in {"huggingface", "local"}:
+            return "local"
+        return provider
     return "claude"
 
 
@@ -1141,7 +993,7 @@ def _warmup():
     # Warmup should build at least one local pipeline when local model mode is explicitly enabled.
     def run():
         try:
-            get_or_create_pipe(BASE_MODEL_DEFAULT, ADAPTER_DEFAULT, TOKENIZER_DEFAULT)
+            get_or_create_pipe(BASE_MODEL_DEFAULT, None, TOKENIZER_DEFAULT)
             _set_ready(True, None)
             print("[warmup] ready=True")
         except Exception as e:
@@ -1211,7 +1063,7 @@ def chat(req: ChatReq):
     cfg = req.gen
 
     base_model = cfg.base_model or BASE_MODEL_DEFAULT
-    adapter = cfg.adapter or ADAPTER_DEFAULT
+    adapter = None
     tokenizer_path = cfg.tokenizer_path or TOKENIZER_DEFAULT
     provider = _select_provider(cfg)
     try:
@@ -1556,37 +1408,71 @@ def chat(req: ChatReq):
     used_mock_price_data = False
 
     if mode == ChatMode.GENERAL_COMPARE.value:
+        # 1. Call backend general products search
+        backend_items = []
         try:
-            internal_candidates = INTERNAL_CATALOG_PROVIDER.search_candidates(
+            backend_items = BACKEND_CATALOG_PROVIDER.search_candidates(
                 req.message,
                 limit=max(1, retrieval_top_k),
             )
-        except Exception:
-            internal_candidates = []
-        if internal_candidates:
-            data_provider = getattr(INTERNAL_CATALOG_PROVIDER, "provider_name", "internal_catalog")
-            provider_context_parts.append(
-                "STRUCTURED INTERNAL CATALOG CANDIDATES "
-                "(fields may be null; use only provided values):\n"
-                + format_catalog_candidates(internal_candidates)
-            )
+        except Exception as e:
+            _logger.warning("BackendGeneralCatalogProvider failed: %s", e)
 
+        if backend_items:
+            data_provider = "backend_general_catalog"
+            provider_context_parts.append(
+                "BACKEND GENERAL CATALOG RESULTS "
+                "(ranked by relevance across all public sources):\n"
+                + format_backend_catalog_items(backend_items)
+            )
+        else:
+            # 2. Fallback: use internal catalog provider (file-based)
+            try:
+                internal_candidates = INTERNAL_CATALOG_PROVIDER.search_candidates(
+                    req.message,
+                    limit=max(1, retrieval_top_k),
+                )
+            except Exception:
+                internal_candidates = []
+            if internal_candidates:
+                data_provider = getattr(INTERNAL_CATALOG_PROVIDER, "provider_name", "internal_catalog")
+                provider_context_parts.append(
+                    "STRUCTURED INTERNAL CATALOG CANDIDATES "
+                    "(fields may be null; use only provided values):\n"
+                    + format_catalog_candidates(internal_candidates)
+                )
+
+    market_price_insight = None
     if mode == ChatMode.MARKET_PRICE.value:
         try:
-            price_refs = PRICE_PROVIDER.get_price_references(
-                req.message,
-                limit=max(1, retrieval_top_k),
-            )
-        except Exception:
-            price_refs = []
-        used_mock_price_data = any(getattr(ref, "is_mock", False) for ref in price_refs)
-        if price_refs:
-            data_provider = price_provider_name
+            market_price_insight = BACKEND_MARKET_PRICE_PROVIDER.get_insight(req.message)
+        except Exception as e:
+            _logger.warning("BackendMarketPriceInsightProvider failed: %s", e)
+            market_price_insight = None
+
+        if market_price_insight is not None:
+            data_provider = "backend_market_price_insight"
             provider_context_parts.append(
-                "PRICE REFERENCES FROM EXPLICIT PRICE PROVIDER "
-                "(mock/demo rows are not real market catalog data):\n"
-                + format_price_references(price_refs)
+                "MARKET PRICE INSIGHT FROM BACKEND (general_products aggregate):\n"
+                + json.dumps(market_price_insight.stats, ensure_ascii=False)
             )
+        else:
+            # Fallback: old price provider
+            try:
+                price_refs = PRICE_PROVIDER.get_price_references(
+                    req.message,
+                    limit=max(1, retrieval_top_k),
+                )
+            except Exception:
+                price_refs = []
+            used_mock_price_data = any(getattr(ref, "is_mock", False) for ref in price_refs)
+            if price_refs:
+                data_provider = price_provider_name
+                provider_context_parts.append(
+                    "PRICE REFERENCES FROM EXPLICIT PRICE PROVIDER "
+                    "(mock/demo rows are not real market catalog data):\n"
+                    + format_price_references(price_refs)
+                )
 
     retrieval_context = format_context(retrieval_hits)
     if provider_context_parts and retrieval_context:
@@ -1639,7 +1525,10 @@ def chat(req: ChatReq):
 
     if answer_mode == "template":
         t0 = time.time()
-        resp = render_product_answer(req.message, context)
+        if mode == ChatMode.GENERAL_COMPARE.value and backend_items:
+            resp = render_general_compare(req.message, backend_items)
+        else:
+            resp = render_product_answer(req.message, context)
         latency_ms = int((time.time() - t0) * 1000)
         debug_trace.update({
             "answer_mode": "template",
@@ -1756,7 +1645,10 @@ def chat(req: ChatReq):
     )
 
     if mode == ChatMode.MARKET_PRICE.value:
-        out = _build_market_price_reply(req.message, price_refs, debug_trace)
+        if market_price_insight is not None:
+            out = _market_price_insight_reply(req.message, market_price_insight)
+        else:
+            out = _market_price_reply(req.message, price_refs)
         response_model = "structured_price"
         response_adapter = None
     elif provider == "stub":

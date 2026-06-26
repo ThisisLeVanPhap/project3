@@ -4,6 +4,8 @@ import com.app.auth.AppPrincipal;
 import com.app.auth.AppRole;
 import com.app.auth.SessionPrincipalAccessor;
 import com.app.common.ApiExceptionHandler;
+import com.app.general.CrawlAndMaterializeService;
+import com.app.general.GeneralProductImportService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -31,6 +33,12 @@ class ProductDatasetControllerTest {
 
     @Mock
     private ProductDatasetService productDatasetService;
+
+    @Mock
+    private GeneralProductImportService generalProductImportService;
+
+    @Mock
+    private CrawlAndMaterializeService crawlAndMaterializeService;
 
     @Mock
     private SessionPrincipalAccessor principalAccessor;
@@ -122,7 +130,7 @@ class ProductDatasetControllerTest {
     }
 
     private MockMvc mvc() {
-        return MockMvcBuilders.standaloneSetup(new ProductDatasetController(productDatasetService, principalAccessor))
+        return MockMvcBuilders.standaloneSetup(new ProductDatasetController(productDatasetService, generalProductImportService, crawlAndMaterializeService, principalAccessor))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .build();
     }

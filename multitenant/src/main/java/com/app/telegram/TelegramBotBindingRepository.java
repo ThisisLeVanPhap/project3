@@ -13,4 +13,8 @@ public interface TelegramBotBindingRepository extends JpaRepository<TelegramBotB
     List<TelegramBotBinding> findAllByTenantId(UUID tenantId);
 
     Optional<TelegramBotBinding> findByTenantIdAndChatbotId(UUID tenantId, UUID chatbotId);
+
+    Optional<TelegramBotBinding> findBySecretPath(String secretPath);
+
+    Optional<TelegramBotBinding> findByBotTokenAndStatus(String botToken, String status);
 }

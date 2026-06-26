@@ -12,8 +12,8 @@ import com.app.customers.CustomerIdentityService;
 import com.app.feedback.FeedbackRepository;
 import com.app.leads.LeadRepository;
 import com.app.leads.LeadService;
+import com.app.modelserver.ChatRuntimeService;
 import com.app.modelserver.LlmInstanceManager;
-import com.app.modelserver.PythonChatClient;
 import com.app.modelserver.dto.ChatResponse;
 import com.app.purchases.PurchaseRequestService;
 import com.app.tenant.TenantContext;
@@ -55,7 +55,7 @@ class TelegramWebhookControllerIdentityTest {
     @Mock
     private LeadRepository leadRepo;
     @Mock
-    private PythonChatClient python;
+    private ChatRuntimeService chatRuntimeService;
     @Mock
     private LlmInstanceManager llmInstanceManager;
     @Mock
@@ -102,8 +102,6 @@ class TelegramWebhookControllerIdentityTest {
         when(bindingRepo.findBySecretPathAndStatus(secretPath, "ACTIVE")).thenReturn(Optional.of(binding));
         when(botRepo.findById(chatbotId)).thenReturn(Optional.of(bot));
         when(leadRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(any(), any())).thenReturn(Optional.empty());
-        when(llmInstanceManager.getOrStartSession(tenantId, bot))
-                .thenReturn(new LlmInstanceManager.Session("http://127.0.0.1:8101", false, false));
 
         when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
                 tenantId,
@@ -135,17 +133,18 @@ class TelegramWebhookControllerIdentityTest {
                     .sorted(Comparator.comparing(Message::getCreatedAt))
                     .toList();
         });
-        when(python.chat(
-                eq("http://127.0.0.1:8101"),
+        when(chatRuntimeService.chat(
+                eq(tenantId),
+                eq(bot),
                 eq("Xin chào"),
                 any(List.class),
-                eq(bot),
                 any(String.class),
-                eq("telegram"),
-                eq(tenantId.toString()),
-                eq(false),
-                eq(false)
-        )).thenReturn(new ChatResponse("Chào bạn!", 8, "model-a", "adapter-a", false, null, null, Map.of("mode", "tenant_sales")));
+                eq("telegram")
+        )).thenReturn(new ChatRuntimeService.Result(
+                new ChatResponse("Chào bạn!", 8, "model-a", "adapter-a", false, null, null, Map.of("mode", "tenant_sales")),
+                "http://127.0.0.1:8101",
+                ""
+        ));
 
         TelegramWebhookController controller = new TelegramWebhookController(
                 bindingRepo,
@@ -153,7 +152,7 @@ class TelegramWebhookControllerIdentityTest {
                 new ChannelConversationService(conversationRepository, customerIdentityService),
                 msgRepo,
                 leadRepo,
-                python,
+                chatRuntimeService,
                 llmInstanceManager,
                 sendService,
                 leadService,
@@ -198,7 +197,7 @@ class TelegramWebhookControllerIdentityTest {
                         && request.shouldResetBusinessFlags())
         );
         verify(msgRepo, never()).save(any(Message.class));
-        verify(python, never()).chat(any(String.class), any(String.class), any(List.class), any(ChatbotInstance.class), any(String.class), any(String.class), any(String.class), any(Boolean.class), any(Boolean.class));
+        verify(chatRuntimeService, never()).chat(any(UUID.class), any(ChatbotInstance.class), any(String.class), any(List.class), any(String.class), any(String.class));
         verify(sendService).sendText("bot-token", chatId, "Đã reset hội thoại hiện tại.");
     }
 
@@ -271,7 +270,7 @@ class TelegramWebhookControllerIdentityTest {
                 null
         );
         verify(msgRepo, never()).save(any(Message.class));
-        verify(python, never()).chat(any(String.class), any(String.class), any(List.class), any(ChatbotInstance.class), any(String.class), any(String.class), any(String.class), any(Boolean.class), any(Boolean.class));
+        verify(chatRuntimeService, never()).chat(any(UUID.class), any(ChatbotInstance.class), any(String.class), any(List.class), any(String.class), any(String.class));
         verify(sendService).sendText("bot-token", chatId, "Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.");
     }
 
@@ -282,7 +281,7 @@ class TelegramWebhookControllerIdentityTest {
                 new ChannelConversationService(conversationRepository, customerIdentityService),
                 msgRepo,
                 leadRepo,
-                python,
+                chatRuntimeService,
                 llmInstanceManager,
                 sendService,
                 leadService,
@@ -314,22 +313,30 @@ class TelegramWebhookControllerIdentityTest {
         return conversation;
     }
 
-    private static void invokeHandle(TelegramWebhookController controller, String secretPath, Map<String, Object> payload) throws Exception {
+    private static void invokeHandle(TelegramWebhookController controller, String secretPath, Map<String, Object> update) throws Exception {
         Method method = TelegramWebhookController.class.getDeclaredMethod("handle", String.class, Map.class);
         method.setAccessible(true);
-        method.invoke(controller, secretPath, payload);
+        method.invoke(controller, secretPath, update);
     }
 
     private static Map<String, Object> telegramPayload(String chatId, String text, String firstName, String lastName, Long updateId) {
         return Map.of(
                 "update_id", updateId,
                 "message", Map.of(
-                        "text", text,
-                        "chat", Map.of("id", chatId),
+                        "message_id", 1,
                         "from", Map.of(
+                                "id", 42L,
+                                "is_bot", false,
                                 "first_name", firstName,
-                                "last_name", lastName
-                        )
+                                "last_name", lastName,
+                                "language_code", "vi"
+                        ),
+                        "chat", Map.of(
+                                "id", chatId,
+                                "type", "private"
+                        ),
+                        "date", (int) (Instant.now().getEpochSecond()),
+                        "text", text
                 )
         );
     }

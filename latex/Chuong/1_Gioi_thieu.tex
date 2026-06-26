@@ -1,0 +1,75 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\section{Đặt vấn đề}
+\label{section:1.1}
+
+Hiện nay, thương mại điện tử và các kênh bán hàng trực tuyến đã trở thành một phần quan trọng trong hoạt động kinh doanh của các cửa hàng nội thất. Người mua có thể xem sản phẩm trên website, fanpage hoặc sàn thương mại điện tử. Tuy nhiên, với sản phẩm nội thất, việc mua hàng không chỉ dừng ở xem ảnh, mô tả và giá. Người mua thường cần so sánh nhiều sản phẩm, xem xét chất liệu, kích thước, kiểu dáng, phong cách và đánh giá mức giá có hợp lý hay không.
+
+Đối với cửa hàng nội thất, danh mục sản phẩm có thể lớn và thay đổi theo thời gian. Mỗi sản phẩm có nhiều thuộc tính như giá, chất liệu, kích thước, mô tả, chính sách hoặc tài liệu liên quan. Nếu dữ liệu này không được tổ chức và khai thác tốt, việc tư vấn dễ phụ thuộc vào nhân viên, thiếu nhất quán và khó mở rộng khi số lượng khách hàng tăng.
+
+Một vấn đề khác là các hệ thống chatbot thông thường thường chỉ trả lời theo kịch bản hoặc trả lời chung chung nếu không gắn với dữ liệu thực tế của cửa hàng. Trong khi đó, để hỗ trợ bán hàng nội thất, chatbot cần trả lời dựa trên dữ liệu sản phẩm, tài liệu và ngữ cảnh hội thoại. Chatbot cũng cần hỗ trợ các nghiệp vụ cụ thể như tư vấn theo cửa hàng, so sánh sản phẩm, tham chiếu giá và tạo yêu cầu mua hàng sau tư vấn.
+
+Từ các vấn đề trên, đề tài hướng đến xây dựng hệ thống \textit{Multi-tenant RAG chatbot hỗ trợ tư vấn bán hàng, so sánh và tham chiếu giá sản phẩm nội thất}. Hệ thống sử dụng mô hình \textit{multi-tenant} để nhiều cửa hàng cùng dùng một nền tảng nhưng vẫn tách biệt dữ liệu. Đồng thời, hệ thống sử dụng hướng \textit{Retrieval-Augmented Generation} để chatbot truy xuất nguồn tri thức trước khi gọi Claude Sonnet sinh câu trả lời, giúp nội dung tư vấn bám sát dữ liệu hơn.
+
+Trọng tâm của đề tài không chỉ là xây dựng một chatbot RAG đơn lẻ, mà là thiết kế và triển khai pipeline RAG trong kiến trúc multi-tenant. Pipeline này cần hỗ trợ nhiều cửa hàng, nhiều kênh hội thoại như Messenger và Telegram, đồng thời quản lý được các dữ liệu phát sinh sau tư vấn như hội thoại, lead và yêu cầu mua hàng. Cách tiếp cận này giúp hệ thống gắn quá trình hỏi đáp của chatbot với quy trình vận hành bán hàng thực tế của cửa hàng.
+
+\section{Mục tiêu và phạm vi đề tài}
+\label{section:1.2}
+
+Mục tiêu của đề tài là xây dựng một hệ thống chatbot tư vấn bán hàng nội thất phục vụ nhiều cửa hàng trên cùng một nền tảng. Mỗi cửa hàng có dữ liệu, chatbot, hội thoại, lead và yêu cầu mua hàng riêng. Hệ thống cần hỗ trợ người mua so sánh sản phẩm, tham chiếu giá và hỗ trợ cửa hàng quản lý thông tin phát sinh sau tư vấn.
+
+Cụ thể, đề tài tập trung vào bảy mục tiêu chính. Thứ nhất, hệ thống xây dựng chatbot RAG sử dụng Claude Sonnet để sinh câu trả lời tư vấn dựa trên dữ liệu đã truy xuất. Thứ hai, hệ thống áp dụng kiến trúc multi-tenant để nhiều cửa hàng có thể sử dụng chung một nền tảng nhưng vẫn tách biệt dữ liệu. Thứ ba, hệ thống quản lý và xử lý nguồn tri thức cho chatbot, bao gồm dữ liệu sản phẩm, tài liệu cửa hàng và dữ liệu tham chiếu. Thứ tư, hệ thống hỗ trợ các chế độ hội thoại chính như tư vấn theo cửa hàng, so sánh sản phẩm và tham chiếu giá. Thứ năm, hệ thống lưu vết hội thoại, lead và yêu cầu mua hàng để cửa hàng tiếp tục xử lý sau tư vấn. Thứ sáu, hệ thống hỗ trợ liên kết định danh khách hàng giữa nhiều kênh hội thoại, giúp cửa hàng nhận biết cùng một người dùng khi họ tương tác qua các nền tảng khác nhau. Thứ bảy, hệ thống kiểm soát pipeline RAG theo từng bước, gồm chọn tenant, chọn phiên bản knowledge base, truy xuất dữ liệu, giới hạn context/token, sinh câu trả lời và kiểm tra tác động nghiệp vụ sau phản hồi.
+
+Phạm vi của đề tài là xây dựng hệ thống demo gồm backend nghiệp vụ, chatbot service, cơ sở dữ liệu, knowledge base, giao diện quản trị, giao diện chat và cơ chế tích hợp kênh ngoài. Trong đó, backend nghiệp vụ xử lý xác thực, phân quyền, tenant, chatbot, hội thoại, lead, yêu cầu mua hàng, binding kênh chat và dữ liệu định danh khách hàng. Chatbot service điều phối luồng RAG, truy xuất dữ liệu liên quan, kiểm soát context/token, xây dựng prompt/ngữ cảnh và gọi Claude Sonnet để sinh câu trả lời.
+
+Hệ thống tập trung vào các nhóm chức năng chính. Nhóm thứ nhất là tư vấn theo cửa hàng, trong đó chatbot sử dụng dữ liệu riêng của cửa hàng để trả lời và hỗ trợ tạo lead hoặc yêu cầu mua hàng. Nhóm thứ hai là tư vấn và so sánh sản phẩm theo các tiêu chí thống nhất. Nhóm thứ ba là tham chiếu giá, trong đó hệ thống đưa ra khoảng giá tham khảo dựa trên dữ liệu hiện có. Nhóm thứ tư là quản lý hội thoại, lead và yêu cầu mua hàng phát sinh từ chatbot. Nhóm thứ năm là tích hợp nhiều kênh hội thoại như web chat, Messenger và Telegram thông qua webhook. Nhóm thứ sáu là liên kết định danh khách hàng giữa các kênh để cửa hàng có thể nhận biết, theo dõi và xử lý nhu cầu của cùng một người dùng trong nhiều điểm chạm khác nhau.
+
+Trong phạm vi đồ án, hệ thống không đặt mục tiêu xây dựng một sàn thương mại điện tử hoàn chỉnh. Các chức năng như thanh toán trực tuyến, vận chuyển, quản lý kho chuyên sâu hoặc chăm sóc sau bán hàng không phải trọng tâm của đề tài. Chức năng tham chiếu giá chỉ có ý nghĩa trong phạm vi dữ liệu hiện có của hệ thống, không đại diện cho toàn bộ thị trường nội thất.
+
+\section{Định hướng giải pháp}
+\label{section:1.3}
+
+Đề tài định hướng xây dựng hệ thống theo kiến trúc gồm ba thành phần chính: Spring Boot backend, FastAPI chatbot service và PostgreSQL kết hợp knowledge base.
+
+Spring Boot backend tiếp nhận request từ giao diện web hoặc kênh chat, quản lý tenant, chatbot, hội thoại, lead, yêu cầu mua hàng, binding kênh ngoài và thông tin định danh khách hàng. Backend cũng kiểm soát dữ liệu theo \texttt{tenant\_id} để mỗi cửa hàng chỉ truy cập dữ liệu thuộc phạm vi của mình. Với các kênh ngoài như Messenger và Telegram, backend ánh xạ tài khoản/kênh bên ngoài với chatbot, tenant và hồ sơ khách hàng nội bộ để hạn chế việc cùng một người dùng bị ghi nhận rời rạc trên nhiều nền tảng.
+
+FastAPI chatbot service điều phối pipeline RAG. Service này nhận yêu cầu từ backend, xác định chế độ hội thoại, sử dụng thông tin tenant và phiên bản knowledge base phù hợp, truy xuất dữ liệu liên quan, giới hạn context/token, xây dựng prompt/ngữ cảnh và gọi Claude Sonnet để sinh câu trả lời. Kết quả trả về không chỉ gồm nội dung phản hồi, mà còn có các thông tin phục vụ kiểm soát luồng như phạm vi dữ liệu sử dụng, chế độ hội thoại và tín hiệu nghiệp vụ nếu có.
+
+\begin{table}[H]
+\centering
+\caption{Các chế độ xử lý chính của chatbot}
+\label{table:chatbot_modes}
+\begin{tabular}{|p{0.25\textwidth}|p{0.65\textwidth}|}
+\hline
+\textbf{Chế độ} & \textbf{Mô tả} \\
+\hline
+\texttt{tenant\_sales} & Tư vấn theo dữ liệu riêng của từng cửa hàng và hỗ trợ tạo lead hoặc yêu cầu mua hàng sau tư vấn. \\
+\hline
+\texttt{general\_compare} & Tư vấn và so sánh sản phẩm theo các tiêu chí thống nhất như giá, chất liệu, kích thước và kiểu dáng. \\
+\hline
+\texttt{market\_price} & Tham chiếu khoảng giá sản phẩm dựa trên dữ liệu hiện có trong hệ thống. \\
+\hline
+\end{tabular}
+\end{table}
+
+Nguồn tri thức của hệ thống gồm dữ liệu sản phẩm, tài liệu cửa hàng và dữ liệu tham chiếu. Các dữ liệu này được tổ chức theo tenant, theo phạm vi sử dụng và theo phiên bản knowledge base để phục vụ truy xuất khi chatbot tư vấn, so sánh sản phẩm hoặc tham chiếu giá. Sau quá trình tư vấn, hệ thống lưu lại hội thoại, lead, yêu cầu mua hàng và thông tin kênh tương tác để nhân viên cửa hàng xem lại, nhận xử lý và cập nhật trạng thái.
+
+Như vậy, định hướng giải pháp của đề tài tập trung vào sáu vấn đề chính: nâng cao chất lượng câu trả lời chatbot, phục vụ nhiều cửa hàng trên cùng nền tảng, quản lý nguồn tri thức theo tenant và phiên bản, kiểm soát pipeline RAG theo từng bước, liên kết định danh khách hàng trên nhiều kênh hội thoại và truy vết dữ liệu sau tư vấn để cải thiện chất lượng hệ thống.
+
+\section{Bố cục đồ án}
+\label{section:1.4}
+
+Phần còn lại của báo cáo đồ án tốt nghiệp này được tổ chức như sau.
+
+Chương~\ref{chapter:Related_works} trình bày khảo sát hiện trạng và phân tích yêu cầu của hệ thống. Nội dung chương tập trung vào nhu cầu của người mua hàng, cửa hàng nội thất và các chức năng cần có như tư vấn theo cửa hàng, so sánh sản phẩm, tham chiếu giá, quản lý hội thoại, lead và yêu cầu mua hàng.
+
+Chương~\ref{chapter:Methodology} trình bày cơ sở lý thuyết và công nghệ sử dụng. Nội dung chính gồm mô hình multi-tenant, RAG, knowledge base, Claude Sonnet, Spring Boot, FastAPI, PostgreSQL, JWT, webhook và Docker Compose.
+
+Chương~\ref{chapter:Experiment} trình bày thiết kế, triển khai và kiểm thử hệ thống. Chương này mô tả kiến trúc tổng thể, luồng xử lý chatbot, xử lý theo tenant, quản lý dữ liệu, giao diện, cơ sở dữ liệu, triển khai Docker Compose và các kiểm thử chính.
+
+Chương~\ref{chapter:SolutionAndContribution} trình bày các giải pháp và đóng góp chính của đồ án. Nội dung chương tập trung vào thiết kế pipeline RAG trong kiến trúc multi-tenant, kiểm soát dữ liệu theo tenant và phiên bản knowledge base, tích hợp nhiều kênh hội thoại, liên kết định danh khách hàng, quản lý context/token và truy vết tác động nghiệp vụ sau tư vấn như hội thoại, lead và yêu cầu mua hàng.
+
+Chương~\ref{chapter:conclusion} tổng kết kết quả đạt được, nêu hạn chế và đề xuất hướng phát triển tiếp theo cho hệ thống.
+
+\end{document}

@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16
+    build: ./postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-global_admin}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}

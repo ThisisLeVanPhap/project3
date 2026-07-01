@@ -1,4 +1,5 @@
 import unittest
+from types import SimpleNamespace
 
 from app.purchase_request import build_purchase_request_draft
 from app.sales_slots import extract_sales_slots, score_lead
@@ -13,6 +14,7 @@ from app.sales_state import (
     _has_recommendation_readiness,
     _has_specific_product_subtype,
 )
+from app.sales_response_renderer import render_sales_response
 
 
 PRODUCTS = [
@@ -173,6 +175,56 @@ class MaterialFalsePositiveFixTests(unittest.TestCase):
         # material should be detected for bare "go" (word boundary match)
         # state depends on whether room is also extracted; with material it should be suggest
         self.assertEqual(state.current_stage, "suggest")
+
+
+class CategoryAwareDiscoveryQuestionTests(unittest.TestCase):
+    """Phase 3: category-aware discovery questions in render_sales_response."""
+
+    def _make_state(self, category, missing_fields, slots=None):
+        s = SimpleNamespace()
+        s.missing_fields = missing_fields
+        s.slots = dict(slots or {})
+        s.slots.setdefault("product_category", category)
+        s.slots.setdefault("product_type", category)
+        return s
+
+    def test_ghe_discovery_asks_about_purpose(self):
+        state = self._make_state("Ghế", ["room_or_space", "budget"])
+        reply = render_sales_response("ask_discovery", None, state)
+        self.assertIn("mục đích", reply.lower())
+        self.assertIn("ghế", reply.lower())
+        self.assertIn("ngân sách", reply.lower())
+        self.assertNotIn("Mình tìm thấy", reply)
+
+    def test_sofa_discovery_asks_about_space(self):
+        state = self._make_state("Sofa", ["room_or_space", "budget"])
+        reply = render_sales_response("ask_discovery", None, state)
+        self.assertIn("không gian", reply.lower())
+        self.assertIn("sofa", reply.lower())
+        self.assertIn("ngân sách", reply.lower())
+
+    def test_ban_discovery_asks_about_purpose(self):
+        state = self._make_state("Bàn", ["room_or_space", "budget"])
+        reply = render_sales_response("ask_discovery", None, state)
+        self.assertIn("mục đích", reply.lower())
+        self.assertIn("bàn", reply.lower())
+
+    def test_no_listing_in_discovery_reply(self):
+        state = self._make_state("Sofa", ["room_or_space", "budget"])
+        reply = render_sales_response("ask_discovery", None, state)
+        self.assertNotIn("Mình tìm thấy", reply)
+        self.assertNotIn("một số sản phẩm", reply)
+        self.assertNotIn("[P", reply)
+        self.assertNotIn("Link nguồn:", reply)
+
+    def test_product_type_missing_asks_type(self):
+        state = self._make_state("", ["product_type"])
+        reply = render_sales_response("ask_discovery", None, state)
+        self.assertIn("sản phẩm nội thất", reply)
+        self.assertIn("sofa", reply)
+        self.assertIn("bàn", reply)
+        self.assertIn("giường", reply)
+        self.assertIn("tủ", reply)
 
 
 class ConsultationStageForIntegrationTests(unittest.TestCase):

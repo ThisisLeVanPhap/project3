@@ -176,6 +176,40 @@ class SalesRuntimeIntegrationTests(unittest.TestCase):
         self.assertEqual(payload["debug"]["last_recommended_count"], 2)
         self.assertEqual(payload["debug"]["sales_action_taken"], "none")
 
+    def test_vague_ghe_query_does_not_list_products_in_active_mode(self):
+        response = self._turn("sales-vague-ghe", "tu van t 1 cai ghe di", sales_mode="active")
+        payload = response.json()
+        self.assertEqual(payload["model"], "sales-template")
+        self.assertEqual(payload["debug"]["sales_action_taken"], "ask_discovery")
+        self.assertEqual(payload["debug"]["current_stage"], "discover")
+        self.assertEqual(payload["debug"]["next_best_action"], "ask_discovery_question")
+        reply = payload["reply"]
+        self.assertNotIn("Mình tìm thấy", reply)
+        self.assertNotIn("một số sản phẩm", reply)
+        self.assertNotIn("[P", reply)
+        self.assertNotIn("Link nguồn:", reply)
+        self.assertNotIn("https://", reply)
+        # Should ask about purpose/use of the chair
+        self.assertIn("ghế", reply.lower())
+        self.assertIn("mục đích", reply)
+
+    def test_vague_sofa_query_does_not_list_products_in_active_mode(self):
+        response = self._turn("sales-vague-sofa", "goi y sofa di", sales_mode="active")
+        payload = response.json()
+        self.assertEqual(payload["model"], "sales-template")
+        self.assertEqual(payload["debug"]["sales_action_taken"], "ask_discovery")
+        self.assertEqual(payload["debug"]["current_stage"], "discover")
+        self.assertEqual(payload["debug"]["next_best_action"], "ask_discovery_question")
+        reply = payload["reply"]
+        self.assertNotIn("Mình tìm thấy", reply)
+        self.assertNotIn("một số sản phẩm", reply)
+        self.assertNotIn("[P", reply)
+        self.assertNotIn("Link nguồn:", reply)
+        self.assertNotIn("https://", reply)
+        # Should ask about space/room for the sofa
+        self.assertIn("sofa", reply.lower())
+        self.assertIn("không gian", reply)
+
     def test_state_persists_and_resolves_second_product(self):
         conversation_id = "sales-persist"
         self._turn(conversation_id, "Có rèm nào dưới 1 triệu không?", sales_mode="shadow")

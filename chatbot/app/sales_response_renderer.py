@@ -76,9 +76,23 @@ def render_sales_response(action: str, draft: Dict[str, Any] | None, state: Any)
 
     if action == "ask_discovery":
         missing = list(getattr(state, "missing_fields", []) or [])
+        slots = getattr(state, "slots", {}) or {}
+        raw_cat = (slots.get("product_category") or slots.get("product_type") or "")
+        import unicodedata
+        cat_folded = unicodedata.normalize("NFKD", raw_cat).encode("ascii", "ignore").decode("ascii").lower()
         if "product_type" in missing:
             return "Bạn đang muốn tìm sản phẩm nội thất nào: sofa, bàn, giường, tủ hay món khác?"
         if "room_or_space" in missing:
+            if "ghe" in cat_folded:
+                return "Được ạ. Bạn muốn tìm ghế dùng cho mục đích nào: ghế làm việc, ghế ăn, ghế thư giãn hay ghế trang trí? Bạn cho mình thêm ngân sách dự kiến và chất liệu/màu sắc mong muốn nhé."
+            if "sofa" in cat_folded:
+                return "Được ạ. Bạn định đặt sofa ở không gian nào và diện tích khoảng bao nhiêu? Bạn cho mình thêm ngân sách dự kiến, chất liệu hoặc màu sắc mong muốn nhé."
+            if "ban" in cat_folded:
+                return "Được ạ. Bạn tìm bàn cho mục đích nào: bàn ăn, bàn làm việc hay bàn trang trí? Bạn cho mình thêm kích thước, ngân sách dự kiến và chất liệu/nơi đặt nhé."
+            if "tu" in cat_folded or "giuong" in cat_folded or "giong" in cat_folded:
+                return "Được ạ. Bạn định đặt sản phẩm ở phòng nào, kích thước và ngân sách dự kiến khoảng bao nhiêu? Mình sẽ tìm mẫu phù hợp."
+            if "den" in cat_folded:
+                return "Được ạ. Bạn cần đèn cho không gian nào, phong cách và ngân sách dự kiến khoảng bao nhiêu? Mình sẽ gợi ý mẫu phù hợp."
             return "Bạn định đặt sản phẩm ở phòng nào hoặc không gian rộng/chật khoảng bao nhiêu?"
         if "budget" in missing:
             return "Ngân sách dự kiến của bạn khoảng bao nhiêu để mình lọc lựa chọn phù hợp hơn?"

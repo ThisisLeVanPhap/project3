@@ -117,6 +117,13 @@ def render_sales_response(action: str, draft: Dict[str, Any] | None, state: Any)
         return "Mình hiểu bạn vẫn đang cân nhắc. Bạn muốn mình so sánh thêm theo giá, chất liệu hay độ phù hợp không gian?"
 
     if action == "ask_product":
+        slots = getattr(state, "slots", {}) or {}
+        pending_sku = slots.get("pending_sku_ref")
+        if pending_sku:
+            return (
+                f"Mình chưa kiểm tra được mã {pending_sku} trong dữ liệu hiện có. "
+                "Bạn gửi giúp mình tên hoặc link sản phẩm, hoặc để lại số điện thoại để cửa hàng kiểm tra nhé."
+            )
         return (
             "Bạn muốn đặt sản phẩm nào trong các mẫu mình vừa gợi ý? "
             "Bạn có thể nói \"P1\", \"mẫu thứ 2\" hoặc gửi tên sản phẩm."

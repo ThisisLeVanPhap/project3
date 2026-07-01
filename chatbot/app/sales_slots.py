@@ -26,7 +26,7 @@ PRODUCT_INQUIRY_RE = re.compile(r"\b(giá|gia|bao nhiêu|bao nhieu|mẫu|mau|s�
 OUT_OF_SCOPE_RE = re.compile(r"\b(thời tiết|thoi tiet|bóng đá|bong da|chứng khoán|chung khoan|nấu ăn|nau an|du lịch|du lich|điện thoại|dien thoai|phone|smartphone|laptop|máy tính|may tinh|politics|weather|football)\b", re.I)
 BUDGET_RE = re.compile(r"\b(?:ngân sách|ngan sach|tầm giá|tam gia|khoảng|khoang|dưới|duoi|budget)\s*([0-9]+(?:[.,][0-9]+)?)\s*(triệu|trieu|tr|k|nghìn|nghin|vnd|vnđ|usd|\$)?\b", re.I)
 PRODUCT_REFERENCE_RE = re.compile(
-    r"\b(p\s*\d+|mau\s*(?:thu\s*)?\d+|mau\s*thu\s*(?:mot|hai|ba|bon|tu|nam)|san pham\s*(?:thu\s*)?\d+|cai\s*(?:dau|cuoi))\b",
+    r"\b(p\s*\d+|mau\s*(?:thu\s*)?\d+|mau\s*thu\s*(?:mot|hai|ba|bon|tu|nam)|san pham\s*(?:thu\s*)?\d+|cai\s*(?:dau|cuoi)|[a-z]{2,6}-\d{2,8})\b",
     re.I,
 )
 PRODUCT_REFERENCE_QUESTION_RE = re.compile(
@@ -150,6 +150,22 @@ def is_product_reference_question(message: str) -> bool:
     return "?" in (message or "") or PRODUCT_REFERENCE_QUESTION_RE.search(folded) is not None
 
 
+SKU_REF_RE = re.compile(r"\b([A-Za-z]{2,6}[-_][A-Za-z0-9]{2,8})\b")
+
+
+def extract_sku_reference(text: str) -> str | None:
+    """Extract SKU/product code reference (e.g. GHO-239, GHS-42048, ABC-1234)."""
+    match = SKU_REF_RE.search(repair_mojibake(text or ""))
+    if match:
+        raw = match.group(1)
+        # Normalize: uppercase the alpha part, keep digits/hyphen as-is
+        parts = raw.rsplit("-", 1) if "-" in raw else raw.rsplit("_", 1)
+        if len(parts) == 2:
+            return f"{parts[0].upper()}-{parts[1]}"
+        return raw.upper()
+    return None
+
+
 def classify_primary_intent(intents: List[str]) -> str:
     for candidate in ("cancel", "handoff_request", "contact_provided", "purchase_intent", "out_of_scope", "product_inquiry"):
         if candidate in intents:
@@ -198,6 +214,11 @@ def extract_sales_slots(message: str) -> Dict[str, Any]:
     if categories:
         slots["product_category"] = categories[0]
         slots.setdefault("product_type", categories[0])
+
+    # Phase 6B: extract explicit SKU reference (e.g. GHO-239, GHS-42048)
+    sku_ref = extract_sku_reference(raw)
+    if sku_ref:
+        slots["product_sku_ref"] = sku_ref
 
     price = parse_price_constraint(raw)
     if price.min_price is not None:

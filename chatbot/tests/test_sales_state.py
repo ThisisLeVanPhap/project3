@@ -2,7 +2,7 @@ import unittest
 from types import SimpleNamespace
 
 from app.purchase_request import build_purchase_request_draft
-from app.sales_slots import extract_sales_slots, score_lead
+from app.sales_slots import extract_sales_slots, extract_sku_reference, score_lead
 from app.sales_state import (
     SalesConversationState,
     apply_message_to_state,
@@ -87,8 +87,9 @@ class SalesStateTests(unittest.TestCase):
         self.assertEqual(state.current_stage, "confirm")
         self.assertIn("room_or_space", consultation_missing_slots(state))
         self.assertIn("budget", consultation_missing_slots(state))
-        self.assertEqual(result["next_best_action"], "ask_discovery_question")
-        self.assertEqual(next_best_action(state, result["slots"]), "ask_discovery_question")
+        # Phase 6: purchase_intent + category -> ask_product (not ask_discovery_question)
+        self.assertEqual(result["next_best_action"], "ask_product")
+        self.assertEqual(next_best_action(state, result["slots"]), "ask_product")
 
     def test_consultation_known_slots_include_constraints(self):
         state = SalesConversationState(tenant_id="tenant-a", conversation_id="conv-known")
@@ -142,6 +143,27 @@ class RecommendationReadinessTests(unittest.TestCase):
         self.assertFalse(_has_specific_product_subtype({"product_category": "Ghe"}))
         self.assertFalse(_has_specific_product_subtype({"product_category": "Sofa"}))
         self.assertFalse(_has_specific_product_subtype({"product_category": "Ban"}))
+
+
+class SkuExtractionTests(unittest.TestCase):
+    """Phase 6D: SKU reference extraction."""
+
+    def test_sku_direct(self):
+        self.assertEqual(extract_sku_reference("GHO-239"), "GHO-239")
+
+    def test_sku_lowercase(self):
+        self.assertEqual(extract_sku_reference("gho-239"), "GHO-239")
+
+    def test_sku_in_sentence(self):
+        self.assertEqual(extract_sku_reference("Đèn thả trần GHO-239 tôi muốn mua"), "GHO-239")
+
+    def test_sku_slot_in_extract_sales_slots(self):
+        slots = extract_sales_slots("GHO-239 tôi muốn mua")
+        self.assertEqual(slots.get("product_sku_ref"), "GHO-239")
+
+    def test_sku_slot_in_full_message(self):
+        slots = extract_sales_slots("Đèn thả trần kiểu dáng đẹp giá rẻ GHO-239 mẫu a hay đấy t muốn mua")
+        self.assertEqual(slots.get("product_sku_ref"), "GHO-239")
 
 
 class MaterialFalsePositiveFixTests(unittest.TestCase):

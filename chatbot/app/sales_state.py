@@ -279,10 +279,13 @@ def _has_specific_product_subtype(slots: Dict[str, Any]) -> bool:
 
 def consultation_stage_for(state: SalesConversationState, slots: Dict[str, Any] | None = None) -> str:
     slots = slots or {}
-    intents = slots.get("intents") or state.slots.get("last_intents") or []
+    new_intents = slots.get("intents") or []
+    # Phase 6: treat ["unknown"] as no intent, fall back to preserved last_intents
+    intents = new_intents if new_intents not in ([], ["unknown"]) else (state.slots.get("last_intents") or [])
     if state.handoff_status == "sent":
         return "purchase_request"
-    if slots.get("is_product_reference_question") or slots.get("has_product_reference") and "purchase_intent" not in intents:
+    # Phase 6: purchase_intent overrides reference question detection
+    if not ("purchase_intent" in intents) and (slots.get("is_product_reference_question") or slots.get("has_product_reference")):
         return "compare"
     if slots.get("objection_type") or state.slots.get("objection_type"):
         return "handle_objection"
@@ -300,20 +303,20 @@ def next_best_action(state: SalesConversationState, slots: Dict[str, Any] | None
     intents = slots.get("intents") or []
     if state.handoff_status == "sent":
         return "send_purchase_request"
-    if slots.get("is_product_reference_question") or slots.get("has_product_reference"):
-        return "compare_options"
+    # Objection takes priority over purchase_intent (prevents false-positive "dat"/"đắt" matching)
     if slots.get("objection_type") or state.slots.get("objection_type"):
         return "handle_objection"
-    if state.confirmation_status == "pending":
-        return "ask_confirmation"
-    if "purchase_intent" in intents and state.selected_products and not state.contact and not state.handoff_required:
-        return "ask_contact"
-    if "purchase_intent" in intents and not state.selected_products:
-        if (state.slots.get("product_type") or state.slots.get("product_category")) and consultation_missing_slots(state):
-            return "ask_discovery_question"
+    # Phase 6: purchase_intent with product reference -> ask_product/ask_contact, not discovery
+    if "purchase_intent" in intents:
+        if state.selected_products and not state.contact and not state.handoff_required:
+            return "ask_contact"
+        if state.selected_products and state.contact:
+            return "ask_confirmation"
         return "ask_product"
     if slots.get("is_product_reference_question") or slots.get("has_product_reference"):
         return "compare_options"
+    if state.confirmation_status == "pending":
+        return "ask_confirmation"
     missing = consultation_missing_slots(state)
     if missing and state.current_stage == "discover":
         return "ask_discovery_question"
@@ -334,8 +337,15 @@ def apply_message_to_state(state: SalesConversationState, message: str) -> Dict[
         state.confirmation_status = "none"
         state.handoff_status = "not_ready"
     state.slots.update(incoming)
-    state.slots["last_intent"] = slots.get("intent")
-    state.slots["last_intents"] = slots.get("intents", [])
+    # Phase 6: preserve last_intents if new message has no meaningful intent
+    new_intent = slots.get("intent")
+    new_intents = slots.get("intents", [])
+    if new_intent not in (None, "unknown") and new_intents not in ([], ["unknown"]):
+        state.slots["last_intent"] = new_intent
+        state.slots["last_intents"] = new_intents
+    elif state.slots.get("last_intent") is None:
+        state.slots["last_intent"] = new_intent or "unknown"
+        state.slots["last_intents"] = new_intents or ["unknown"]
     state.slots["last_nlu_intent"] = slots.get("nlu_intent")
     for key in ("phone", "email"):
         if slots.get(key):
@@ -355,6 +365,11 @@ def apply_message_to_state(state: SalesConversationState, message: str) -> Dict[
             state.selected_products.append(resolved.product)
         state.slots["selected_product_id"] = resolved.product.get("sku") or resolved.product.get("pid") or resolved.product.get("source_url")
         state.slots["selected_product_name"] = resolved.product.get("product_name")
+    # Phase 6B: if user provided SKU reference but resolve failed, store pending SKU reference
+    # (do NOT create synthetic selected_product that blocks exact KB lookup)
+    sku_ref = slots.get("product_sku_ref")
+    if sku_ref:
+        state.slots["pending_sku_ref"] = sku_ref
 
     state.lead_score, state.lead_status = score_lead(slots, has_selected_product=bool(state.selected_products))
     purchase_score = score_purchase_intent(

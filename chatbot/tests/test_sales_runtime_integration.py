@@ -258,10 +258,117 @@ class SalesRuntimeIntegrationTests(unittest.TestCase):
 
         payload = response.json()
         self.assertEqual(payload["model"], "sales-template")
-        self.assertEqual(payload["debug"]["sales_action_taken"], "ask_discovery")
-        self.assertIn("room_or_space", payload["debug"]["missing_slots"])
+        # Phase 6: purchase_intent + category -> ask_product (which specific product?)
+        self.assertEqual(payload["debug"]["sales_action_taken"], "ask_product")
+        self.assertIn("sản phẩm", payload["reply"].lower())
+        self.assertIn("P1", payload["reply"])
         self.assertFalse(payload.get("trigger_purchase_request"))
-        self.assertIn("phòng", payload["reply"].lower())
+
+    def test_sku_purchase_intent_resolves_and_asks_contact(self):
+        """First-turn SKU + purchase_intent: resolve from KB, ask contact, not discovery/product."""
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            sku_kb = FakeRetriever([
+                _hit("den-gho239", "Đèn thả trần trang trí GHO-239", "GHO-239", 450000,
+                     "https://example.test/den-gho239", category="Đèn"),
+            ])
+            server.KB = sku_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = sku_kb
+
+            conv_id = "sales-sku-resolve"
+            response = self._turn(conv_id, "Đèn thả trần trang trí kiểu dáng đẹp và giá rẻ GHO-239 mẫu a hay đấy, t muốn mua",
+                                  sales_mode="active", mode="tenant_sales")
+            payload = response.json()
+            self.assertEqual(payload["model"], "sales-template")
+            self.assertEqual(payload["debug"]["sales_action_taken"], "ask_contact")
+            self.assertGreater(len(payload["debug"]["selected_products"]), 0)
+            sp = payload["debug"]["selected_products"][0]
+            real_url = "https://example.test/den-gho239"
+            self.assertEqual(sp.get("source_url"), real_url)
+            # purchase_request_status should reflect resolved product (needs contact, not product)
+            pr_status = payload["debug"].get("purchase_request_status")
+            self.assertNotEqual(pr_status, "needs_product", msg=f"status was {pr_status}")
+            reply = payload["reply"]
+            self.assertIn("GHO-239", reply)
+            self.assertIn("Đèn thả trần", reply)
+            self.assertIn(real_url, reply)
+            self.assertNotIn("Sản phẩm mã", reply)
+            self.assertNotIn("Bạn chia sẻ thêm 1–2 ưu tiên", reply)
+            self.assertNotIn("Mình chưa tìm thấy", reply)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    def test_sku_purchase_multi_turn_preserves_selected_product(self):
+        """Multi-turn: SKU resolve first turn, follow-up preserves product context."""
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            sku_kb = FakeRetriever([
+                _hit("den-gho239", "Đèn thả trần trang trí GHO-239", "GHO-239", 450000,
+                     "https://example.test/den-gho239", category="Đèn"),
+            ])
+            server.KB = sku_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = sku_kb
+
+            conv_id = "sales-sku-multi"
+            turn1 = self._turn(conv_id,
+                "Đèn thả trần trang trí kiểu dáng đẹp và giá rẻ GHO-239 mẫu a hay đấy, t muốn mua",
+                sales_mode="active", mode="tenant_sales")
+            p1 = turn1.json()
+            self.assertIn("GHO-239", p1["reply"])
+
+            turn2 = self._turn(conv_id, "phòng học đi của tôi đi",
+                               sales_mode="active", mode="tenant_sales")
+            p2 = turn2.json()
+            reply2 = p2["reply"]
+            self.assertNotIn("Mình chưa tìm thấy sản phẩm phù hợp", reply2)
+            self.assertNotIn("Mình chưa tìm thấy thông tin", reply2)
+            # Verify selected product is still the real KB product (not synthetic/fallback)
+            sp2 = p2["debug"].get("selected_products", [])
+            self.assertGreater(len(sp2), 0)
+            sp2_first = sp2[0]
+            self.assertEqual(sp2_first.get("sku"), "GHO-239")
+            self.assertEqual(sp2_first.get("source_url"), "https://example.test/den-gho239")
+            self.assertNotIn("Sản phẩm mã", sp2_first.get("product_name", ""))
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    def test_sku_not_in_kb_does_not_create_fake_product(self):
+        """SKU not in KB: no synthetic selected_product, ask_product with clear message."""
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            # KB has GHO-239 but user asks for GHO-999
+            sku_kb = FakeRetriever([
+                _hit("den-gho239", "Đèn thả trần trang trí GHO-239", "GHO-239", 450000,
+                     "https://example.test/den-gho239", category="Đèn"),
+            ])
+            server.KB = sku_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = sku_kb
+
+            conv_id = "sales-sku-notfound"
+            response = self._turn(conv_id, "GHO-999 t muốn mua",
+                                  sales_mode="active", mode="tenant_sales")
+            payload = response.json()
+            self.assertEqual(payload["model"], "sales-template")
+            selected = payload["debug"].get("selected_products", [])
+            self.assertEqual(len(selected), 0)
+            reply = payload["reply"]
+            self.assertIn("GHO-999", reply)
+            self.assertNotIn("Sản phẩm mã", reply)
+            self.assertNotIn("Bạn chia sẻ thêm 1–2 ưu tiên", reply)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
 
     def test_handle_objection_gets_controlled_reply(self):
         response = self._turn("sales-objection-price", "Mẫu này đắt quá", sales_mode="active")

@@ -389,13 +389,68 @@ def _sales_debug_payload(
     return payload
 
 
+from .retrievers.text import fold_accents as _fold_sku
+
+
+def _normalize_sku(sku: str) -> str:
+    """Normalize SKU for comparison: strip separators, lowercase."""
+    return sku.lower().replace("-", "").replace("_", "")
+
+
+def _resolve_sku_to_selected_product(
+    state: Any,
+    retrieval_hits: List[Any],
+    active_kb: Any,
+    sku_ref: str,
+    message: str,
+    tenant_id: Optional[str],
+    retrieval_mode: str,
+) -> None:
+    """Try to find a product matching sku_ref in retrieval_hits or KB, store in selected_products."""
+    from .retrieval_service import search_hits as _sku_search
+    sku_norm = _normalize_sku(sku_ref)
+
+    def _find_in_hits(hits):
+        for hit in hits:
+            if isinstance(hit, dict):
+                meta = hit.get("metadata") or {}
+                hit_sku = meta.get("sku") or hit.get("sku") or ""
+                hit_source = meta.get("source_url") or hit.get("source_url") or ""
+                hit_name = meta.get("product_name") or hit.get("product_name") or ""
+            else:
+                meta = getattr(hit, "metadata", {}) or {}
+                hit_sku = meta.get("sku") or getattr(hit, "sku", "") or ""
+                hit_source = meta.get("source_url") or getattr(hit, "source_url", "") or ""
+                hit_name = meta.get("product_name") or getattr(hit, "product_name", "") or ""
+            if hit_sku and _normalize_sku(str(hit_sku)) == sku_norm:
+                return hit
+            # Also check if sku_ref appears in source_url or title
+            if sku_ref.lower() in hit_source.lower() or sku_ref.lower() in str(getattr(hit, "title", "") or hit_name).lower():
+                return hit
+        return None
+
+    matched = _find_in_hits(retrieval_hits)
+    if matched is None and active_kb is not None:
+        sku_search = _sku_search(active_kb, sku_ref, k=10, tenant_id=tenant_id)
+        matched = _find_in_hits(sku_search)
+    if matched is not None:
+        from .sales_state import normalize_product as _norm_prod
+        prod = _norm_prod(matched, 1)
+        state.selected_products = [prod]
+        state.slots["selected_product_id"] = _normalize_sku(sku_ref)
+        state.slots["selected_product_name"] = (prod.get("product_name") or matched.get("title") or sku_ref)
+        state.slots["selected_product_sku"] = sku_ref
+
+
 def _sales_action_from_state(
     state: SalesConversationState,
     sales_result: Dict[str, Any],
     draft: Optional[Dict[str, Any]],
 ) -> str:
     slots = sales_result.get("slots") or {}
-    intents = slots.get("intents") or []
+    current_intents = slots.get("intents") or []
+    # Phase 6: fall back to preserved state intents when current message has no meaningful intent
+    intents = current_intents if current_intents not in ([], ["unknown"]) else (state.slots.get("last_intents") or [])
     status = (draft or {}).get("status")
     if "cancel" in intents:
         return "cancelled"
@@ -404,9 +459,22 @@ def _sales_action_from_state(
     if "handoff_request" in intents:
         return "handoff"
     if state.current_stage == "discover" and state.slots.get("next_best_action") == "ask_discovery_question":
+        # Phase 6: purchase_intent with product reference -> ask_product/ask_contact, not discovery
+        if "purchase_intent" in intents:
+            if state.selected_products:
+                return "ask_contact"
+            if slots.get("has_product_reference") or state.slots.get("product_type") or state.slots.get("product_category"):
+                return "ask_product"
         return "ask_discovery"
-    if "purchase_intent" in intents and not state.selected_products and (state.slots.get("product_type") or state.slots.get("product_category")) and state.slots.get("consultation_missing_slots"):
-        return "ask_discovery"
+    # Phase 6: purchase_intent with product context -> route to ask_product/ask_contact
+    if "purchase_intent" in intents and not state.selected_products:
+        if state.slots.get("product_type") or state.slots.get("product_category") or slots.get("has_product_reference"):
+            return "ask_product"
+        return "none"
+    if "purchase_intent" in intents and state.selected_products:
+        if not state.contact and not state.handoff_required:
+            return "ask_contact"
+        return "ask_confirmation"
     if status == "draft" and ("purchase_intent" in intents or "contact_provided" in intents):
         return "ask_confirmation"
     if status == "needs_contact" and "purchase_intent" in intents:
@@ -1268,6 +1336,27 @@ def chat(req: ChatReq):
             if (sales_draft or {}).get("status") == "draft":
                 event_type = "draft_created" if previous_purchase_status != "draft" else "draft_updated"
                 _ensure_durable_pending_request(sales_state, sales_draft, event_type=event_type)
+        # Phase 6C: resolve pending_sku_ref from KB BEFORE sales action decision
+        pending_sku = sales_state.slots.get("pending_sku_ref")
+        if pending_sku and not sales_state.selected_products:
+            sku_resolved = False
+            sku_kb = get_kb_for_mode(retrieval_mode)
+            if sku_kb is not None:
+                sku_hits = search_hits(sku_kb, pending_sku, k=5, tenant_id=req.tenant_id)
+                if sku_hits:
+                    _resolve_sku_to_selected_product(
+                        sales_state, sku_hits, sku_kb,
+                        pending_sku, req.message, req.tenant_id,
+                        retrieval_mode,
+                    )
+                    if sales_state.selected_products:
+                        sku_resolved = True
+                        sales_state.slots.pop("pending_sku_ref", None)
+            if sku_resolved:
+                # Rebuild draft to reflect newly resolved selected_product
+                sales_draft = build_purchase_request_draft(sales_state, req.message)
+            # If not resolved: keep pending_sku_ref, do NOT create synthetic product.
+            # _sales_action_from_state will see purchase_intent + category -> ask_product.
         sales_action_taken = _sales_action_from_state(sales_state, sales_result, sales_draft)
         _save_sales_state(sales_state)
         if sales_mode == "active" and sales_action_taken != "none":
@@ -1419,6 +1508,27 @@ def chat(req: ChatReq):
                 tenant_id=req.tenant_id,
             )
             retrieval_hits = filter_by_category(retrieval_hits, _tenant_sales_requested_cat)
+
+    # Phase 6C: resolve pending_sku from KB hits -> real selected_product
+    if sales_state and _is_tenant_sales_mode(mode) and retrieval_hits:
+        pending_sku = sales_state.slots.get("pending_sku_ref") or (
+            (sales_result.get("slots") or {}).get("product_sku_ref") if sales_result else None)
+        if pending_sku:
+            need_real = not sales_state.selected_products
+            if not need_real:
+                need_real = all(p.get("pid") == "SKU" for p in sales_state.selected_products)
+            if need_real:
+                _resolve_sku_to_selected_product(
+                    sales_state, retrieval_hits, active_kb,
+                    pending_sku, req.message, req.tenant_id,
+                    retrieval_mode,
+                )
+                # KB resolve succeeded -> clear pending_sku
+                if any(p.get("pid") != "SKU" for p in sales_state.selected_products):
+                    sales_state.slots.pop("pending_sku_ref", None)
+        # KB resolve failed -> keep pending_sku, never create synthetic selected_product
+        # The early path (line 1339) already handled fallback; this block is a no-op.
+        pass
 
     internal_candidates = []
     price_refs = []

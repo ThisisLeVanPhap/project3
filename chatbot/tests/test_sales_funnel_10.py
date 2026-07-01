@@ -143,7 +143,7 @@ class SalesFunnel10Tests(unittest.TestCase):
         reply = render_off_topic_redirect_template()
 
         self.assertIn("sofa", state.slots.get("product_category", "").lower())
-        self.assertIn("noi that", reply)
+        self.assertIn("nội thất", reply)
 
 
 if __name__ == "__main__":

@@ -33,7 +33,7 @@ class SalesConversationEvaluatorTests(unittest.TestCase):
                     "lead_status": "hot",
                     "purchase_request_status": "draft",
                     "handoff_required": False,
-                    "should_ask_missing_info": False,
+                    "should_ask_missing_info": True,
                 },
             }
         ]
@@ -76,7 +76,7 @@ class SalesConversationEvaluatorTests(unittest.TestCase):
                 "lead_status": "cold",
                 "purchase_request_status": "needs_product",
                 "handoff_required": True,
-                "should_ask_missing_info": False,
+                "should_ask_missing_info": True,
             },
         }
         with tempfile.TemporaryDirectory() as tmpdir:

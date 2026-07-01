@@ -53,7 +53,6 @@ from .general_catalog_provider import (
 )
 from .general_compare_renderer import render_general_compare
 from .product_filters import filter_by_category
-from .retrievers.text import fold_accents as _fold_accents_cat
 from .market_data import (
     build_internal_catalog_provider,
     build_price_provider,

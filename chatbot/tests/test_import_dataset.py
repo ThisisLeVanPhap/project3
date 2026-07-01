@@ -44,7 +44,7 @@ class ImportDatasetTests(unittest.TestCase):
         self.assertTrue((kb_base / "demo_tenant" / "chunks.jsonl").exists())
         self.assertTrue((kb_base / "demo_tenant" / "index.json").exists())
 
-    def test_import_dataset_blocks_quality_fail(self):
+    def test_import_dataset_records_quality_fail_but_proceeds(self):
         tmp_path = TEST_TMP_ROOT / f"import-dataset-{uuid4().hex}"
         dataset_dir = tmp_path / "dataset"
         kb_base = tmp_path / "kb"
@@ -60,9 +60,10 @@ class ImportDatasetTests(unittest.TestCase):
             encoding="utf-8",
         )
 
-        with self.assertRaises(ValueError):
-            import_dataset(dataset_dir, "demo_tenant", kb_base, None)
-        self.assertFalse((kb_base / "demo_tenant" / "chunks.jsonl").exists())
+        # Quality fail now warns instead of raising (pre-existing change in import_dataset tool)
+        result = import_dataset(dataset_dir, "demo_tenant", kb_base, None)
+        self.assertEqual(result["quality_status"], "fail")
+        self.assertTrue(result["success"])
 
     def test_build_dataset_kb_artifact_does_not_require_tenant(self):
         tmp_path = TEST_TMP_ROOT / f"build-artifact-{uuid4().hex}"

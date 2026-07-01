@@ -247,6 +247,37 @@ def apply_price_constraint(results: Sequence[T], constraint: PriceConstraint | D
     return [item[1] for item in ranked] + [item[1] for item in unknown_price]
 
 
+def filter_by_category(
+    results: Sequence[T],
+    requested_category: str,
+    metadata_category_key: str = "category",
+    product_name_key: str = "product_name",
+) -> List[T]:
+    """Filter results to only include products whose category matches requested_category.
+
+    Matches by category metadata field first, then by product_name.
+    Does NOT pad - returns whatever matches, including empty list.
+    """
+    if not requested_category:
+        return list(results)
+    cat_folded = fold_accents(requested_category).lower()
+    matched: List[T] = []
+    for result in results:
+        meta = _metadata(result)
+        meta_cat = str(meta.get(metadata_category_key, "") or "")
+        meta_name = str(meta.get(product_name_key, "") or "")
+        if isinstance(result, dict):
+            name = str(result.get("product_name", "") or str(result.get("title", "")))
+        else:
+            name = str(getattr(result, "product_name", "") or getattr(result, "title", ""))
+        for candidate in (meta_cat, meta_name, name):
+            candidate_folded = fold_accents(candidate).lower()
+            if candidate_folded and (candidate_folded == cat_folded or cat_folded in candidate_folded or candidate_folded in cat_folded):
+                matched.append(result)
+                break
+    return matched
+
+
 def diversify_by_category(results: Sequence[T], categories: Sequence[str], k: int) -> List[T]:
     original = list(results)
     if len(categories) < 2 or k <= 0:

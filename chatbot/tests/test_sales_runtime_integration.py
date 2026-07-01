@@ -37,7 +37,7 @@ class FakeRetriever:
         return self.hits[:k]
 
 
-def _hit(doc_id, product_name, sku, price, url):
+def _hit(doc_id, product_name, sku, price, url, category="Rèm"):
     return RetrievalResult(
         doc_id=doc_id,
         chunk_id=f"{doc_id}#0",
@@ -48,7 +48,7 @@ def _hit(doc_id, product_name, sku, price, url):
         metadata={
             "doc_type": "product",
             "product_name": product_name,
-            "category": "Rèm",
+            "category": category,
             "price": price,
             "currency": "VND",
             "sku": sku,
@@ -117,10 +117,10 @@ class SalesRuntimeIntegrationTests(unittest.TestCase):
             },
         )
 
-    def _turn(self, conversation_id, message, sales_mode="active", tenant_id="tenant-a", answer_mode="template"):
+    def _turn(self, conversation_id, message, sales_mode="active", tenant_id="tenant-a", answer_mode="template", mode="general_compare"):
         gen = {
             "provider": "stub",
-            "mode": "general_compare",
+            "mode": mode,
             "retrieval_mode": "keyword",
             "retrieval_top_k": 4,
             "answer_mode": answer_mode,
@@ -175,6 +175,37 @@ class SalesRuntimeIntegrationTests(unittest.TestCase):
         self.assertEqual(payload["debug"]["sales_mode"], "shadow")
         self.assertEqual(payload["debug"]["last_recommended_count"], 2)
         self.assertEqual(payload["debug"]["sales_action_taken"], "none")
+
+    def test_tenant_sales_filters_products_by_requested_category(self):
+        # Override KB with mixed-category products
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            mixed_kb = FakeRetriever([
+                _hit("ghe-vp", "Ghế văn phòng Ergo", "GHE-001", 2300000, "https://example.test/ghe-vp"),
+                _hit("vach-ngan", "Vách ngăn trang trí GHO-595", "GHO-595", 2100000, "https://example.test/vach-ngan"),
+                _hit("den-tha", "Đèn thả trần GHO-256", "GHO-256", 400000, "https://example.test/den-tha"),
+            ])
+            server.KB = mixed_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = mixed_kb
+
+            conv_id = "sales-category-filter"
+            response = self._turn(conv_id, "tư vấn ghế văn phòng dưới 3 triệu",
+                                  sales_mode="active", mode="tenant_sales", answer_mode="template")
+
+            payload = response.json()
+            self.assertEqual(payload["model"], "product-template")
+            reply = payload["reply"]
+            self.assertIn("Ghế văn phòng", reply)
+            self.assertNotIn("Vách ngăn", reply)
+            self.assertNotIn("Đèn thả trần", reply)
+            self.assertNotIn("GHO-595", reply)
+            self.assertNotIn("GHO-256", reply)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
 
     def test_vague_ghe_query_does_not_list_products_in_active_mode(self):
         response = self._turn("sales-vague-ghe", "tu van t 1 cai ghe di", sales_mode="active")
@@ -250,6 +281,78 @@ class SalesRuntimeIntegrationTests(unittest.TestCase):
         self.assertEqual(payload["debug"]["sales_action_taken"], "none")
         self.assertIn("Rèm cuốn", payload["reply"])
 
+    def test_similar_suggestion_filters_by_category_in_tenant_sales(self):
+        """Similar suggestion with mixed-category KB: only Ghế in output.
+        Must pass through server.py:1604, NOT template/LlM return."""
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            mixed_kb = FakeRetriever([
+                _hit("ghe-a", "Ghế văn phòng A", "GHE-A", 2000000, "https://example.test/ghe-a", category="Ghế"),
+                _hit("vach-ngan", "Vách ngăn trang trí GHO-595", "GHO-595", 2100000, "https://example.test/vach-ngan", category="Đồ trang trí"),
+                _hit("den-tha", "Đèn thả trần GHO-256", "GHO-256", 400000, "https://example.test/den-tha", category="Đèn"),
+            ])
+            server.KB = mixed_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = mixed_kb
+
+            conv_id = "sales-similar-filter"
+            self._turn(conv_id, "ghe van phong duoi 3 trieu",
+                       sales_mode="active", mode="tenant_sales")
+
+            # llm mode bypasses template return so similar path at 1604 is reached
+            response = self._turn(conv_id, "co mau ghe nao tuong tu khong?",
+                                  sales_mode="active", mode="tenant_sales", answer_mode="llm")
+            payload = response.json()
+            reply = payload["reply"]
+            # Similar path fires and returns its own template text before LLM is called.
+            # The reply text is the similar suggestion template, NOT a stub LLM string.
+            self.assertIn("gợi ý một vài sản phẩm tương tự", reply)
+            self.assertIn("Ghế văn phòng", reply)
+            self.assertNotIn("GHO-595", reply)
+            self.assertNotIn("GHO-256", reply)
+            self.assertNotIn("Vách ngăn", reply)
+            self.assertNotIn("Đèn thả trần", reply)
+            # Not template mode, not stub-generator text
+            self.assertNotIn("[stub]", reply)
+            # Not sales-template (ask_discovery/ask_contact/etc.)
+            self.assertNotEqual(payload["model"], "sales-template")
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    def test_similar_suggestion_no_result_when_no_matching_category(self):
+        """Similar suggestion with only wrong-category hits: no-product fallback."""
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            wrong_kb = FakeRetriever([
+                _hit("vach-ngan", "Vách ngăn trang trí GHO-595", "GHO-595", 2100000, "https://example.test/vach-ngan", category="Đồ trang trí"),
+                _hit("den-tha", "Đèn thả trần GHO-256", "GHO-256", 400000, "https://example.test/den-tha", category="Đèn"),
+            ])
+            server.KB = wrong_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = wrong_kb
+
+            conv_id = "sales-similar-no-match"
+            self._turn(conv_id, "ghe van phong duoi 3 trieu",
+                       sales_mode="active", mode="tenant_sales")
+
+            response = self._turn(conv_id, "co mau tuong tu khong?",
+                                  sales_mode="active", mode="tenant_sales", answer_mode="llm")
+            payload = response.json()
+            reply = payload["reply"]
+            # Similar path fires with no items -> no-result fallback text
+            self.assertIn("chưa tìm thấy sản phẩm cùng loại", reply)
+            self.assertNotIn("GHO-595", reply)
+            self.assertNotIn("GHO-256", reply)
+            self.assertNotIn("Vách ngăn", reply)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
     def test_market_price_mode_never_handoff_even_with_purchase_text(self):
         response = self._turn("sales-market-guard", "Tôi muốn mua sofa, số tôi 0987654321", sales_mode="active", answer_mode="llm")
         payload = response.json()
@@ -268,6 +371,64 @@ class SalesRuntimeIntegrationTests(unittest.TestCase):
         self.assertIn("số điện thoại hoặc email", payload["reply"])
         self.assertEqual(payload["debug"]["purchase_request_status"], "needs_contact")
         self.assertEqual(payload["debug"]["sales_action_taken"], "ask_contact")
+
+    def test_main_listing_one_match_no_padding(self):
+        """Template listing with 1 Ghế + nhiều product sai loại: chỉ 1 Ghế, không pad."""
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            mixed_kb = FakeRetriever([
+                _hit("ghe-1", "Ghế làm việc Z", "GHE-1", 2500000, "https://example.test/ghe-1", category="Ghế"),
+                _hit("vach-ngan", "Vách ngăn trang trí", "VN-1", 2100000, "https://example.test/vach-ngan", category="Đồ trang trí"),
+                _hit("den-tha", "Đèn thả trần", "DEN-1", 400000, "https://example.test/den-tha", category="Đèn"),
+            ])
+            server.KB = mixed_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = mixed_kb
+
+            conv_id = "sales-listing-one"
+            # template mode -> render_product_answer -> render_listing_answer path
+            response = self._turn(conv_id, "ghe van phong duoi 3 trieu",
+                                  sales_mode="active", mode="tenant_sales", answer_mode="template")
+            payload = response.json()
+            reply = payload["reply"]
+            self.assertIn("Ghế làm việc", reply)
+            self.assertNotIn("Vách ngăn", reply)
+            self.assertNotIn("Đèn thả", reply)
+            self.assertNotIn("VN-1", reply)
+            self.assertNotIn("DEN-1", reply)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    def test_main_listing_zero_match_no_suggest(self):
+        """Template listing with 0 product đúng loại: no-result, không listing sai."""
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            mixed_kb = FakeRetriever([
+                _hit("vach-ngan", "Vách ngăn trang trí", "VN-1", 2100000, "https://example.test/vach-ngan", category="Đồ trang trí"),
+                _hit("den-tha", "Đèn thả trần", "DEN-1", 400000, "https://example.test/den-tha", category="Đèn"),
+            ])
+            server.KB = mixed_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = mixed_kb
+
+            conv_id = "sales-listing-zero"
+            response = self._turn(conv_id, "ghe van phong duoi 3 trieu",
+                                  sales_mode="active", mode="tenant_sales", answer_mode="template")
+            payload = response.json()
+            reply = payload["reply"]
+            self.assertIn("Mình chưa tìm thấy", reply)
+            self.assertNotIn("Vách ngăn", reply)
+            self.assertNotIn("Đèn thả", reply)
+            self.assertNotIn("VN-1", reply)
+            self.assertNotIn("DEN-1", reply)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
 
     def test_active_purchase_creates_draft_without_order_confirmation(self):
         conversation_id = "sales-draft"

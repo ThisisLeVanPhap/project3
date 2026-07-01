@@ -9,6 +9,7 @@ if str(ROOT_DIR) not in sys.path:
 from app.product_filters import (
     apply_price_constraint,
     diversify_by_category,
+    filter_by_category,
     parse_price_constraint,
     parse_product_categories,
 )
@@ -115,6 +116,53 @@ class ProductFilterTests(unittest.TestCase):
 
         self.assertIn("Đồ trang trí", categories)
 
+    def test_filter_by_category_keeps_only_matching(self):
+        results = [
+            _result("ghe-1", price=700_000, category="Ghế"),
+            _result("den-1", price=600_000, category="Đèn"),
+            _result("vach-1", price=500_000, category="Đồ trang trí"),
+        ]
+        filtered = filter_by_category(results, "Ghế")
+        self.assertEqual(len(filtered), 1)
+        self.assertEqual(filtered[0].doc_id, "ghe-1")
+
+    def test_filter_by_category_empty_when_no_match(self):
+        results = [
+            _result("den-1", price=600_000, category="Đèn"),
+            _result("vach-1", price=500_000, category="Đồ trang trí"),
+        ]
+        filtered = filter_by_category(results, "Ghế")
+        self.assertEqual(len(filtered), 0)
+
+    def test_filter_by_category_does_not_pad_count(self):
+        results = [
+            _result("ghe-1", price=700_000, category="Ghế"),
+            _result("ghe-2", price=800_000, category="Ghế"),
+            _result("den-1", price=600_000, category="Đèn"),
+        ]
+        filtered = filter_by_category(results, "Ghế")
+        self.assertEqual(len(filtered), 2)
+        self.assertNotIn("den-1", [r.doc_id for r in filtered])
+
+    def test_filter_by_category_matches_by_product_name_too(self):
+        results = [
+            RetrievalResult(
+                doc_id="ghe-vp", chunk_id="ghe-vp#0", title="Ghế văn phòng Ergo",
+                text="Ghế văn phòng Ergo", source="kb://ghe-vp", score=10.0,
+                metadata={"doc_type": "product", "product_name": "Ghế văn phòng Ergo", "category": "Ghế"},
+            ),
+            RetrievalResult(
+                doc_id="den-tha", chunk_id="den-tha#0", title="Đèn thả trần",
+                text="Đèn thả trần", source="kb://den-tha", score=9.0,
+                metadata={"doc_type": "product", "product_name": "Đèn thả trần", "category": "Đèn"},
+            ),
+        ]
+        filtered = filter_by_category(results, "Ghế")
+        self.assertEqual(len(filtered), 1)
+        self.assertEqual(filtered[0].doc_id, "ghe-vp")
+
+
+class DiversifyTests(unittest.TestCase):
     def test_diversify_by_category_includes_requested_categories(self):
         results = [
             _result("rem-1", 700_000, "Rèm"),

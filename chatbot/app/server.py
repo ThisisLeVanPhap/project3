@@ -52,6 +52,8 @@ from .general_catalog_provider import (
     format_backend_catalog_items,
 )
 from .general_compare_renderer import render_general_compare
+from .product_filters import filter_by_category
+from .retrievers.text import fold_accents as _fold_accents_cat
 from .market_data import (
     build_internal_catalog_provider,
     build_price_provider,
@@ -1400,6 +1402,25 @@ def chat(req: ChatReq):
             tenant_id=req.tenant_id,
         )
 
+    # Phase 4: compute requested category and filter retrieval hits in tenant_sales
+    _tenant_sales_requested_cat = None
+    if sales_enabled and _is_tenant_sales_mode(mode) and sales_state and sales_state.slots:
+        raw = sales_state.slots.get("product_category") or sales_state.slots.get("product_type") or ""
+        if raw:
+            _tenant_sales_requested_cat = raw
+
+    if _tenant_sales_requested_cat and retrieval_hits:
+        filtered_count = len(retrieval_hits)
+        retrieval_hits = filter_by_category(retrieval_hits, _tenant_sales_requested_cat)
+        filtered_count -= len(retrieval_hits)
+        if filtered_count:
+            retrieval_hits = search_hits(
+                active_kb, req.message,
+                k=max(len(retrieval_hits) + filtered_count + 5, 20),
+                tenant_id=req.tenant_id,
+            )
+            retrieval_hits = filter_by_category(retrieval_hits, _tenant_sales_requested_cat)
+
     internal_candidates = []
     price_refs = []
     provider_context_parts = []
@@ -1584,6 +1605,8 @@ def chat(req: ChatReq):
         similar_hits = retrieval_hits
         if len(similar_hits) < 8:
             similar_hits = search_hits(active_kb, req.message, k=8, tenant_id=req.tenant_id)
+        if _tenant_sales_requested_cat:
+            similar_hits = filter_by_category(similar_hits, _tenant_sales_requested_cat)
         items = top_similar_items(similar_hits, limit=3)
 
         if items:
@@ -1591,32 +1614,34 @@ def chat(req: ChatReq):
                 "Mình gợi ý một vài sản phẩm tương tự trong dữ liệu hiện có:\n" +
                 "\n".join([f"- {t} ({u})" if u else f"- {t}" for t, u in items])
             )
+        else:
+            reply = "Mình chưa tìm thấy sản phẩm cùng loại phù hợp trong dữ liệu hiện có. Bạn có muốn nới điều kiện hoặc chọn nhóm sản phẩm khác không?"
 
-            log_event({
-                "event": "similar_suggestion",
-                "question": req.message,
-                "channel": req.channel,
-                "conversation_id": conv_id,
-                "tenant_id": req.tenant_id,
-                "items": [{"title": t, "url": u} for t, u in items],
-                "debug": debug_trace,
-            })
+        log_event({
+            "event": "similar_suggestion",
+            "question": req.message,
+            "channel": req.channel,
+            "conversation_id": conv_id,
+            "tenant_id": req.tenant_id,
+            "items": [{"title": t, "url": u} for t, u in items] if items else [],
+            "debug": debug_trace,
+        })
 
-            # Save turn for stateful flow continuity
-            try:
-                save_turn(conv_id, req.message, reply[:1200])
-            except Exception:
-                pass
-            if sales_enabled and sales_state is not None:
-                _save_sales_state(sales_state)
+        # Save turn for stateful flow continuity
+        try:
+            save_turn(conv_id, req.message, reply[:1200])
+        except Exception:
+            pass
+        if sales_enabled and sales_state is not None:
+            _save_sales_state(sales_state)
 
-            return ChatResp(
-                reply=reply[:1200],
-                latency_ms=0,
-                model=base_model,
-                adapter=adapter,
-                debug=debug_trace,
-            )
+        return ChatResp(
+            reply=reply[:1200],
+            latency_ms=0,
+            model=base_model or "stub",
+            adapter=adapter,
+            debug=debug_trace,
+        )
 
     # ---- SALES flow prefix inside system prompt ----
     sales_prefix = ""

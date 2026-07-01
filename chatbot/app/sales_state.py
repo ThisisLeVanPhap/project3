@@ -244,6 +244,39 @@ def consultation_missing_slots(state: SalesConversationState) -> List[str]:
     return missing[:2]
 
 
+def _has_recommendation_readiness(slots: Dict[str, Any]) -> bool:
+    """Has enough detail to suggest products: product+category + at least 1 constraint."""
+    has_product = bool(slots.get("product_type") or slots.get("product_category"))
+    if not has_product:
+        return False
+    # Subtype (e.g. "ghế văn phòng", "sofa góc") counts as readiness
+    if has_product and _has_specific_product_subtype(slots):
+        return True
+    # Any constraint/detail beyond just the category
+    return any(slots.get(key) for key in (
+        "budget", "budget_text", "budget_usd", "price_target", "price_max",
+        "room", "space", "material", "style", "color", "size",
+        "pets", "kids", "children", "back_pain", "health_need", "easy_clean",
+        "constraints",
+    ))
+
+
+def _has_specific_product_subtype(slots: Dict[str, Any]) -> bool:
+    """Check if product_type is a specific subtype, not just a bare category.
+    A bare category is a single generic furniture word (sofa, ghế, bàn, etc.)
+    while a subtype adds qualifiers (ghế văn phòng, sofa góc, bàn ăn, etc.)
+    """
+    from .retrievers.text import fold_accents
+    raw_type = str(slots.get("product_type") or slots.get("product_category") or "")
+    folded = fold_accents(raw_type).strip().lower()
+    # Generic single-word categories (folded, lowercased)
+    generic = {"sofa", "ghe", "ban", "ghe sofa", "tu", "giuong", "ke", "den", "tham", "tranh", "guong", "rem"}
+    words = folded.split()
+    if len(words) >= 2:
+        return True  # "ghế văn phòng", "sofa góc", "bàn ăn"
+    return folded not in generic
+
+
 def consultation_stage_for(state: SalesConversationState, slots: Dict[str, Any] | None = None) -> str:
     slots = slots or {}
     intents = slots.get("intents") or state.slots.get("last_intents") or []
@@ -257,7 +290,7 @@ def consultation_stage_for(state: SalesConversationState, slots: Dict[str, Any] 
         return "confirm"
     if state.last_recommended_products or state.selected_products:
         return "suggest"
-    if state.slots.get("product_type") or state.slots.get("product_category"):
+    if _has_recommendation_readiness(state.slots):
         return "suggest"
     return "discover"
 

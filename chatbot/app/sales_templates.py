@@ -8,7 +8,7 @@ def clean(value: Any) -> str:
 
 
 def product_title(product: Dict[str, Any]) -> str:
-    name = clean(product.get("product_name")) or "San pham trong du lieu hien co"
+    name = clean(product.get("product_name")) or "Sản phẩm trong dữ liệu hiện có"
     pid = clean(product.get("pid"))
     return f"{name} [{pid}]" if pid else name
 
@@ -18,11 +18,11 @@ def product_reason(product: Dict[str, Any], query: str) -> str:
     material = clean(product.get("material"))
     parts: List[str] = []
     if category:
-        parts.append(f"khop nhom {category}")
+        parts.append(f"khớp với nhóm {category}")
     if material:
-        parts.append(f"co chat lieu {material}")
+        parts.append(f"có chất liệu {material}")
     if not parts:
-        parts.append("khop voi ket qua tim kiem trong KB")
+        parts.append("khớp với kết quả tìm kiếm trong KB")
     return ", ".join(parts)
 
 
@@ -31,13 +31,13 @@ def render_recommendation_template(query: str, products: Sequence[Dict[str, Any]
     if not selected:
         return render_no_products_found_template()
 
-    lines = ["Minh tim thay mot vai san pham phu hop:"]
+    lines = ["Mình tìm thấy một vài sản phẩm phù hợp:"]
     for idx, product in enumerate(selected, start=1):
         title = product_title(product)
         price = clean(product.get("price"))
         lines.append("")
         lines.append(f"{idx}. {title}" + (f" - {price}" if price else ""))
-        lines.append(f"   Phu hop vi: {product_reason(product, query)}")
+        lines.append(f"   Phù hợp vì: {product_reason(product, query)}")
         sku = clean(product.get("sku"))
         source_url = clean(product.get("source_url"))
         if sku:
@@ -46,21 +46,21 @@ def render_recommendation_template(query: str, products: Sequence[Dict[str, Any]
             lines.append(f"   Link: {source_url}")
     if include_cta:
         lines.append("")
-        lines.append("Ban muon minh loc tiep theo khoang gia, kich thuoc hay chat lieu khong?")
+        lines.append("Bạn muốn mình lọc tiếp theo khoảng giá, kích thước hay chất liệu không?")
     return "\n".join(lines)
 
 
 def render_missing_info_template(missing_fields: Sequence[str] | None = None) -> str:
     questions = {
-        "product_category": "Ban dang tim loai san pham nao?",
-        "price_range": "Khoang gia mong muon khoang bao nhieu?",
-        "material": "Ban uu tien chat lieu nao?",
-        "delivery_area": "Ban muon nhan hang o khu vuc nao?",
-        "phone": "Ban gui giup minh so dien thoai lien he nhe.",
-        "address": "Ban gui giup minh khu vuc hoac dia chi nhan hang nhe.",
+        "product_category": "Bạn đang tìm loại sản phẩm nào?",
+        "price_range": "Khoảng giá mong muốn khoảng bao nhiêu?",
+        "material": "Bạn ưu tiên chất liệu nào?",
+        "delivery_area": "Bạn muốn nhận hàng ở khu vực nào?",
+        "phone": "Bạn gửi giúp mình số điện thoại liên hệ nhé.",
+        "address": "Bạn gửi giúp mình khu vực hoặc địa chỉ nhận hàng nhé.",
     }
     selected = list(missing_fields or ["product_category", "price_range"])[:2]
-    lines = ["Minh co the tu van ky hon, nhung can them mot chut thong tin:"]
+    lines = ["Mình có thể tư vấn kỹ hơn, nhưng cần thêm một chút thông tin:"]
     for field in selected:
         question = questions.get(field)
         if question:
@@ -70,16 +70,16 @@ def render_missing_info_template(missing_fields: Sequence[str] | None = None) ->
 
 def render_no_products_found_template() -> str:
     return (
-        "Minh chua tim thay san pham khop hoan toan. Ban co the noi ro hon ve loai san pham, "
-        "chat lieu hoac khoang gia de minh loc lai khong?"
+        "Mình chưa tìm thấy sản phẩm khớp hoàn toàn. Bạn có thể nói rõ hơn về loại sản phẩm, "
+        "chất liệu hoặc khoảng giá để mình lọc lại không?"
     )
 
 
 def render_comparison_template(query: str, products: Sequence[Dict[str, Any]], max_products: int = 2) -> str:
     selected = list(products)[: max(2, max_products)]
     if len(selected) < 2:
-        return "Ban muon so sanh nhung san pham nao? Ban co the noi ten, SKU hoac chon P1/P2 trong cac mau vua xem."
-    lines = ["So sanh nhanh cac san pham ban quan tam:"]
+        return "Bạn muốn so sánh những sản phẩm nào? Bạn có thể nói tên, SKU hoặc chọn P1/P2 trong các mẫu vừa xem."
+    lines = ["So sánh nhanh các sản phẩm bạn quan tâm:"]
     for product in selected:
         details = []
         for key in ("price", "material", "dimensions", "category"):
@@ -87,22 +87,22 @@ def render_comparison_template(query: str, products: Sequence[Dict[str, Any]], m
             if value:
                 details.append(value)
         reason = product_reason(product, query)
-        lines.append(f"- {product_title(product)}: {', '.join(details) if details else 'chua co them thuoc tinh'}, phu hop vi {reason}.")
+        lines.append(f"- {product_title(product)}: {', '.join(details) if details else 'chưa có thêm thuộc tính'}, phù hợp vì {reason}.")
     lines.append("")
-    lines.append("Ban nghieng ve lua chon nao hon?")
+    lines.append("Bạn nghiêng về lựa chọn nào hơn?")
     return "\n".join(lines)
 
 
 def render_cta_collect_info_template() -> str:
     return (
-        "Neu ban muon, minh co the luu lai nhu cau de shop lien he tu van/chot don. "
-        "Ban gui giup minh so dien thoai va khu vuc nhan hang nhe."
+        "Nếu bạn muốn, mình có thể lưu lại nhu cầu để shop liên hệ tư vấn/chốt đơn. "
+        "Bạn gửi giúp mình số điện thoại và khu vực nhận hàng nhé."
     )
 
 
 def render_handoff_confirmation_template() -> str:
-    return "Minh da ghi nhan nhu cau cua ban. Shop se lien he de tu van/chot don theo thong tin ban cung cap."
+    return "Mình đã ghi nhận nhu cầu của bạn. Shop sẽ liên hệ để tư vấn/chốt đơn theo thông tin bạn cung cấp."
 
 
 def render_off_topic_redirect_template() -> str:
-    return "Minh chuyen ho tro tu van san pham noi that. Ban dang quan tam san pham nao de minh ho tro tot hon?"
+    return "Mình chuyên hỗ trợ tư vấn sản phẩm nội thất. Bạn đang quan tâm sản phẩm nào để mình hỗ trợ tốt hơn?"

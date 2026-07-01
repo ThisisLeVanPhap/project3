@@ -85,11 +85,11 @@ def _reason_line(product: Dict[str, Any], query: str) -> str:
     category = _field(product, "category")
     material = _field(product, "material")
     if category:
-        reasons.append(f"khop nhom {category}")
+        reasons.append(f"khớp với nhóm {category}")
     if material and material.lower() in _norm(query):
-        reasons.append(f"khop chat lieu {material}")
+        reasons.append(f"khớp chất liệu {material}")
     if not reasons:
-        reasons.append("khop voi ket qua tim kiem trong KB")
+        reasons.append("khớp với kết quả tìm kiếm trong KB")
     return ", ".join(reasons)
 
 
@@ -118,7 +118,7 @@ def render_listing_answer(query: str, products: Sequence[Dict[str, Any]], max_pr
         if category:
             lines.append(f"   - Danh mục: {category}")
         if reason:
-            lines.append(f"   - Phu hop vi: {reason}")
+            lines.append(f"   - Phù hợp vì: {reason}")
         if attrs:
             lines.append(f"   - Thuộc tính chính: {attrs}")
         if source_url:
@@ -126,7 +126,7 @@ def render_listing_answer(query: str, products: Sequence[Dict[str, Any]], max_pr
     lines.extend([
         "",
         "Lưu ý: Giá là giá tham khảo theo dữ liệu hiện có, nên xác nhận lại với cửa hàng trước khi mua.",
-        "Ban muon minh loc tiep theo khoang gia, kich thuoc hay chat lieu khong?",
+        "Bạn muốn mình lọc tiếp theo khoảng giá, kích thước hay chất liệu không?",
     ])
     return "\n".join(lines)
 

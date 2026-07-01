@@ -7,9 +7,10 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from app.answer_evaluator import evaluate_answer_grounding  # noqa: E402
-from app.product_answer_renderer import (  # noqa: E402
+from app.product_answer_renderer import (
     detect_answer_intent,
     render_comparison_answer,
+    render_listing_answer,
     render_missing_or_policy_answer,
     render_no_context_answer,
     render_product_answer,
@@ -70,6 +71,24 @@ class ProductAnswerRendererTests(unittest.TestCase):
         self.assertNotIn("900.000", answer)
         self.assertNotIn("Tổng", answer)
 
+    def test_listing_answer_has_diacritic_cta_and_no_banned_patterns(self):
+        answer = render_listing_answer(
+            "ghế",
+            [{"product_name": "Ghế văn phòng", "pid": "P1", "price": "2.300.000 VND", "category": "Ghế"}],
+        )
+
+        banned = [
+            "Ban muon",
+            "Phu hop vi",
+            "khop nhom",
+            "san pham",
+        ]
+        for b in banned:
+            self.assertNotIn(b, answer)
+
+        self.assertIn("Bạn muốn mình lọc tiếp", answer)
+        self.assertIn("Phù hợp vì:", answer)
+
     def test_comparison_answer_has_table_citations_and_links(self):
         answer = render_product_answer("So sánh rèm cuốn và rèm sáo", CONTEXT, max_products=2)
 
@@ -97,6 +116,27 @@ class ProductAnswerRendererTests(unittest.TestCase):
 
         self.assertIn("Trạng thái trên trang sản phẩm: InStock", answer)
         self.assertNotIn("showroom", answer.lower())
+
+    def test_sales_templates_no_banned_patterns_and_diacritic_cta(self):
+        """Light wording test for sales_templates user-facing output."""
+        from app import sales_templates as st
+
+        banned = ["Ban muon", "Phu hop vi", "khop nhom", "san pham"]
+
+        # render_recommendation_template
+        rec = st.render_recommendation_template(
+            "ghế",
+            [{"product_name": "Ghế văn phòng", "pid": "P1", "price": "2.300.000 VND"}],
+        )
+        for b in banned:
+            self.assertNotIn(b, rec)
+        self.assertIn("Bạn muốn mình lọc tiếp", rec)
+
+        # render_missing_info_template
+        miss = st.render_missing_info_template(["product_category"])
+        for b in banned:
+            self.assertNotIn(b, miss)
+        self.assertIn("Bạn đang tìm", miss)
 
     def test_no_context_answer(self):
         answer = render_no_context_answer("Có sofa không?")

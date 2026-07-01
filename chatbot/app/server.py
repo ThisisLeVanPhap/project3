@@ -1174,7 +1174,7 @@ def chat(req: ChatReq):
         })
 
         return ChatResp(
-            reply="Got it — I’ve started a new consultation. What are you shopping for today?",
+            reply="Mình đã làm mới cuộc trò chuyện. Bạn muốn mình tư vấn sản phẩm nào ạ?",
             latency_ms=0,
             model="system",
             adapter=adapter,
@@ -1588,9 +1588,8 @@ def chat(req: ChatReq):
 
         if items:
             reply = (
-                "Here are a few similar products you might want to consider:\n" +
-                "\n".join([f"- {t} ({u})" if u else f"- {t}" for t, u in items]) +
-                "\nWhat would you like to prioritize: style, size, or material?"
+                "Mình gợi ý một vài sản phẩm tương tự trong dữ liệu hiện có:\n" +
+                "\n".join([f"- {t} ({u})" if u else f"- {t}" for t, u in items])
             )
 
             log_event({
@@ -1715,7 +1714,7 @@ def chat(req: ChatReq):
         resp = render_product_answer(req.message, context)
         debug_trace["fallback_answer_mode"] = "product-template"
     if not resp:
-        resp = "Sorry, I couldn't process that request right now."
+        resp = "Xin lỗi, hệ thống đang gặp sự cố khi xử lý yêu cầu. Bạn thử lại giúp mình nhé."
 
     # Keep answers concise, but not too short for consultative flow
     if response_model != "structured_price":
@@ -1733,9 +1732,7 @@ def chat(req: ChatReq):
             )
         elif _is_tenant_sales_mode(mode) and ((not context) or (NOT_FOUND.lower() in resp.lower())):
             resp = (
-                "Sorry, I couldn’t find enough information to answer that accurately. "
-                "If you can share the product name or code, I can try again, "
-                "or I can connect you with a staff member for further assistance."
+                "Mình chưa đủ thông tin để tư vấn chính xác. Bạn cho mình biết thêm nhu cầu, ngân sách hoặc không gian sử dụng nhé."
             )
         elif mode == ChatMode.GENERAL_COMPARE.value and not context:
             resp = (
@@ -1746,18 +1743,18 @@ def chat(req: ChatReq):
     if _is_tenant_sales_mode(mode) and getattr(st, "stage", None) == "close":
         resp = resp.strip()
         resp += (
-            "\n\nTo proceed, reply CONFIRM and I’ll create a purchase request for our staff. "
-            "Reply CANCEL to stop. "
-            "I can’t process payments directly in chat."
+            "\n\nNếu muốn gửi yêu cầu cho cửa hàng, bạn trả lời CONFIRM. "
+            "Nếu muốn dừng, bạn trả lời CANCEL. "
+            "Mình chưa xử lý thanh toán trực tiếp trong chat."
         )
+
 
     resp = _apply_grounding_guard(req.message, context, resp)
 
     # --- Output guardrail: if model slips into unverified facts, replace with safe fallback ---
     if BAD_FACTS.search(resp):
         resp = (
-            "Sorry — I can’t confirm payment, delivery timing, or refund details in chat without verified store data. "
-            "If you share the product link/name, I can check what’s available, or I can connect you with a staff member to confirm the details."
+            "Mình chưa tìm thấy thông tin đủ chắc chắn trong dữ liệu hiện có. Bạn có thể mô tả cụ thể hơn nhu cầu được không?"
         )
 
     latency_ms = int((time.time() - t0) * 1000)

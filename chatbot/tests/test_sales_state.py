@@ -84,12 +84,12 @@ class SalesStateTests(unittest.TestCase):
         state = SalesConversationState(tenant_id="tenant-a", conversation_id="conv-discover")
         result = apply_message_to_state(state, "Toi muon mua sofa")
 
-        self.assertEqual(state.current_stage, "confirm")
+        # Phase 7: vague purchase intent without specific product -> discover, not confirm
+        self.assertEqual(state.current_stage, "discover")
         self.assertIn("room_or_space", consultation_missing_slots(state))
         self.assertIn("budget", consultation_missing_slots(state))
-        # Phase 6: purchase_intent + category -> ask_product (not ask_discovery_question)
-        self.assertEqual(result["next_best_action"], "ask_product")
-        self.assertEqual(next_best_action(state, result["slots"]), "ask_product")
+        self.assertEqual(result["next_best_action"], "ask_discovery_question")
+        self.assertEqual(next_best_action(state, result["slots"]), "ask_discovery_question")
 
     def test_consultation_known_slots_include_constraints(self):
         state = SalesConversationState(tenant_id="tenant-a", conversation_id="conv-known")
@@ -122,8 +122,9 @@ class RecommendationReadinessTests(unittest.TestCase):
     def test_category_plus_budget_returns_true(self):
         self.assertTrue(_has_recommendation_readiness({"product_category": "Sofa", "budget": "duoi 10 trieu"}))
 
-    def test_category_plus_room_returns_true(self):
-        self.assertTrue(_has_recommendation_readiness({"product_category": "Sofa", "room": "phong khach"}))
+    def test_category_plus_room_returns_false(self):
+        # Phase 7B: room alone + bare category is not enough for readiness
+        self.assertFalse(_has_recommendation_readiness({"product_category": "Sofa", "room": "phong khach"}))
 
     def test_category_plus_material_returns_true(self):
         self.assertTrue(_has_recommendation_readiness({"product_category": "Sofa", "material": "go"}))

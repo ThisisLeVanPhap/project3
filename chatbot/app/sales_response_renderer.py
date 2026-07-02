@@ -75,8 +75,11 @@ def render_sales_response(action: str, draft: Dict[str, Any] | None, state: Any)
         )
 
     if action == "ask_discovery":
-        missing = list(getattr(state, "missing_fields", []) or [])
+        # Phase 7: prefer consultation_missing_slots over state.missing_fields for discovery questions
         slots = getattr(state, "slots", {}) or {}
+        missing = list(slots.get("consultation_missing_slots", []) or [])
+        if not missing:
+            missing = list(getattr(state, "missing_fields", []) or [])
         raw_cat = (slots.get("product_category") or slots.get("product_type") or "")
         import unicodedata
         cat_folded = unicodedata.normalize("NFKD", raw_cat).encode("ascii", "ignore").decode("ascii").lower()
@@ -90,7 +93,7 @@ def render_sales_response(action: str, draft: Dict[str, Any] | None, state: Any)
             if "ban" in cat_folded:
                 return "Được ạ. Bạn tìm bàn cho mục đích nào: bàn ăn, bàn làm việc hay bàn trang trí? Bạn cho mình thêm kích thước, ngân sách dự kiến và chất liệu/nơi đặt nhé."
             if "tu" in cat_folded or "giuong" in cat_folded or "giong" in cat_folded:
-                return "Được ạ. Bạn định đặt sản phẩm ở phòng nào, kích thước và ngân sách dự kiến khoảng bao nhiêu? Mình sẽ tìm mẫu phù hợp."
+                return "Được ạ. Bạn cho mình biết khoảng kích thước hoặc chiều dài mong muốn, ngân sách và tông màu/phong cách phòng để mình lọc mẫu phù hợp nhé."
             if "den" in cat_folded:
                 return "Được ạ. Bạn cần đèn cho không gian nào, phong cách và ngân sách dự kiến khoảng bao nhiêu? Mình sẽ gợi ý mẫu phù hợp."
             return "Bạn định đặt sản phẩm ở phòng nào hoặc không gian rộng/chật khoảng bao nhiêu?"

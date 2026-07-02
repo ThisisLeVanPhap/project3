@@ -245,19 +245,20 @@ def consultation_missing_slots(state: SalesConversationState) -> List[str]:
 
 
 def _has_recommendation_readiness(slots: Dict[str, Any]) -> bool:
-    """Has enough detail to suggest products: product+category + at least 1 constraint."""
+    """Has enough detail to suggest products: product + substantive constraint.
+    Lifestyle signals (pets/kids/back_pain/easy_clean) don't count toward readiness.
+    Room alone + bare category doesn't count if no other constraint.
+    """
     has_product = bool(slots.get("product_type") or slots.get("product_category"))
     if not has_product:
         return False
-    # Subtype (e.g. "ghế văn phòng", "sofa góc") counts as readiness
+    # Subtype (e.g. "ghế văn phòng", "sofa góc", "tủ tivi") counts as readiness
     if has_product and _has_specific_product_subtype(slots):
         return True
-    # Any constraint/detail beyond just the category
+    # Substantive constraints that justify listing
     return any(slots.get(key) for key in (
         "budget", "budget_text", "budget_usd", "price_target", "price_max",
-        "room", "space", "material", "style", "color", "size",
-        "pets", "kids", "children", "back_pain", "health_need", "easy_clean",
-        "constraints",
+        "material", "style", "color", "size",
     ))
 
 
@@ -289,7 +290,19 @@ def consultation_stage_for(state: SalesConversationState, slots: Dict[str, Any] 
         return "compare"
     if slots.get("objection_type") or state.slots.get("objection_type"):
         return "handle_objection"
-    if "purchase_intent" in intents or state.purchase_request or state.selected_products and state.contact:
+    # Phase 7: purchase_intent only confirms if user has selected a specific product
+    if "purchase_intent" in intents:
+        has_product_ref = slots.get("has_product_reference") or bool(slots.get("product_sku_ref"))
+        # Also check if the message itself references a past recommendation
+        has_position_ref = bool(state.last_recommended_products) and (
+            slots.get("has_product_reference") or bool(state.selected_products))
+        if state.selected_products or state.purchase_request or has_product_ref or has_position_ref:
+            return "confirm"
+        # Vague purchase intent without specific product -> stay in discover/suggest
+        if _has_recommendation_readiness(state.slots):
+            return "suggest"
+        return "discover"
+    if state.selected_products and state.contact:
         return "confirm"
     if state.last_recommended_products or state.selected_products:
         return "suggest"
@@ -306,13 +319,23 @@ def next_best_action(state: SalesConversationState, slots: Dict[str, Any] | None
     # Objection takes priority over purchase_intent (prevents false-positive "dat"/"đắt" matching)
     if slots.get("objection_type") or state.slots.get("objection_type"):
         return "handle_objection"
-    # Phase 6: purchase_intent with product reference -> ask_product/ask_contact, not discovery
+    # Phase 7: purchase_intent only routes to handoff if user selected a specific product
     if "purchase_intent" in intents:
-        if state.selected_products and not state.contact and not state.handoff_required:
-            return "ask_contact"
-        if state.selected_products and state.contact:
+        has_product_ref = slots.get("has_product_reference") or bool(slots.get("product_sku_ref"))
+        has_pos_ref = bool(state.last_recommended_products) and has_product_ref
+        if state.selected_products:
+            if not state.contact and not state.handoff_required:
+                return "ask_contact"
             return "ask_confirmation"
-        return "ask_product"
+        if has_product_ref or has_pos_ref:
+            return "ask_product"
+        # Phase 7: vague purchase intent without specific product -> always consult/discover
+        missing = consultation_missing_slots(state)
+        if missing:
+            return "ask_discovery_question"
+        if _has_recommendation_readiness(state.slots):
+            return "suggest_from_kb"
+        return "ask_discovery_question"
     if slots.get("is_product_reference_question") or slots.get("has_product_reference"):
         return "compare_options"
     if state.confirmation_status == "pending":

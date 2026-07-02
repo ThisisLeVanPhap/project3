@@ -463,18 +463,23 @@ def _sales_action_from_state(
         if "purchase_intent" in intents:
             if state.selected_products:
                 return "ask_contact"
-            if slots.get("has_product_reference") or state.slots.get("product_type") or state.slots.get("product_category"):
+            # Phase 7: only route to ask_product if user has a specific product reference (not just category)
+            if slots.get("has_product_reference") or bool(slots.get("product_sku_ref")):
                 return "ask_product"
         return "ask_discovery"
-    # Phase 6: purchase_intent with product context -> route to ask_product/ask_contact
-    if "purchase_intent" in intents and not state.selected_products:
-        if state.slots.get("product_type") or state.slots.get("product_category") or slots.get("has_product_reference"):
+    # Phase 7: purchase_intent only routes to handoff if user selected a specific product
+    if "purchase_intent" in intents:
+        if state.selected_products:
+            if not state.contact and not state.handoff_required:
+                return "ask_contact"
+            return "ask_confirmation"
+        # No selected product but user mentioned a specific reference -> ask which product
+        if slots.get("has_product_reference") or bool(slots.get("product_sku_ref")):
             return "ask_product"
+        # Vague purchase intent without specific product -> check if consultation needed
+        if state.slots.get("consultation_missing_slots"):
+            return "ask_discovery"
         return "none"
-    if "purchase_intent" in intents and state.selected_products:
-        if not state.contact and not state.handoff_required:
-            return "ask_contact"
-        return "ask_confirmation"
     if status == "draft" and ("purchase_intent" in intents or "contact_provided" in intents):
         return "ask_confirmation"
     if status == "needs_contact" and "purchase_intent" in intents:

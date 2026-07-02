@@ -257,11 +257,10 @@ class SalesRuntimeIntegrationTests(unittest.TestCase):
         response = self._turn("sales-discover-sofa", "Tôi muốn mua sofa", sales_mode="active")
 
         payload = response.json()
-        self.assertEqual(payload["model"], "sales-template")
-        # Phase 6: purchase_intent + category -> ask_product (which specific product?)
-        self.assertEqual(payload["debug"]["sales_action_taken"], "ask_product")
-        self.assertIn("sản phẩm", payload["reply"].lower())
-        self.assertIn("P1", payload["reply"])
+        # Phase 7: vague purchase intent without specific product -> ask_discovery
+        self.assertEqual(payload["debug"]["sales_action_taken"], "ask_discovery")
+        self.assertIn("sofa", payload["reply"].lower())
+        self.assertIn("không gian", payload["reply"].lower())
         self.assertFalse(payload.get("trigger_purchase_request"))
 
     def test_sku_purchase_intent_resolves_and_asks_contact(self):
@@ -365,6 +364,103 @@ class SalesRuntimeIntegrationTests(unittest.TestCase):
             self.assertIn("GHO-999", reply)
             self.assertNotIn("Sản phẩm mã", reply)
             self.assertNotIn("Bạn chia sẻ thêm 1–2 ưu tiên", reply)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    def test_fresh_ghp_phong_khach_purchase_does_not_list(self):
+        """Phase 7: fresh 'tôi muốn mua ghế cho phòng khách' -> ask_discovery, not listing."""
+        response = self._turn("sales-fresh-ghp", "tôi muốn mua ghế cho phòng khách",
+                              sales_mode="active", mode="tenant_sales")
+        payload = response.json()
+        self.assertEqual(payload["debug"]["sales_action_taken"], "ask_discovery")
+        self.assertEqual(payload["debug"]["current_stage"], "discover")
+        reply = payload["reply"]
+        self.assertNotIn("Bạn muốn đặt sản phẩm nào", reply)
+        self.assertNotIn("P1", reply)
+        self.assertNotIn("Mình tìm thấy", reply)
+        self.assertNotIn("[P", reply)
+        self.assertNotEqual(payload["model"], "product-template")
+
+    def test_room_level_consultation_does_not_list(self):
+        """Phase 7B: 'tôi muốn tìm đồ cho phòng khách' -> ask_discovery, no listing."""
+        response = self._turn("sales-room-level", "tôi muốn tìm đồ cho phòng khách",
+                              sales_mode="active", mode="tenant_sales")
+        payload = response.json()
+        self.assertEqual(payload["debug"]["sales_action_taken"], "ask_discovery")
+        self.assertEqual(payload["debug"]["current_stage"], "discover")
+        reply = payload["reply"]
+        self.assertNotIn("Bạn muốn đặt sản phẩm nào", reply)
+        self.assertNotIn("P1", reply)
+        self.assertNotIn("Mình tìm thấy", reply)
+        self.assertNotIn("[P", reply)
+
+    def test_multi_turn_tu_tivi_does_not_list(self):
+        """Phase 7B: room consult -> 'thiếu tủ để ti vi' -> ask_discovery, not listing."""
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            mock_kb = FakeRetriever([
+                _hit("tu-tivi", "Kệ tivi gỗ", "TU-001", 5000000,
+                     "https://example.test/tu-tivi", category="Tủ"),
+            ])
+            server.KB = mock_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = mock_kb
+
+            conv_id = "sales-tu-tivi"
+            self._turn(conv_id, "tôi muốn tìm đồ cho phòng khách",
+                       sales_mode="active", mode="tenant_sales")
+
+            response = self._turn(conv_id, "nhà tôi đang thiếu tủ để ti vi",
+                                  sales_mode="active", mode="tenant_sales")
+            payload = response.json()
+            self.assertEqual(payload["debug"]["sales_action_taken"], "ask_discovery")
+            self.assertEqual(payload["debug"]["current_stage"], "discover")
+            reply = payload["reply"]
+            self.assertNotIn("Mình tìm thấy", reply)
+            self.assertNotIn("[P1]", reply)
+            self.assertNotIn("Bạn muốn đặt sản phẩm nào", reply)
+            self.assertNotIn("https://", reply)
+            self.assertNotIn("Bạn muốn đặt sản phẩm nào", reply)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    def test_multi_turn_tu_tivi_budget_leads_to_suggest(self):
+        """Phase 7B: room -> category -> budget+color -> suggest, listing đúng loại."""
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            mock_kb = FakeRetriever([
+                _hit("tu-tivi", "Kệ tivi gỗ sáng", "TU-001", 5000000,
+                     "https://example.test/tu-tivi", category="Tủ"),
+                _hit("ghe", "Ghế văn phòng", "GHE-001", 2300000,
+                     "https://example.test/ghe", category="Ghế"),
+                _hit("den", "Đèn thả trần", "DEN-001", 400000,
+                     "https://example.test/den", category="Đèn"),
+            ])
+            server.KB = mock_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = mock_kb
+
+            conv_id = "sales-tu-tivi-budget"
+            self._turn(conv_id, "tôi muốn tìm đồ cho phòng khách",
+                       sales_mode="active", mode="tenant_sales")
+            self._turn(conv_id, "nhà tôi đang thiếu tủ để ti vi",
+                       sales_mode="active", mode="tenant_sales")
+
+            response = self._turn(conv_id, "ngân sách 5 triệu, màu gỗ sáng",
+                                  sales_mode="active", mode="tenant_sales")
+            payload = response.json()
+            self.assertIn(payload["debug"]["sales_action_taken"], ("none", "suggest_from_kb"))
+            reply = payload["reply"]
+            self.assertIn("Kệ tivi", reply)
+            self.assertNotIn("Ghế văn phòng", reply)
+            self.assertNotIn("Đèn thả", reply)
+            self.assertNotIn("Ghế", reply)
         finally:
             server.KB = prev_kb
             server.KB_BY_MODE.clear()

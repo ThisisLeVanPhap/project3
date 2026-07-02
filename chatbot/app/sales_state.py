@@ -256,10 +256,12 @@ def _has_recommendation_readiness(slots: Dict[str, Any]) -> bool:
     if has_product and _has_specific_product_subtype(slots):
         return True
     # Substantive constraints that justify listing
+    # Phase 10G: budget_min also counts as a substantive constraint
+    # Phase 10H: category + vague size_preference (e.g. "thật to") is NOT sufficient; "size" alone does not count
     return any(slots.get(key) for key in (
         "budget", "budget_text", "budget_usd", "price_target", "price_max",
-        "material", "style", "color", "size",
-    ))
+        "material", "color",
+    )) or bool(slots.get("budget_min"))
 
 
 def _has_specific_product_subtype(slots: Dict[str, Any]) -> bool:
@@ -307,6 +309,7 @@ def consultation_stage_for(state: SalesConversationState, slots: Dict[str, Any] 
         return "discover"
     if state.selected_products and state.contact:
         return "confirm"
+    # Phase 10H: maintain suggest if we already have recs (even if current message adds no new readiness)
     if state.last_recommended_products or state.selected_products:
         return "suggest"
     if _has_recommendation_readiness(state.slots):
@@ -346,6 +349,11 @@ def next_best_action(state: SalesConversationState, slots: Dict[str, Any] | None
     missing = consultation_missing_slots(state)
     if missing and state.current_stage == "discover":
         return "ask_discovery_question"
+    # Phase 10H: if missing room/budget (vague size follow-up), force discovery ONLY if we lack readiness
+    # If subtype+budget or budget_min gives readiness, we can suggest even without room
+    if missing and ("room_or_space" in missing or "budget" in missing):
+        if not _has_recommendation_readiness(state.slots):
+            return "ask_discovery_question"
     if state.current_stage == "suggest":
         return "suggest_from_kb"
     return "continue_consultation"

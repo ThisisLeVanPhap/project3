@@ -87,14 +87,24 @@ def render_sales_response(action: str, draft: Dict[str, Any] | None, state: Any)
             return "Bạn đang muốn tìm sản phẩm nội thất nào: sofa, bàn, giường, tủ hay món khác?"
         if "room_or_space" in missing:
             if "ghe" in cat_folded:
+                style = (slots.get("style") or "").lower()
+                if "co dien" in style or "classic" in style:
+                    return "Được ạ. Với phong cách cổ điển, ghế thường dùng gỗ hoặc tông màu trầm. Bạn cho mình biết ngân sách dự kiến và mục đích ghế (làm việc, ăn, thư giãn) nhé?"
                 return "Được ạ. Bạn muốn tìm ghế dùng cho mục đích nào: ghế làm việc, ghế ăn, ghế thư giãn hay ghế trang trí? Bạn cho mình thêm ngân sách dự kiến và chất liệu/màu sắc mong muốn nhé."
             if "sofa" in cat_folded:
                 return "Được ạ. Bạn định đặt sofa ở không gian nào và diện tích khoảng bao nhiêu? Bạn cho mình thêm ngân sách dự kiến, chất liệu hoặc màu sắc mong muốn nhé."
             if "ban" in cat_folded:
+                size_pref = (slots.get("size") or slots.get("room_size") or "").lower()
+                if "to" in size_pref or "lon" in size_pref:
+                    return "Được ạ. Với bàn thật to, mình cần biết mục đích (bàn ăn, làm việc, trà) và phòng đặt để chọn kích thước phù hợp. Bạn cho mình ngân sách dự kiến nhé?"
                 return "Được ạ. Bạn tìm bàn cho mục đích nào: bàn ăn, bàn làm việc hay bàn trang trí? Bạn cho mình thêm kích thước, ngân sách dự kiến và chất liệu/nơi đặt nhé."
             if "tu" in cat_folded or "giuong" in cat_folded or "giong" in cat_folded:
                 return "Được ạ. Bạn cho mình biết khoảng kích thước hoặc chiều dài mong muốn, ngân sách và tông màu/phong cách phòng để mình lọc mẫu phù hợp nhé."
             if "den" in cat_folded:
+                room = (slots.get("room") or "").lower()
+                size = slots.get("room_size") or ""
+                if "khach" in room or "tran" in raw_cat.lower() or size:
+                    return "Được ạ. Với phòng khách hoặc trần khoảng " + (size if size else "vừa") + ", mình có thể gợi ý đèn ốp trần hoặc đèn thả gọn. Bạn cho mình biết ngân sách dự kiến và phong cách (hiện đại, cổ điển...) nhé?"
                 return "Được ạ. Bạn cần đèn cho không gian nào, phong cách và ngân sách dự kiến khoảng bao nhiêu? Mình sẽ gợi ý mẫu phù hợp."
             return "Bạn định đặt sản phẩm ở phòng nào hoặc không gian rộng/chật khoảng bao nhiêu?"
         if "budget" in missing:

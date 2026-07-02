@@ -39,8 +39,12 @@ CATEGORY_PATTERNS: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
     ("Bàn làm việc", (r"\bban lam viec\b", r"\bban hoc\b", r"\bban may tinh\b")),
     ("Bàn ăn", (r"\bban ghe an\b", r"\bbo ban an\b", r"\bban an\b")),
     ("Bàn trà", (r"\bban tra\b", r"\bban sofa\b")),
+    ("Bàn", (r"\bcai\s+ban\b", r"\bmua\s+(?:\d+\s+)?(?:cai\s+)?ban\b",
+             r"\btim\s+(?:\d+\s+)?(?:cai\s+)?ban\b", r"\bchon\s+ban\b",
+             r"\blay\s+(?:\d+\s+)?(?:cai\s+)?ban\b",
+             r"\bban\s+(?:that\s*to|to\s*that|lon|to)\b")),
     ("Sofa", (r"\bghe sofa\b", r"\bsofa\b")),
-    ("Kệ", (r"\bke tivi\b", r"\bke sach\b", r"\bke\b")),
+    ("Kệ", (r"\bke tivi\b", r"\bke sach\b", r"\bke\b(?!\s*(?:tra|tivi|sach))")),
     ("Đồ trang trí", (r"\bdo trang tri\b", r"\bdo decor\b", r"\bphu kien trang tri\b", r"\bdecor\b", r"\bbinh hoa\b", r"\blo hoa\b", r"\bdong ho\b")),
     ("Rèm", (r"\brem\b", r"\bmanh\b")),
     ("Đèn", (r"\bden\b",)),
@@ -49,7 +53,10 @@ CATEGORY_PATTERNS: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
     ("Gương", (r"\bguong\b",)),
     ("Ghế", (r"\bghe\b",)),
     ("Giường", (r"\bgiuong\b",)),
-    ("Tủ", (r"\btu quan ao\b", r"\btu ao\b", r"\bwardrobe\b", r"\bcabinet\b", r"\btu\b(?!\s+van)\b")),
+    ("T\u1ee7", (r"\btu quan ao\b", r"\btu ao\b", r"\bwardrobe\b", r"\bcabinet\b",
+             r"\btu\s+tivi\b", r"\btu\s+bep\b", r"\btu\s+giay\b",
+             r"\bcai\s+tu\b", r"\bmua\s+tu\b",
+             r"\btim\s+tu\b", r"\bchon\s+tu\b", r"\bxem\s+tu\b", r"\btu\s+(?:de|trang|nho|to|dep|moi|nay|hien|lam|go|nhua|kinh|sat|in|don|cu|can|dung)\b")),
 )
 
 

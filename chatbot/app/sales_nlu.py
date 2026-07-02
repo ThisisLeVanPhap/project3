@@ -82,16 +82,22 @@ def _extract_entities(text: str) -> Dict[str, Any]:
         entities["price_target"] = price.target_price
 
     material_patterns = (
-        ("go cong nghiep", ("go cong nghiep", "mdf", "mfc", "hdf")),
-        ("go tu nhien", ("go tu nhien",)),
-        ("go", ("go", "wood")),
-        ("da", ("da", "leather")),
-        ("vai", ("vai", "fabric", "ni")),
-        ("kim loai", ("kim loai", "sat", "thep", "metal", "steel")),
-        ("kinh", ("kinh", "glass")),
+        ("go cong nghiep", (r"\bgo cong nghiep\b", r"\bmdf\b", r"\bmfc\b", r"\bhdf\b")),
+        ("go tu nhien", (r"\bgo tu nhien\b",)),
+        ("go", (r"\bgo\b", r"\bwood\b")),
+        ("da", (r"\bda\b", r"\bleather\b")),
+        ("vai", (r"\bvai\b", r"\bfabric\b", r"\bni\b")),
+        ("kim loai", (r"\bkim loai\b", r"\bsat\b", r"\bthep\b", r"\bmetal\b", r"\bsteel\b")),
+        ("kinh", (r"\bkinh\b", r"\bglass\b")),
     )
+    import re as _re
     for material, patterns in material_patterns:
-        if any(pattern in normalized for pattern in patterns):
+        if any(_re.search(pattern, normalized) for pattern in patterns):
+            # Phase 10I: reject "da" from folded text if it's past-tense marker, not leather
+            if material == "da":
+                is_past_tense = bool(_re.search(r"\bđã\b", text or "", re.I)) or bool(_re.search(r'\bda\s+(noi|mua|lam|bao|chot|gui|tim|biet|bảo|làm|chốt|gửi|tìm|biết|nghi|nghĩ|lay|lấy|hoc|đi)\b', text or "", re.I))
+                if is_past_tense:
+                    continue
             entities["material"] = material
             break
 

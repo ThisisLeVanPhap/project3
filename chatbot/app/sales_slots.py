@@ -250,12 +250,30 @@ def extract_sales_slots(message: str) -> Dict[str, Any]:
             amount = tro_xuong.group(1) + " " + tro_xuong.group(2)
             slots["budget"] = amount.strip()
         else:
-            lteq = re.search(r'(?:<=|≤)\s*(\d+(?:[\.,]\d+)?)\s*(triệu|tr|nghìn)\b', raw, re.I)
+            lteq = re.search(r'(?:<=|≤|le)\s*(\d+(?:[\.,]\d+)?)\s*(triệu|tr|nghìn)\b', raw, re.I)
             if not lteq:
-                lteq = re.search(r'(?:<=|≤)\s*(\d+(?:[\.,]\d+)?)\s*(triệu|tr|nghìn)\b', folded, re.I)
+                lteq = re.search(r'(?:<=|≤|le)\s*(\d+(?:[\.,]\d+)?)\s*(triệu|tr|nghìn)\b', raw, re.I)
+            if not lteq:
+                lteq = re.search(r'(?:<=|≤|le)\s*(\d+(?:[\.,]\d+)?)\s*(trieu|tr|nghin)\b', raw, re.I)
+            if not lteq:
+                lteq = re.search(r'(?:<=|≤|le)\s*(\d+(?:[\.,]\d+)?)\s*(trieu|tr|nghin)\b', folded, re.I)
             if lteq:
                 amount = lteq.group(1) + " " + lteq.group(2)
                 slots["budget"] = amount.strip()
+            else:
+                tro_xuong2 = re.search(r'(\d+(?:[\.,]\d+)?)\s*(trieu|tr|nghin)\s*tro\s*xuong\b', folded, re.I)
+                if tro_xuong2:
+                    amount = tro_xuong2.group(1) + " " + tro_xuong2.group(2)
+                    slots["budget"] = amount.strip()
+    # Phase 10F: lower-bound budget ("hơn 10 triệu", "trên 10 triệu", "phải hơn X")
+    if not slots.get("budget"):
+        lower = re.search(r'(?:hon|hon hon|tren|trên|phai hon|phai hon hon)\s*(\d+(?:[\.,]\d+)?)\s*(trieu|tr|nghin)\b', folded, re.I)
+        if not lower:
+            lower = re.search(r'(?:tu|từ)\s*(\d+(?:[\.,]\d+)?)\s*(trieu|tr|nghin)\s*tro\s*len\b', folded, re.I)
+        if lower:
+            amount = lower.group(1) + " " + lower.group(2)
+            slots["budget"] = amount.strip()
+            slots["budget_min"] = amount.strip()
 
     # Phase 9B: extract room dimensions/area
     _dim = _extract_dimensions(raw)

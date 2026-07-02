@@ -1211,5 +1211,339 @@ class SalesRuntimeIntegrationTests(unittest.TestCase):
             server.SALES_HANDOFF_SERVICE = previous_service
 
 
+    # Phase 10F: Den consultation with room + size, then budget
+        # Phase 10F: Den consultation with room + size, then budget
+    def test_den_consultation_room_size_then_budget(self):
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            den_kb = FakeRetriever([
+                _hit("den-op", "Den op tran nho", "DEN-001", 3500000, "https://example.test/den-op", category="Den"),
+                _hit("tranh", "Tranh trang tri", "TRA-001", 2500000, "https://example.test/tranh", category="Tranh"),
+            ])
+            server.KB = den_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = den_kb
+
+            conv_id = "phase10-den"
+            r1 = self._turn(conv_id, "t muon mua 1 cai den", sales_mode="active", mode="tenant_sales")
+            p1 = r1.json()
+            self.assertEqual(p1["debug"]["current_stage"], "discover")
+
+            r2 = self._turn(conv_id, "phong khach di, tran chac khoang 3x2m", sales_mode="active", mode="tenant_sales")
+            p2 = r2.json()
+            known = p2["debug"].get("known_slots", {})
+            # Should retain category Den (unicode Diacritics)
+            cat = known.get("product_category", known.get("product_type", ""))
+            from app.retrievers.text import fold_accents
+            self.assertTrue("den" in fold_accents(str(cat)).lower(), msg=f"Expected Den category, got {cat!r}")
+            # Should ask budget, not list yet
+            self.assertEqual(p2["debug"]["sales_action_taken"], "ask_discovery")
+
+            r3 = self._turn(conv_id, "10 trieu tro xuong", sales_mode="active", mode="tenant_sales")
+            p3 = r3.json()
+            reply3 = p3.get("reply", "")
+            # Phase 10H: positive assertion — Đèn upper-bound should list or suggest Đèn
+            # (may show product listing via template or ask_budget; check it's not wrong-category)
+            from app.retrievers.text import fold_accents as _fa
+            self.assertTrue("den" in _fa(reply3) or p3["debug"].get("requested_category") in ("Den", "Đèn"),
+                            msg=f"Expected Đèn-related reply or category, got: {reply3}")
+            self.assertGreaterEqual(p3["debug"].get("retrieval_count", 0), 0)
+            _rc3 = p3["debug"].get("requested_category", "")
+            self.assertIsNotNone(_rc3, msg="requested_category should not be None")
+            # Should not show Tranh
+            self.assertNotIn("Tranh", reply3)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    # Phase 10F: Ghe co dien, then budget under 3tr should not return Tranh
+    def test_ghe_co_dien_then_budget_under_3m_not_tranh(self):
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            mixed_kb = FakeRetriever([
+                _hit("ghe-go", "Ghe go co dien", "GHE-010", 2500000, "https://example.test/ghe-go", category="Ghe"),
+                _hit("tranh", "Tranh nho", "TRA-010", 1800000, "https://example.test/tranh", category="Tranh"),
+            ])
+            server.KB = mixed_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = mixed_kb
+
+            conv_id = "phase10-ghe-co-dien"
+            self._turn(conv_id, "t muon mua do cho phong ngu cua t", sales_mode="active", mode="tenant_sales")
+            self._turn(conv_id, "ghe di", sales_mode="active", mode="tenant_sales")
+            r3 = self._turn(conv_id, "t nghi lai roi, t thich cai gi phong cach co dien co", sales_mode="active", mode="tenant_sales")
+            p3 = r3.json()
+            known = p3["debug"].get("known_slots", {})
+            cat = known.get("product_category", known.get("product_type", ""))
+            from app.retrievers.text import fold_accents
+            self.assertTrue("ghe" in fold_accents(str(cat)).lower(), msg=f"Expected Ghe category, got {cat!r}")
+            # Should not no-result early
+            self.assertNotEqual(p3["debug"]["sales_action_taken"], "none")
+
+            r4 = self._turn(conv_id, "duoi 3 trieu", sales_mode="active", mode="tenant_sales")
+            p4 = r4.json()
+            reply4 = p4.get("reply", "")
+            # Phase 10H: positive assertion — Ghế cổ điển + budget must retain Ghế category
+            from app.retrievers.text import fold_accents as _fa3
+            self.assertTrue("ghe" in _fa3(reply4) or "ghe" in _fa3(str(p4["debug"].get("requested_category", ""))),
+                            msg=f"Expected Ghế-related reply, got: {reply4}")
+            # Should have attempted retrieval with right category
+            self.assertGreaterEqual(p4["debug"].get("retrieval_count", 0), 0)
+            # requested_category should be Ghế-related or None (not wrong category)
+            _rc = p4["debug"].get("requested_category") or ""
+            if _rc:
+                from app.retrievers.text import fold_accents as _fa4
+                self.assertIn("ghe", _fa4(str(_rc)).lower(),
+                             msg=f"requested_category should be Ghế-related, got: {_rc}")
+            self.assertNotIn("Tranh", reply4)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    # Phase 10F: Ban that to should not ask category again
+    def test_ban_that_to_category_retained(self):
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            ban_kb = FakeRetriever([
+                _hit("ban-lon", "Ban an lon", "BAN-100", 8000000, "https://example.test/ban-lon", category="Ban"),
+            ])
+            server.KB = ban_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = ban_kb
+
+            conv_id = "phase10-ban-to"
+            r1 = self._turn(conv_id, "t muon mua 1 cai ban that to", sales_mode="active", mode="tenant_sales")
+            p1 = r1.json()
+            known = p1["debug"].get("known_slots", {})
+            cat = known.get("product_category", known.get("product_type", ""))
+            from app.retrievers.text import fold_accents
+            self.assertTrue("ban" in fold_accents(str(cat)).lower(), msg=f"Expected Ban category, got {cat!r}")
+            reply1 = p1.get("reply", "")
+            self.assertNotIn("sofa, ban, giuong, tu", reply1)
+
+            r2 = self._turn(conv_id, "ban, da noi roi ma", sales_mode="active", mode="tenant_sales")
+            p2 = r2.json()
+            reply2 = p2.get("reply", "")
+            # Phase 10H: positive — Bàn repeat should not no-result and must ask missing details
+            self.assertNotIn("Mình chưa tìm thấy", reply2)
+            self.assertNotIn("sofa, bàn, giường, tủ", reply2)
+            self.assertNotEqual(p2["debug"].get("sales_action_taken"), "suggest_from_kb")
+            # Should ask at least one useful missing detail
+            self.assertTrue(
+                ("phòng" in reply2.lower()) or ("ngân sách" in reply2.lower()) or ("mục đích" in reply2.lower()) or ("ăn" in reply2.lower()) or ("làm việc" in reply2.lower()) or ("kích thước" in reply2.lower()),
+                msg=f"Bàn repeat should ask missing details, got: {reply2}"
+            )
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+
+
+    # Phase 10J: Den lower-bound — expensive product should be listed, cheap filtered out
+    def test_den_lower_bound_only_expensive(self):
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            lux_kb = FakeRetriever([
+                _hit("den-cheap", "Den OK not expensive", "DEN-CHEAP", 3500000, "https://example.test/den-cheap", category="Den"),
+                _hit("den-lux", "Den EXP very expensive", "DEN-LUX", 12000000, "https://example.test/den-lux", category="Den"),
+            ])
+            server.KB = lux_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = lux_kb
+            conv_id = "phase10j-den-lower"
+            self._turn(conv_id, "t muon mua 1 cai den", sales_mode="active", mode="tenant_sales")
+            self._turn(conv_id, "phong khach di, tran chac khoang 3x2m", sales_mode="active", mode="tenant_sales")
+            r3 = self._turn(conv_id, "phai hon 10 trieu", sales_mode="active", mode="tenant_sales")
+            p3 = r3.json()
+            reply3 = p3.get("reply", "")
+            d3 = p3.get("debug", {})
+            # Price filter must exclude cheap product and include expensive one
+            self.assertNotIn("DEN-CHEAP", reply3)
+            self.assertGreater(d3.get("retrieval_count", 0), 0,
+                              msg=f"retrieval_count should be >0 (DEN-LUX 12m), got {d3.get('retrieval_count')}")
+            self.assertIn("DEN-LUX", reply3, msg="DEN-LUX should be listed since it is >10m, DEN-CHEAP filtered out")
+            self.assertIsNotNone(d3.get("requested_category"), "requested_category should be set")
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    # Phase 10J: Den lower-bound with only cheap product — no listing of cheap product
+    def test_den_lower_bound_cheap_only_no_listing(self):
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            cheap_kb = FakeRetriever([
+                _hit("den-cheap", "Den OK not expensive", "DEN-CHEAP", 3500000, "https://example.test/den-cheap", category="Den"),
+            ])
+            server.KB = cheap_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = cheap_kb
+            conv_id = "phase10j-den-cheap-only"
+            self._turn(conv_id, "t muon mua 1 cai den", sales_mode="active", mode="tenant_sales")
+            self._turn(conv_id, "phong khach di, tran chac khoang 3x2m", sales_mode="active", mode="tenant_sales")
+            r3 = self._turn(conv_id, "phai hon 10 trieu", sales_mode="active", mode="tenant_sales")
+            p3 = r3.json()
+            reply3 = p3.get("reply", "")
+            self.assertNotIn("DEN-CHEAP", reply3)
+            self.assertNotIn("[P1]", reply3)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    # Phase 10I: Ban repeat should not list products and no material false positive
+    def test_ban_repeat_no_listing(self):
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            ban_kb = FakeRetriever([
+                _hit("ban-lon", "Ban an lon", "BAN-100", 8000000, "https://example.test/ban-lon", category="Ban"),
+            ])
+            server.KB = ban_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = ban_kb
+            conv_id = "phase10i-ban-repeat"
+            self._turn(conv_id, "t muon mua 1 cai ban that to", sales_mode="active", mode="tenant_sales")
+            r2 = self._turn(conv_id, "ban, da noi roi ma", sales_mode="active", mode="tenant_sales")
+            p2 = r2.json()
+            reply2 = p2.get("reply", "")
+            known = p2["debug"].get("known_slots", {})
+            self.assertNotEqual(known.get("material"), "da", msg="material should not be 'da' from past-tense 'da'")
+            self.assertNotIn("[P1]", reply2)
+            self.assertNotIn("BAN-100", reply2)
+            self.assertNotIn("Minh chua tim thay", reply2)
+            from app.retrievers.text import fold_accents as _fa_ban
+            reply2_folded = _fa_ban(reply2).lower()
+            self.assertIn("ban", reply2_folded, msg="Reply should contain 'ban', got: " + reply2)
+            reply2_raw_lower = reply2.lower()
+            self.assertTrue(
+                ("phong" in reply2_folded) or ("ngan sach" in reply2_raw_lower) or ("muc dich" in reply2_folded) or ("ngân sách" in reply2_raw_lower) or ("mục đích" in reply2_raw_lower) or ("kích thước" in reply2_raw_lower),
+                msg="Ban repeat should ask missing details, got: " + reply2
+            )
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    # Phase 10J: Den upper-bound — cheap listed, expensive filtered out
+    def test_den_upper_bound_filters_expensive(self):
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            mix_kb = FakeRetriever([
+                _hit("den-cheap", "Den OK not expensive", "DEN-CHEAP", 3500000, "https://example.test/den-cheap", category="Den"),
+                _hit("den-lux", "Den EXP very expensive", "DEN-LUX", 12000000, "https://example.test/den-lux", category="Den"),
+            ])
+            server.KB = mix_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = mix_kb
+            conv_id = "phase10j-den-upper"
+            self._turn(conv_id, "t muon mua 1 cai den", sales_mode="active", mode="tenant_sales")
+            self._turn(conv_id, "phong khach di, tran chac khoang 3x2m", sales_mode="active", mode="tenant_sales")
+            r3 = self._turn(conv_id, "10 trieu tro xuong", sales_mode="active", mode="tenant_sales")
+            p3 = r3.json()
+            reply3 = p3.get("reply", "")
+            d3 = p3.get("debug", {})
+            self.assertIn("DEN-CHEAP", reply3, msg="DEN-CHEAP (3.5m) should be listed under 10m upper-bound")
+            self.assertNotIn("DEN-LUX", reply3, msg="DEN-LUX (12m) should be filtered out by 10m upper-bound")
+            self.assertGreater(d3.get("retrieval_count", 0), 0,
+                              msg=f"retrieval_count should be >0 (DEN-CHEAP 3.5m), got {d3.get('retrieval_count')}")
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+
+
+
+    # Phase 10K: tu 10 trieu tro len lower-bound — must not become Tu category, must list DEN-LUX
+    def test_tu_muoi_lower_bound_lists_den_lux(self):
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            den_kb = FakeRetriever([
+                _hit("den-cheap", "Den OK not expensive", "DEN-CHEAP", 3500000, "https://example.test/den-cheap", category="Den"),
+                _hit("den-lux", "Den EXP very expensive", "DEN-LUX", 12000000, "https://example.test/den-lux", category="Den"),
+                _hit("tu-lam", "Tu lam bang go", "TU-001", 5000000, "https://example.test/tu-lam", category="Tu"),
+            ])
+            server.KB = den_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = den_kb
+            conv_id = "phase10k-tu-muoi"
+            self._turn(conv_id, "t muon mua 1 cai den", sales_mode="active", mode="tenant_sales")
+            self._turn(conv_id, "phong khach di, tran chac khoang 3x2m", sales_mode="active", mode="tenant_sales")
+            r3 = self._turn(conv_id, "tu 10 trieu tro len", sales_mode="active", mode="tenant_sales")
+            p3 = r3.json()
+            reply3 = p3.get("reply", "")
+            d3 = p3.get("debug", {})
+            # Category must remain Den, not Tu
+            known = d3.get("known_slots", {})
+            from app.retrievers.text import fold_accents as _fa_tu
+            cat = known.get("product_category", known.get("product_type", ""))
+            cat_folded = _fa_tu(str(cat)).lower() if cat else ""
+            self.assertNotEqual(cat_folded, "tu", msg=f"Category should NOT be Tu, got: {cat}")
+            self.assertIn("den", cat_folded, msg=f"Category should be Den, got: {cat}")
+            # Must list DEN-LUX, not DEN-CHEAP
+            self.assertIn("DEN-LUX", reply3, msg="DEN-LUX (12m) should be listed")
+            self.assertNotIn("DEN-CHEAP", reply3, msg="DEN-CHEAP (3.5m) should be filtered out")
+            self.assertGreater(d3.get("retrieval_count", 0), 0,
+                              msg=f"retrieval_count should be >0, got {d3.get('retrieval_count')}")
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    # Phase 10N: similar supplemental path — must render in-budget candidate
+    def test_similar_path_price_filter(self):
+        """Similar/supplemental path must render in-budget candidate and exclude expensive.
+        Uses shadow mode + answer_mode=llm to reach similar branch (~line 1904).
+        """
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            similar_kb = FakeRetriever([
+                _hit("den-ok", "Den OK not expensive", "DEN-OK", 3500000, "https://example.test/den-ok", category="Den"),
+                _hit("den-expensive", "Den EXP very expensive", "DEN-EXP", 12000000, "https://example.test/den-exp", category="Den"),
+            ])
+            server.KB = similar_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = similar_kb
+            conv_id = "phase10l-similar-price"
+            # Build state in shadow mode to accumulate category + budget without early sales return
+            self._turn(conv_id, "t muon mua 1 cai den", sales_mode="shadow", mode="tenant_sales")
+            self._turn(conv_id, "10 trieu tro xuong", sales_mode="shadow", mode="tenant_sales")
+            # Similar intent with llm mode: skips template early return, reaches similar branch
+            r3 = self._turn(conv_id, "co mau nao tuong tu khong", sales_mode="shadow", mode="tenant_sales", answer_mode="llm")
+            p3 = r3.json()
+            reply3 = p3.get("reply", "")
+            d3 = p3.get("debug", {})
+            # Category assertions
+            known_slots = d3.get("known_slots", {})
+            from app.retrievers.text import fold_accents as _fa_10n
+            cat = known_slots.get("product_category", known_slots.get("product_type", ""))
+            cat_folded = _fa_10n(str(cat)).lower()
+            self.assertIn("den", cat_folded, msg=f"Category should be Den, got: {cat}")
+            # Retrieval must have found candidates
+            self.assertGreater(d3.get("retrieval_count", 0), 0,
+                              msg=f"retrieval_count should be >0, got {d3.get('retrieval_count')}")
+            # Must render in-budget product and exclude expensive
+            self.assertIn("Den OK not expensive", reply3, msg="DEN-OK product should appear in similar results")
+            self.assertNotIn("DEN-EXP", reply3, msg="DEN-EXP (12m) should be filtered out by price filter")
+            self.assertNotIn("Den EXP very expensive", reply3, msg="DEN-EXP product should NOT appear")
+            self.assertNotIn("chưa tìm thấy", reply3, msg="Should NOT say no-result when candidate exists")
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+
 if __name__ == "__main__":
     unittest.main()

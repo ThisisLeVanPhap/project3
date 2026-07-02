@@ -132,8 +132,9 @@ class RecommendationReadinessTests(unittest.TestCase):
     def test_category_plus_color_returns_true(self):
         self.assertTrue(_has_recommendation_readiness({"product_category": "Sofa", "color": "navy"}))
 
-    def test_category_plus_style_returns_true(self):
-        self.assertTrue(_has_recommendation_readiness({"product_category": "Sofa", "style": "modern"}))
+    def test_category_plus_style_returns_false(self):
+        # Phase 10F: style alone does not justify listing; need budget/material/color/size
+        self.assertFalse(_has_recommendation_readiness({"product_category": "Sofa", "style": "modern"}))
 
     def test_subtype_counts_as_readiness(self):
         self.assertTrue(_has_specific_product_subtype({"product_type": "ghe van phong"}))
@@ -250,6 +251,48 @@ class MaterialFalsePositiveFixTests(unittest.TestCase):
         # state depends on whether room is also extracted; with material it should be suggest
         self.assertEqual(state.current_stage, "suggest")
 
+    # Phase 10I: "đã" should not become material "da"
+    def test_da_in_past_tense_not_material(self):
+        from app.sales_slots import extract_sales_slots
+        from app.sales_flow import extract_slots
+        slots = extract_sales_slots("ban, da noi roi ma")
+        self.assertIsNone(slots.get("material"), msg="'da' from past-tense 'da' should not be material")
+        flow_slots = extract_slots("ban, da noi roi ma")
+        self.assertIsNone(flow_slots.get("material"), msg="flow: 'da' from past-tense 'da' should not be material")
+
+    def test_da_accented_past_tense_not_material(self):
+        from app.sales_slots import extract_sales_slots
+        slots = extract_sales_slots("ban, da noi roi ma")
+        self.assertIsNone(slots.get("material"))
+
+    def test_ghe_da_still_material(self):
+        from app.sales_slots import extract_sales_slots
+        from app.sales_flow import extract_slots
+        slots = extract_sales_slots("ghe da")
+        self.assertEqual(slots.get("material"), "da")
+        flow_slots = extract_slots("ghe da")
+        self.assertEqual(flow_slots.get("material"), "da")
+
+    def test_sofa_da_cong_nghiep_still_material(self):
+        from app.sales_slots import extract_sales_slots
+        slots = extract_sales_slots("sofa da cong nghiep")
+        self.assertEqual(slots.get("material"), "da")
+
+    # Phase 10M: "tuong tu" must NOT become category Tu
+    def test_tuong_tu_not_tu_category(self):
+        from app.sales_slots import extract_sales_slots
+        from app.product_filters import parse_product_categories
+        slots = extract_sales_slots("co mau nao tuong tu khong")
+        self.assertIsNone(slots.get("product_category"), msg="tuong tu should not become Tu")
+        self.assertIsNone(slots.get("product_type"), msg="tuong tu should not become Tu")
+        cats = parse_product_categories("co mau nao tuong tu khong")
+        self.assertNotIn("Tủ", cats, msg="tuong tu should not be Tu category")
+
+    def test_tu_tivi_still_tu_category(self):
+        from app.product_filters import parse_product_categories
+        cats = parse_product_categories("tu tivi")
+        self.assertIn("Tủ", cats, msg="tu tivi should still be Tu")
+
 
 class CategoryAwareDiscoveryQuestionTests(unittest.TestCase):
     """Phase 3: category-aware discovery questions in render_sales_response."""
@@ -338,16 +381,11 @@ class ConsultationStageForIntegrationTests(unittest.TestCase):
         self.assertEqual(state.current_stage, "suggest")
         self.assertEqual(result["next_best_action"], "suggest_from_kb")
 
-    def test_category_plus_room_goes_to_suggest(self):
+    def test_category_plus_room_goes_to_discover(self):
         state = SalesConversationState(tenant_id="t", conversation_id="c")
         result = apply_message_to_state(state, "sofa phong khach")
-        # sofa phong khach -> product_category: Sofa, room: not extracted by keyword only
-        # Actually 'phong khach' might not get extracted as 'room' -- verify
-        if result["slots"].get("room") or result["slots"].get("space"):
-            self.assertEqual(state.current_stage, "suggest")
-        else:
-            # If room not extracted, state should still be discover
-            self.assertEqual(state.current_stage, "discover")
+        # Phase 7B: room alone + bare category is not enough for readiness; need budget/material/color
+        self.assertEqual(state.current_stage, "discover")
 
     def test_product_reference_goes_to_compare(self):
         state = SalesConversationState(tenant_id="t", conversation_id="c")

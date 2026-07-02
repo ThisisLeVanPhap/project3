@@ -661,6 +661,19 @@ def _build_debug_trace(
     external_price_refs: int = 0,
     price_provider: str = "none",
     used_mock_price_data: bool = False,
+    # Phase 10F: LLM/trace debug fields — hardcoded defaults (overridden in callers)
+    llm_enabled: bool = False,
+    llm_provider: str = "none",
+    llm_model: str = "",
+    llm_call_attempted: bool = False,
+    llm_called: bool = False,
+    llm_skip_reason: str = "",
+    llm_error_type: str = "",
+    answer_mode: str = "",
+    template_reason: str = "",
+    retrieval_query: str = "",
+    requested_category: str = "",
+    slots_snapshot: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     return {
         "mode": mode,
@@ -674,6 +687,19 @@ def _build_debug_trace(
         "external_price_refs": external_price_refs,
         "price_provider": price_provider,
         "used_mock_price_data": used_mock_price_data,
+        # Phase 10F: LLM/trace debug fields
+        "llm_enabled": llm_enabled,
+        "llm_provider": llm_provider,
+        "llm_model": llm_model,
+        "llm_call_attempted": llm_call_attempted,
+        "llm_called": llm_called,
+        "llm_skip_reason": llm_skip_reason,
+        "llm_error_type": llm_error_type,
+        "answer_mode": answer_mode,
+        "template_reason": template_reason,
+        "retrieval_query": retrieval_query,
+        "requested_category": requested_category,
+        "slots_snapshot": dict(slots_snapshot or {}),
     }
 
 
@@ -1288,6 +1314,16 @@ def chat(req: ChatReq):
                     stage=_mode_default_stage(mode),
                     slots={},
                     retrieval_mode=retrieval_mode,
+                    answer_mode="sales-template",
+                    template_reason="pending_confirmation",
+                    llm_enabled=False,
+                    llm_provider="none",
+                    llm_call_attempted=False,
+                    llm_called=False,
+                    llm_skip_reason="template_route",
+                    retrieval_query="",
+                    requested_category="",
+                    slots_snapshot=dict(sales_state.slots if sales_state else {}),
                 )
                 debug_trace.update(_sales_debug_payload(
                     sales_mode,
@@ -1370,6 +1406,16 @@ def chat(req: ChatReq):
                 stage=_mode_default_stage(mode),
                 slots={},
                 retrieval_mode=retrieval_mode,
+                answer_mode="sales-template",
+                template_reason="sales_action",
+                llm_enabled=False,
+                llm_provider="none",
+                llm_call_attempted=False,
+                llm_called=False,
+                llm_skip_reason="template_route",
+                retrieval_query=(lambda q: re.sub(r'[\w\.-]+@[\w\.-]+', '***', re.sub(r'\d[\d\s\.\-]{7,}\d', '***', q or '')))(locals().get("_tenant_sales_search_query") or req.message),
+                requested_category=(locals().get("_tenant_sales_requested_cat") or ""),
+                slots_snapshot=(lambda s: {k: ("***" if k in ("phone", "email") else v) for k, v in (s or {}).items()})(sales_state.slots if sales_state else {}),
             )
             debug_trace.update(_sales_debug_payload(
                 sales_mode,
@@ -1379,6 +1425,22 @@ def chat(req: ChatReq):
                 persistent=sales_state_persistent,
                 state_warning=sales_state_warning,
             ))
+            # Phase 10G: fill debug for ask_discovery early return
+            debug_trace.setdefault("answer_mode", "sales-template")
+            debug_trace.setdefault("template_reason", "ask_discovery")
+            debug_trace.setdefault("llm_enabled", False)
+            debug_trace.setdefault("llm_provider", "none")
+            debug_trace.setdefault("llm_call_attempted", False)
+            debug_trace.setdefault("llm_called", False)
+            debug_trace.setdefault("llm_skip_reason", "template_route")
+            debug_trace.setdefault("retrieval_query", (locals().get("_tenant_sales_search_query") or req.message))
+            debug_trace.setdefault("requested_category", (locals().get("_tenant_sales_requested_cat") or ""))
+            # Phase 10G: snapshot slots but mask contact details for privacy
+            _snap = dict(sales_state.slots if sales_state else {})
+            for _k in ("phone", "email"):
+                if _k in _snap:
+                    _snap[_k] = "***"
+            debug_trace.setdefault("slots_snapshot", _snap)
             reply = render_sales_response(sales_action_taken, sales_draft, sales_state)
             try:
                 save_turn(conv_id, req.message, reply[:1200])
@@ -1412,6 +1474,17 @@ def chat(req: ChatReq):
                 persistent=sales_state_persistent,
                 state_warning=sales_state_warning,
             ))
+        # Phase 10G: fill debug for rule early return
+        debug_trace.setdefault("answer_mode", "rule")
+        debug_trace.setdefault("llm_enabled", False)
+        debug_trace.setdefault("llm_provider", "none")
+        debug_trace.setdefault("llm_call_attempted", False)
+        debug_trace.setdefault("llm_called", False)
+        debug_trace.setdefault("llm_skip_reason", "rule_route")
+        debug_trace.setdefault("template_reason", "")
+        debug_trace.setdefault("retrieval_query", req.message)
+        debug_trace.setdefault("requested_category", "")
+        debug_trace.setdefault("slots_snapshot", dict(slots_for_debug if 'slots_for_debug' in dir() else {}))
         log_event({
             "event": "rule_hit",
             "rule_type": rr["type"],
@@ -1437,6 +1510,10 @@ def chat(req: ChatReq):
     captured_name = None
     stage_for_debug = getattr(st, "stage", _mode_default_stage(mode))
     slots_for_debug: Dict[str, Any] = dict(getattr(st, "slots", {}) or {})
+
+    # Phase 10G: initialize tenant_sales query vars early so debug traces can reference them
+    _tenant_sales_requested_cat = None
+    _tenant_sales_search_query = req.message
 
     # update slots from this user message
     try:
@@ -1500,11 +1577,26 @@ def chat(req: ChatReq):
         cat = state_slots.get("product_category") or state_slots.get("product_type") or ""
         room = state_slots.get("room") or ""
         budget = state_slots.get("budget_text") or state_slots.get("budget_usd") or ""
+        style = state_slots.get("style") or ""
+        budget_min = state_slots.get("budget_min") or ""
         if cat:
             raw = cat
             _tenant_sales_requested_cat = cat
-        if cat or room or budget:
+        if cat or room or budget or style or budget_min:
+            # Phase 10G: format budget_min as lower-bound phrase so parse_price_constraint picks it up as min_price
             parts = [cat, room, budget]
+            # Phase 10H: include both canonical style and Vietnamese label for KB matching (e.g., "classic" + "cổ điển")
+            if style:
+                parts.append(style)
+                try:
+                    from .sales_flow import STYLE_TO_VI
+                    vi_label = STYLE_TO_VI.get(style)
+                    if vi_label:
+                        parts.append(vi_label)
+                except Exception:
+                    pass
+            if budget_min:
+                parts.append(f"trên {budget_min}")
             accumulated = " ".join(p for p in parts if p).strip()
             if accumulated:
                 _tenant_sales_search_query = accumulated
@@ -1522,11 +1614,66 @@ def chat(req: ChatReq):
         filtered_count -= len(retrieval_hits)
         if filtered_count:
             retrieval_hits = search_hits(
-                active_kb, req.message,
+                active_kb, _tenant_sales_search_query,
                 k=max(len(retrieval_hits) + filtered_count + 5, 20),
                 tenant_id=req.tenant_id,
             )
             retrieval_hits = filter_by_category(retrieval_hits, _tenant_sales_requested_cat)
+
+    # Phase 10I: hard price filter from accumulated sales_state (hard min/max, not apply_price_constraint which returns all on no-match)
+    if retrieval_hits and sales_state and _is_tenant_sales_mode(mode) and sales_state.slots:
+        _ss = sales_state.slots
+        _budget_min_str = _ss.get("budget_min") or ""
+        _budget_str = _ss.get("budget") or ""
+        _budget_text = _ss.get("budget_text") or ""
+        _min_price_vnd = None
+        _max_price_vnd = None
+        if _budget_min_str:
+            _pm = __import__("re").search(r"(\d+(?:[.,]\d+)?)\s*(tri\u1ec7u|tr|trieu|ngh\u00ecn|nghin)", _budget_min_str, __import__("re").I)
+            if _pm:
+                _val = float(_pm.group(1).replace(",", "."))
+                _mult = 1_000_000 if _pm.group(2) in ("tri\u1ec7u", "tr", "trieu") else 1_000
+                _min_price_vnd = int(_val * _mult)
+        # Phase 10J: only use budget/budget_text for max_price when there is NO budget_min
+        # (budget_min and budget share the same underlying text for lower-bound expressions)
+        if not _budget_min_str:
+            _upper_text = _budget_str or _budget_text
+            if _upper_text:
+                _pm2 = __import__("re").search(r"(\d+(?:[.,]\d+)?)\s*(tri\u1ec7u|tr|trieu|ngh\u00ecn|nghin)", _upper_text, __import__("re").I)
+                if _pm2:
+                    _val2 = float(_pm2.group(1).replace(",", "."))
+                    _mult2 = 1_000_000 if _pm2.group(2) in ("tri\u1ec7u", "tr", "trieu") else 1_000
+                    _max_price_vnd = int(_val2 * _mult2)
+        if _min_price_vnd is not None or _max_price_vnd is not None:
+            _pre_count = len(retrieval_hits)
+            _filtered = []
+            for _hit in retrieval_hits:
+                _meta = getattr(_hit, "metadata", {}) if hasattr(_hit, "metadata") else {}
+                _price_raw = None
+                if isinstance(_meta, dict):
+                    _price_raw = _meta.get("price")
+                if _price_raw is None:
+                    _price_raw = getattr(_hit, "price", None) or (getattr(getattr(_hit, "metadata", None) or {}, "get", lambda k: None)("price") if hasattr(_hit, "metadata") else None)
+                if _price_raw is None:
+                    _filtered.append(_hit)
+                    continue
+                try:
+                    _pv = float(_price_raw)
+                except (TypeError, ValueError):
+                    _filtered.append(_hit)
+                    continue
+                if _min_price_vnd is not None and _pv < _min_price_vnd:
+                    continue
+                if _max_price_vnd is not None and _pv > _max_price_vnd:
+                    continue
+                _filtered.append(_hit)
+            retrieval_hits = _filtered
+            _post_count = len(retrieval_hits)
+            if 'debug_trace' in dir() and debug_trace:
+                debug_trace["price_filter_before"] = _pre_count
+                debug_trace["price_filter_after"] = _post_count
+                debug_trace["price_filter_min"] = _min_price_vnd
+                debug_trace["price_filter_max"] = _max_price_vnd
 
     # Phase 6C: resolve pending_sku from KB hits -> real selected_product
     if sales_state and _is_tenant_sales_mode(mode) and retrieval_hits:
@@ -1635,6 +1782,20 @@ def chat(req: ChatReq):
         update_recommended_products(sales_state, retrieval_hits)
         _save_sales_state(sales_state)
 
+    # Phase 10F: determine LLM call status for debug
+    llm_enabled = (provider == "claude") or (provider == "local" and answer_mode != "template")
+    llm_provider = provider if llm_enabled else "none"
+    llm_model = (os.getenv("CLAUDE_MODEL") or 'claude-sonnet-4-6') if provider == "claude" else (base_model or "")
+    llm_call_attempted = llm_enabled and answer_mode != "template"
+    llm_called = False  # will be set True after successful call below
+    llm_skip_reason = ""
+    if not llm_enabled:
+        llm_skip_reason = "llm_disabled"
+    elif answer_mode == "template":
+        llm_skip_reason = "template_route"
+    elif provider == "claude" and not (os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")):
+        llm_skip_reason = "missing_api_key"
+
     debug_trace = _build_debug_trace(
         mode=mode,
         stage=stage_for_debug,
@@ -1647,6 +1808,17 @@ def chat(req: ChatReq):
         external_price_refs=len(price_refs),
         price_provider=price_provider_name,
         used_mock_price_data=used_mock_price_data,
+        llm_enabled=llm_enabled,
+        llm_provider=llm_provider,
+        llm_model=llm_model,
+        llm_call_attempted=llm_call_attempted,
+        llm_called=llm_called,
+        llm_skip_reason=llm_skip_reason,
+        answer_mode=answer_mode,
+        template_reason="template" if answer_mode == "template" else "",
+        retrieval_query=_tenant_sales_search_query if sales_enabled else req.message,
+        requested_category=_tenant_sales_requested_cat or "",
+        slots_snapshot=dict(sales_state.slots if sales_state else slots_for_debug),
     )
     debug_trace.update({
         "answer_mode": answer_mode,
@@ -1732,9 +1904,48 @@ def chat(req: ChatReq):
     if _is_tenant_sales_mode(mode) and active_kb is not None and allow_rag and want_similar(req.message):
         similar_hits = retrieval_hits
         if len(similar_hits) < 8:
-            similar_hits = search_hits(active_kb, req.message, k=8, tenant_id=req.tenant_id)
+            similar_hits = search_hits(active_kb, _tenant_sales_search_query or req.message, k=8, tenant_id=req.tenant_id)
         if _tenant_sales_requested_cat:
             similar_hits = filter_by_category(similar_hits, _tenant_sales_requested_cat)
+        # Phase 10J: apply price constraint to similar hits too
+        if similar_hits and sales_state and _is_tenant_sales_mode(mode) and sales_state.slots:
+            _ss2 = sales_state.slots
+            _bmin2 = _ss2.get("budget_min") or ""
+            _minvnd2 = None
+            _maxvnd2 = None
+            if _bmin2:
+                _m2 = __import__("re").search(r"(\d+(?:[.,]\d+)?)\s*(triệu|tr|trieu|nghìn|nghin)", _bmin2, __import__("re").I)
+                if _m2:
+                    _v2 = float(_m2.group(1).replace(",", "."))
+                    _mu2 = 1_000_000 if _m2.group(2) in ("triệu", "tr", "trieu") else 1_000
+                    _minvnd2 = int(_v2 * _mu2)
+            if not _bmin2:
+                _ut2 = _ss2.get("budget") or _ss2.get("budget_text") or ""
+                if _ut2:
+                    _m3 = __import__("re").search(r"(\d+(?:[.,]\d+)?)\s*(triệu|tr|trieu|nghìn|nghin)", _ut2, __import__("re").I)
+                    if _m3:
+                        _v3 = float(_m3.group(1).replace(",", "."))
+                        _mu3 = 1_000_000 if _m3.group(2) in ("triệu", "tr", "trieu") else 1_000
+                        _maxvnd2 = int(_v3 * _mu3)
+            if _minvnd2 is not None or _maxvnd2 is not None:
+                _fh2 = []
+                for _hk in similar_hits:
+                    _mk = getattr(_hk, "metadata", {}) if hasattr(_hk, "metadata") else {}
+                    _pr2 = None
+                    if isinstance(_mk, dict):
+                        _pr2 = _mk.get("price")
+                    if _pr2 is None:
+                        _fh2.append(_hk); continue
+                    try:
+                        _pv2 = float(_pr2)
+                    except (TypeError, ValueError):
+                        _fh2.append(_hk); continue
+                    if _minvnd2 is not None and _pv2 < _minvnd2:
+                        continue
+                    if _maxvnd2 is not None and _pv2 > _maxvnd2:
+                        continue
+                    _fh2.append(_hk)
+                similar_hits = _fh2
         items = top_similar_items(similar_hits, limit=3)
 
         if items:
@@ -1817,6 +2028,7 @@ def chat(req: ChatReq):
         if not api_key:
             out, claude_error_code, claude_error_preview = "", "missing_api_key", "System env ANTHROPIC_API_KEY or CLAUDE_API_KEY not set"
         else:
+            llm_called = True
             out, claude_error_code, claude_error_preview = _call_claude_api(
                 _messages_to_plain_prompt(messages),
                 api_key,
@@ -1828,12 +2040,16 @@ def chat(req: ChatReq):
             )
 
         if claude_error_code:
+            debug_trace["llm_error_type"] = claude_error_code
+        if claude_error_code:
             debug_trace["claude_error"] = {
                 "type": claude_error_code,
                 "preview": claude_error_preview,
                 "model": api_model,
                 "base_url": api_base_url,
             }
+        if llm_called and not claude_error_code:
+            debug_trace["llm_called"] = True
         response_model = api_model
         response_adapter = None
     elif provider == "local":

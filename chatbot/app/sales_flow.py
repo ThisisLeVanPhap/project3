@@ -26,7 +26,7 @@ RX_DURABILITY_OBJECTION = re.compile(r"\b(bền không|ben khong|có bền|co be
 RX_EXPENSIVE_OBJECTION = re.compile(r"\b(đắt quá|dat qua|hơi đắt|hoi dat|mắc quá|mac qua|expensive|too much|over budget)\b", re.I)
 RX_NOT_READY = re.compile(r"\b(chưa chắc|chua chac|cân nhắc|can nhac|để nghĩ|de nghi|not sure|think about|maybe later)\b", re.I)
 RX_STYLE = re.compile(r"\b(modern|minimal|classic|scandinavian|boho|industrial|luxury)\b", re.I)
-RX_STYLE_VI = re.compile(r"\b(hiện đại|tối giản|cổ điển|bắc âu|boho|công nghiệp|cao cấp|luxury)\b", re.I)
+RX_STYLE_VI = re.compile(r"\b(hiện đại|tối giản|cổ điển|bắc âu|boho|công nghiệp|cao cấp|luxury|sang trọng|ấm cúng)\b", re.I)
 STYLE_MAP_VI = {
     "hiện đại": "modern",
     "tối giản": "minimal",
@@ -35,6 +35,20 @@ STYLE_MAP_VI = {
     "boho": "boho",
     "công nghiệp": "industrial",
     "cao cấp": "luxury",
+    "sang trọng": "luxury",
+    "ấm cúng": "warm",
+}
+
+# Reverse map: canonical English style -> Vietnamese display label for KB-friendly queries
+STYLE_TO_VI = {
+    "modern": "hiện đại",
+    "minimal": "tối giản",
+    "classic": "cổ điển",
+    "scandinavian": "bắc âu",
+    "boho": "boho",
+    "industrial": "công nghiệp",
+    "luxury": "cao cấp",
+    "warm": "ấm cúng",
 }
 
 def _repair_mojibake(text: str) -> str:
@@ -113,7 +127,7 @@ RX_BUY = re.compile(
 )
 # --- Consultation-specific patterns ---
 RX_ROOM_TYPE = re.compile(
-    r"\b(living room|phòng khách|bedroom|phòng ngủ|dining room|phòng ăn|kitchen|bếp|"
+    r"\b(living room|phòng khách|phong khach|bedroom|phòng ngủ|phong ngu|dining room|phòng ăn|phong an|kitchen|bếp|bep|"
     r"home office|văn phòng tại nhà|apartment|căn hộ|studio|balcony|ban công)\b",
     re.I,
 )
@@ -215,6 +229,10 @@ def extract_slots(text: str) -> Dict[str, Any]:
             slots["style"] = "minimal"
         elif re.search(r"\bco dien\b", mt):
             slots["style"] = "classic"
+        elif re.search(r"\bsang trong\b", mt):
+            slots["style"] = "luxury"
+        elif re.search(r"\bam cung\b", mt):
+            slots["style"] = "warm"
 
     # Color extraction (first match only)
     color_match = RX_COLOR.search(t)
@@ -228,7 +246,17 @@ def extract_slots(text: str) -> Dict[str, Any]:
     # Material extraction (first match only)
     material_match = RX_MATERIAL.search(t)
     if material_match:
-        slots["material"] = material_match.group(1).lower()
+        raw_material = material_match.group(1).lower()
+        # Phase 10I: reject "da" when it's a past-tense marker, not leather material
+        if raw_material == "da":
+            # "da" is past-tense if followed by a verb (noi, mua, lam, bao, chot, gui, tim, biet)
+            # or if original has "đã" as a word
+            after_da = t[t[material_match.start():].find("da ") + 3:t[material_match.start():].find("da ") + 10] if "da " in t[material_match.start():] else ""
+            is_past_tense = bool(re.search(r"\bđã\b", text or "", re.I)) or bool(re.search(r'\bda\s+(noi|mua|lam|bao|chot|gui|tim|biet|bảo|làm|chốt|gửi|tìm|biết|nghi|nghĩ|lay|lấy|hoc|đi)\b', t or "", re.I))
+            if not is_past_tense:
+                slots["material"] = raw_material
+        else:
+            slots["material"] = raw_material
 
     return slots
 

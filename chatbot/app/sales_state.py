@@ -296,7 +296,10 @@ def consultation_stage_for(state: SalesConversationState, slots: Dict[str, Any] 
         # Also check if the message itself references a past recommendation
         has_position_ref = bool(state.last_recommended_products) and (
             slots.get("has_product_reference") or bool(state.selected_products))
-        if state.selected_products or state.purchase_request or has_product_ref or has_position_ref:
+        # Phase 9C: purchase_request with needs_product status does not indicate a real purchase
+        _purchase_has_product = state.purchase_request is not None and (
+            state.purchase_request.get("status") not in (None, "needs_product"))
+        if state.selected_products or _purchase_has_product or has_product_ref or has_position_ref:
             return "confirm"
         # Vague purchase intent without specific product -> stay in discover/suggest
         if _has_recommendation_readiness(state.slots):
@@ -411,8 +414,8 @@ def apply_message_to_state(state: SalesConversationState, message: str) -> Dict[
     action = next_best_action(state, slots)
     state.slots["consultation_stage"] = stage
     state.slots["next_best_action"] = action
-    if consult_missing:
-        state.slots["consultation_missing_slots"] = consult_missing
+    # Phase 9: always update consultation_missing_slots, even when empty (clears stale values)
+    state.slots["consultation_missing_slots"] = consult_missing
     state.updated_at = time.time()
     return {"slots": slots, "resolved_product": resolved, "stage": stage, "next_best_action": action, "missing_slots": consult_missing}
 
@@ -420,7 +423,11 @@ def apply_message_to_state(state: SalesConversationState, message: str) -> Dict[
 def suggest_missing_fields(state: SalesConversationState, slots: Dict[str, Any] | None = None) -> List[str]:
     slots = slots or {}
     missing: List[str] = []
-    if not state.selected_products and ("purchase_intent" in slots.get("intents", []) or state.contact):
+    # Phase 9B: only require product for genuine purchase intent (has specific product ref/SKU)
+    has_real_purchase = bool(
+        state.selected_products or slots.get("has_product_reference") or slots.get("product_sku_ref")
+    ) if "purchase_intent" in slots.get("intents", []) else False
+    if not state.selected_products and has_real_purchase:
         missing.append("product")
     if state.selected_products and not state.contact and not state.handoff_required:
         missing.append("contact")

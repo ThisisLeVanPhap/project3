@@ -1478,10 +1478,15 @@ def chat(req: ChatReq):
     retrieval_hits = []
     allow_rag = False
     try:
+        # Phase 9C: use sales_state for retrieval decision when available
+        _rag_stage = (sales_state.current_stage if sales_state and _is_tenant_sales_mode(mode)
+                      else stage_for_debug)
+        _rag_slots = (dict(sales_state.slots) if sales_state and _is_tenant_sales_mode(mode)
+                      else slots_for_debug)
         allow_rag = True if not _is_tenant_sales_mode(mode) else should_allow_retrieval(
             req.message,
-            stage_for_debug,
-            slots_for_debug,
+            _rag_stage,
+            _rag_slots,
         )
     except Exception:
         allow_rag = False

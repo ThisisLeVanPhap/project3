@@ -167,6 +167,57 @@ class SkuExtractionTests(unittest.TestCase):
         self.assertEqual(slots.get("product_sku_ref"), "GHO-239")
 
 
+class DimensionBudgetExtractionTests(unittest.TestCase):
+    """Phase 9C: dimension/area/budget extraction and false positive prevention."""
+
+    def test_dimension_3m_x_5m(self):
+        slots = extract_sales_slots("phòng khách đi, chắc khoảng 3m x 5m là to nhất rồi")
+        self.assertEqual(slots.get("room"), "phòng khách")
+        self.assertEqual(slots.get("room_size"), "3m x 5m")
+        self.assertEqual(slots.get("width_m"), 3.0)
+        self.assertEqual(slots.get("length_m"), 5.0)
+        self.assertIsNone(slots.get("budget"))
+        self.assertIsNone(slots.get("price_target"))
+
+    def test_dimension_3_met_x_5_met(self):
+        slots = extract_sales_slots("phòng khách khoảng 3 mét x 5 mét")
+        self.assertEqual(slots.get("room"), "phòng khách")
+        self.assertIsNotNone(slots.get("room_size"))
+
+    def test_area_15m2(self):
+        slots = extract_sales_slots("phòng rộng khoảng 15m2")
+        self.assertEqual(slots.get("area_m2"), 15.0)
+        self.assertIsNone(slots.get("budget"))
+        self.assertIsNone(slots.get("price_target"))
+        self.assertIsNone(slots.get("price_max"))
+
+    def test_area_15_met_vuong(self):
+        slots = extract_sales_slots("phòng rộng 15 mét vuông")
+        self.assertEqual(slots.get("area_m2"), 15.0)
+
+    def test_budget_5_trieu_tro_xuong(self):
+        slots = extract_sales_slots("5 triệu trở xuống")
+        self.assertEqual(slots.get("budget"), "5 triệu")
+
+    def test_budget_duoi_5_trieu(self):
+        slots = extract_sales_slots("dưới 5 triệu")
+        self.assertEqual(slots.get("budget"), "5 triệu")
+
+    def test_budget_khoang_5tr(self):
+        slots = extract_sales_slots("khoảng 5tr")
+        self.assertIsNotNone(slots.get("budget"))
+
+    def test_budget_lteq_5_trieu(self):
+        slots = extract_sales_slots("<= 5 triệu")
+        self.assertEqual(slots.get("budget"), "5 triệu")
+
+    def test_dimension_does_not_set_price_target(self):
+        slots = extract_sales_slots("phòng khách đi, chắc khoảng 3m x 5m là to nhất rồi")
+        self.assertIsNone(slots.get("price_target"))
+        self.assertIsNone(slots.get("price_min"))
+        self.assertIsNone(slots.get("price_max"))
+
+
 class MaterialFalsePositiveFixTests(unittest.TestCase):
     """Phase 2B: sales_nlu material extraction should not fire on 'gợi ý/goi y'."""
 
@@ -248,6 +299,28 @@ class CategoryAwareDiscoveryQuestionTests(unittest.TestCase):
         self.assertIn("bàn", reply)
         self.assertIn("giường", reply)
         self.assertIn("tủ", reply)
+
+
+class StateRetentionPhase9CTests(unittest.TestCase):
+    """Phase 9C: accumulated state across Tranh consultation turns."""
+
+    def test_tranh_full_state_retention(self):
+        state = SalesConversationState(tenant_id="t", conversation_id="c")
+        apply_message_to_state(state, "t muốn mua 1 bức tranh")
+        apply_message_to_state(state, "phòng khách đi, chắc khoảng 3m x 5m là to nhất rồi")
+        apply_message_to_state(state, "5 triệu trở xuống")
+
+        self.assertEqual(state.slots.get("product_category"), "Tranh")
+        self.assertEqual(state.slots.get("product_type"), "Tranh")
+        self.assertEqual(state.slots.get("room"), "phòng khách")
+        self.assertEqual(state.slots.get("budget"), "5 triệu")
+        self.assertEqual(state.current_stage, "suggest")
+        self.assertEqual(len(state.selected_products), 0)
+        self.assertIsNone(state.slots.get("pending_sku_ref"))
+        missing = state.slots.get("consultation_missing_slots")
+        # missing should NOT contain 'contact' when no selected product exists
+        self.assertNotIn("contact", missing)
+        self.assertEqual(state.slots.get("next_best_action"), "suggest_from_kb")
 
 
 class ConsultationStageForIntegrationTests(unittest.TestCase):

@@ -533,6 +533,79 @@ class SalesRuntimeIntegrationTests(unittest.TestCase):
             server.KB_BY_MODE.clear()
             server.KB_BY_MODE.update(prev_by_mode)
 
+    def test_tranh_consultation_full_flow_kb_match(self):
+        """Phase 9C: tranh -> room+size -> budget => suggest Tranh listing, not contact/generic."""
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            tranh_kb = FakeRetriever([
+                _hit("tranh-a", "Tranh treo tường phòng khách GHX-6101", "GHX-6101", 2100000,
+                     "https://example.test/tranh-a", category="Tranh"),
+            ])
+            server.KB = tranh_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = tranh_kb
+
+            conv_id = "sales-tranh-full"
+            self._turn(conv_id, "t muốn mua 1 bức tranh",
+                       sales_mode="active", mode="tenant_sales")
+            self._turn(conv_id, "phòng khách đi, chắc khoảng 3m x 5m là to nhất rồi",
+                       sales_mode="active", mode="tenant_sales")
+
+            response = self._turn(conv_id, "5 triệu trở xuống",
+                                  sales_mode="active", mode="tenant_sales")
+            payload = response.json()
+            reply = payload["reply"]
+            # Must list Tranh, not generic/contact
+            self.assertIn("Tranh", reply)
+            self.assertNotIn("Bạn chia sẻ thêm", reply)
+            self.assertNotIn("số điện thoại", reply.lower())
+            self.assertNotIn("phòng đặt", reply)
+            # No wrong category
+            self.assertNotIn("Ghế", reply)
+            self.assertNotIn("Đèn", reply)
+            # Must have retrieval
+            self.assertGreaterEqual(payload["debug"].get("retrieval_count", 0), 1)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    def test_tranh_consultation_no_kb_match(self):
+        """Phase 9C: Tranh consultation, KB no match => no-result for Tranh, not generic."""
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            no_tranh_kb = FakeRetriever([
+                _hit("ghe-1", "Ghế rẻ", "GHE-1", 2000000,
+                     "https://example.test/ghe-1", category="Ghế"),
+                _hit("den-1", "Đèn bàn", "DEN-1", 500000,
+                     "https://example.test/den-1", category="Đèn"),
+            ])
+            server.KB = no_tranh_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = no_tranh_kb
+
+            conv_id = "sales-tranh-nomatch"
+            self._turn(conv_id, "t muốn mua 1 bức tranh",
+                       sales_mode="active", mode="tenant_sales")
+            self._turn(conv_id, "phòng khách đi, chắc khoảng 3m x 5m là to nhất rồi",
+                       sales_mode="active", mode="tenant_sales")
+
+            response = self._turn(conv_id, "5 triệu trở xuống",
+                                  sales_mode="active", mode="tenant_sales")
+            payload = response.json()
+            reply = payload["reply"]
+            # Must be no-result, not wrong category listing, not generic
+            self.assertNotIn("Ghế", reply)
+            self.assertNotIn("Đèn", reply)
+            self.assertNotIn("Bạn chia sẻ thêm", reply)
+            self.assertNotIn("phòng đặt", reply)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
     def test_handle_objection_gets_controlled_reply(self):
         response = self._turn("sales-objection-price", "Mẫu này đắt quá", sales_mode="active")
 

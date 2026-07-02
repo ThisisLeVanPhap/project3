@@ -151,6 +151,34 @@ def is_product_reference_question(message: str) -> bool:
 
 
 SKU_REF_RE = re.compile(r"\b([A-Za-z]{2,6}[-_][A-Za-z0-9]{2,8})\b")
+DIM_RE = re.compile(
+    r"\b(\d+(?:[.,]\d+)?)\s*(?:m|mét)?\s*[x*]\s*(\d+(?:[.,]\d+)?)\s*m?\b",
+    re.I,
+)
+AREA_RE = re.compile(
+    r"\b(\d+(?:[.,]\d+)?)\s*(m²|m2|sqm|mét\s+vuông|m2|mét vuông)\b",
+    re.I,
+)
+
+
+def _extract_dimensions(text: str) -> dict | None:
+    """Extract room dimensions: 3m x 5m -> {raw, width_m, length_m}; 15m2 -> {raw, area_m2}."""
+    m = DIM_RE.search(text)
+    if m:
+        try:
+            w = float(m.group(1).replace(",", "."))
+            l = float(m.group(2).replace(",", "."))
+            return {"raw": m.group(0), "width_m": w, "length_m": l}
+        except ValueError:
+            pass
+    m2 = AREA_RE.search(text)
+    if m2:
+        try:
+            a = float(m2.group(1).replace(",", "."))
+            return {"raw": m2.group(0), "area_m2": a}
+        except ValueError:
+            pass
+    return None
 
 
 def extract_sku_reference(text: str) -> str | None:
@@ -206,9 +234,39 @@ def extract_sales_slots(message: str) -> Dict[str, Any]:
         slots["delivery_area"] = location
         slots["address"] = raw.strip()
 
-    budget = BUDGET_RE.search(raw) or BUDGET_RE.search(folded)
-    if budget:
-        slots["budget"] = " ".join(part for part in budget.groups() if part).strip()
+    budget_match = BUDGET_RE.search(raw) or BUDGET_RE.search(folded)
+    if budget_match:
+        # Phase 9: ignore "khoảng 3m x 5m" false positive (dimension, not budget)
+        budget_raw = budget_match.group(0)
+        _, is_dim = raw.lower(), bool(re.search(r'\b\d+\s*m\s*x\s*\d+\s*m?\b', raw, re.I))
+        if not is_dim:
+            slots["budget"] = " ".join(part for part in budget_match.groups() if part).strip()
+    # Phase 9: match "5 triệu trở xuống", "5tr tro xuong", "<= 5 triệu" etc.
+    if not slots.get("budget"):
+        tro_xuong = re.search(r'\b(\d+(?:[\.,]\d+)?)\s*(triệu|tr|nghìn)\s*trở\s*xuống\b', raw, re.I)
+        if not tro_xuong:
+            tro_xuong = re.search(r'\b(\d+(?:[\.,]\d+)?)\s*(triệu|tr|nghìn)\s*tro\s*xuong\b', folded, re.I)
+        if tro_xuong:
+            amount = tro_xuong.group(1) + " " + tro_xuong.group(2)
+            slots["budget"] = amount.strip()
+        else:
+            lteq = re.search(r'(?:<=|≤)\s*(\d+(?:[\.,]\d+)?)\s*(triệu|tr|nghìn)\b', raw, re.I)
+            if not lteq:
+                lteq = re.search(r'(?:<=|≤)\s*(\d+(?:[\.,]\d+)?)\s*(triệu|tr|nghìn)\b', folded, re.I)
+            if lteq:
+                amount = lteq.group(1) + " " + lteq.group(2)
+                slots["budget"] = amount.strip()
+
+    # Phase 9B: extract room dimensions/area
+    _dim = _extract_dimensions(raw)
+    if _dim:
+        slots["room_size"] = _dim["raw"]
+        if "width_m" in _dim:
+            slots["width_m"] = _dim["width_m"]
+        if "length_m" in _dim:
+            slots["length_m"] = _dim["length_m"]
+        if "area_m2" in _dim:
+            slots["area_m2"] = _dim["area_m2"]
 
     categories = parse_product_categories(raw)
     if categories:
@@ -221,11 +279,13 @@ def extract_sales_slots(message: str) -> Dict[str, Any]:
         slots["product_sku_ref"] = sku_ref
 
     price = parse_price_constraint(raw)
-    if price.min_price is not None:
+    # Phase 9B: prevent dimension false positive ("3m x 5m" -> price_target=3,000,000)
+    _dim_fp = bool(re.search(r"\b\d+\s*m\s*x\s*\d+\s*m?\b", raw, re.I))
+    if price.min_price is not None and not _dim_fp:
         slots["price_min"] = price.min_price
-    if price.max_price is not None:
+    if price.max_price is not None and not _dim_fp:
         slots["price_max"] = price.max_price
-    if price.target_price is not None:
+    if price.target_price is not None and not _dim_fp:
         slots["price_target"] = price.target_price
 
     try:
@@ -238,6 +298,13 @@ def extract_sales_slots(message: str) -> Dict[str, Any]:
     ):
         if key in base_slots and key not in slots:
             slots[key] = base_slots[key]
+    # Phase 9: skip budget_text false positive from dimension like "3m x 5m" or area "15m2"
+    _is_meas_pattern = bool(re.search(r"\b\d+\s*m\s*x\s*\d+\s*m?\b", raw, re.I)
+                            or re.search(r"\b\d+\s*(m²|m2|sqm|mét\s+vuông)\b", raw, re.I)
+                            or re.search(r"\b\d+\s*x\s*\d+\s*m?\b", raw, re.I))
+    if _is_meas_pattern:
+        slots.pop("budget_text", None)
+        slots.pop("budget", None)
     if "budget_text" in slots and "budget" not in slots:
         slots["budget"] = slots["budget_text"]
     if "budget_usd" in slots and "budget" not in slots:

@@ -1487,20 +1487,29 @@ def chat(req: ChatReq):
         allow_rag = False
 
     active_kb = get_kb_for_mode(retrieval_mode)
+    # Phase 8: build accumulated search query from sales state for tenant_sales retrieval
+    _tenant_sales_requested_cat = None
+    _tenant_sales_search_query = req.message
+    if sales_enabled and _is_tenant_sales_mode(mode) and sales_state and sales_state.slots:
+        state_slots = sales_state.slots
+        cat = state_slots.get("product_category") or state_slots.get("product_type") or ""
+        room = state_slots.get("room") or ""
+        budget = state_slots.get("budget_text") or state_slots.get("budget_usd") or ""
+        if cat:
+            raw = cat
+            _tenant_sales_requested_cat = cat
+        if cat or room or budget:
+            parts = [cat, room, budget]
+            accumulated = " ".join(p for p in parts if p).strip()
+            if accumulated:
+                _tenant_sales_search_query = accumulated
     if active_kb is not None and allow_rag:
         retrieval_hits = search_hits(
             active_kb,
-            req.message,
+            _tenant_sales_search_query,
             k=max(1, retrieval_top_k),
             tenant_id=req.tenant_id,
         )
-
-    # Phase 4: compute requested category and filter retrieval hits in tenant_sales
-    _tenant_sales_requested_cat = None
-    if sales_enabled and _is_tenant_sales_mode(mode) and sales_state and sales_state.slots:
-        raw = sales_state.slots.get("product_category") or sales_state.slots.get("product_type") or ""
-        if raw:
-            _tenant_sales_requested_cat = raw
 
     if _tenant_sales_requested_cat and retrieval_hits:
         filtered_count = len(retrieval_hits)

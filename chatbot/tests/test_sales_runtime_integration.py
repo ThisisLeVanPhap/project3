@@ -466,6 +466,73 @@ class SalesRuntimeIntegrationTests(unittest.TestCase):
             server.KB_BY_MODE.clear()
             server.KB_BY_MODE.update(prev_by_mode)
 
+    def test_multi_turn_budget_uses_accumulated_category(self):
+        """Phase 8: room -> category -> budget: listing must use accumulated state, not last message only."""
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            accum_kb = FakeRetriever([
+                _hit("ghe-1", "Ghế phòng ngủ", "GHE-1", 2500000,
+                     "https://example.test/ghe-1", category="Ghế"),
+                _hit("tranh-1", "Tranh treo tường", "TR-1", 1500000,
+                     "https://example.test/tranh-1", category="Tranh"),
+            ])
+            server.KB = accum_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = accum_kb
+
+            conv_id = "sales-accum-state"
+            self._turn(conv_id, "t muốn mua đồ cho phòng ngủ của t",
+                       sales_mode="active", mode="tenant_sales")
+            self._turn(conv_id, "ghế đi",
+                       sales_mode="active", mode="tenant_sales")
+
+            response = self._turn(conv_id, "dưới 3 triệu",
+                                  sales_mode="active", mode="tenant_sales")
+            payload = response.json()
+            reply = payload["reply"]
+            self.assertIn("Ghế", reply)
+            self.assertNotIn("Tranh", reply)
+            self.assertNotIn("TR-1", reply)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
+    def test_multi_turn_budget_no_match_does_not_fallback_wrong_category(self):
+        """Phase 8: room->Ghế->budget, KB has wrong-category only -> no-result, not wrong listing."""
+        prev_kb = server.KB
+        prev_by_mode = dict(server.KB_BY_MODE)
+        try:
+            no_ghe_kb = FakeRetriever([
+                _hit("tranh-1", "Tranh treo tường", "TR-1", 1500000,
+                     "https://example.test/tranh-1", category="Tranh"),
+                _hit("den-1", "Đèn bàn", "DEN-1", 500000,
+                     "https://example.test/den-1", category="Đèn"),
+            ])
+            server.KB = no_ghe_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE["keyword"] = no_ghe_kb
+
+            conv_id = "sales-accum-nomatch"
+            self._turn(conv_id, "t muốn mua đồ cho phòng ngủ của t",
+                       sales_mode="active", mode="tenant_sales")
+            self._turn(conv_id, "ghế đi",
+                       sales_mode="active", mode="tenant_sales")
+
+            response = self._turn(conv_id, "dưới 3 triệu",
+                                  sales_mode="active", mode="tenant_sales")
+            payload = response.json()
+            reply = payload["reply"]
+            self.assertNotIn("Tranh", reply)
+            self.assertNotIn("Đèn", reply)
+            self.assertNotIn("TR-1", reply)
+            self.assertNotIn("DEN-1", reply)
+        finally:
+            server.KB = prev_kb
+            server.KB_BY_MODE.clear()
+            server.KB_BY_MODE.update(prev_by_mode)
+
     def test_handle_objection_gets_controlled_reply(self):
         response = self._turn("sales-objection-price", "Mẫu này đắt quá", sales_mode="active")
 

@@ -25,13 +25,21 @@ from .sales_slots import extract_sales_slots
 from .sales_state import (
     SalesConversationState,
     apply_message_to_state,
+    consultation_stage_for,
     known_consultation_slots,
+    next_best_action,
     resolve_product_reference,
     state_to_dict,
     update_recommended_products,
 )
 
 from .claude_provider import call_claude_api as _call_claude_api
+# Phase 11C: module-level import for interpreter so tests can patch at app.server.*
+from . import sales_state_interpreter as _sales_state_interpreter
+# Re-export names for direct patch('app.server.*') convenience
+call_state_interpreter = _sales_state_interpreter.call_state_interpreter
+apply_interpreter_to_state = _sales_state_interpreter.apply_interpreter_to_state
+_call_consultation_llm = _sales_state_interpreter.call_consultation_llm
 from .market_price_insight_provider import (
     BackendMarketPriceInsightProvider,
     build_market_price_insight_provider,
@@ -387,6 +395,64 @@ def _sales_debug_payload(
     if slots.get("is_product_reference_question"):
         payload["is_product_reference_question"] = True
     return payload
+
+
+def _mask_contact_in_value(v: Any) -> Any:
+    """Mask phone/email in debug values. Recursively handles dict/list."""
+    if isinstance(v, str):
+        # Mask phone patterns (7+ digits) and email patterns
+        import re
+        v = re.sub(r'\d[\d\s\.\-]{6,}\d', '***masked***', v)
+        v = re.sub(r'[\w\.-]+@[\w\.-]+', '***masked***', v)
+        return v
+    if isinstance(v, dict):
+        return {k: _mask_contact_in_value(val) for k, val in v.items()}
+    if isinstance(v, list):
+        return [_mask_contact_in_value(item) for item in v]
+    return v
+
+
+def _is_pytest_blocking_real_claude() -> bool:
+    if os.getenv("RUN_REAL_CLAUDE_TESTS", "0").strip().lower() in TRUE_VALUES:
+        return False
+    return bool(os.getenv("PYTEST_CURRENT_TEST"))
+
+
+def _build_tenant_sales_consult_prompt(user_message: str, slots: Dict[str, Any], missing: List[str]) -> str:
+    snap = {k: slots.get(k) for k in ("product_category", "product_type", "room", "budget_text", "budget", "style", "material", "color") if slots.get(k)}
+    return (
+        "Bạn là nhân viên tư vấn nội thất chuyên nghiệp. Trả lời khách hàng bằng tiếng Việt tự nhiên, ngắn gọn (2-3 câu).\n\n"
+        "QUY TẮC:\n"
+        "- Đưa 1 câu tư vấn hữu ích trước khi hỏi.\n"
+        "- Hỏi đúng 1 câu tiếp theo.\n"
+        "- KHÔNG liệt kê sản phẩm, SKU, giá, link nếu chưa có evidence từ tìm kiếm.\n"
+        "- KHÔNG nói \"mình tìm thấy\" nếu chưa có kết quả tìm kiếm.\n\n"
+        f"Trạng thái: {json.dumps(snap, ensure_ascii=False)}\n"
+        f"Thiếu: {', '.join(missing) if missing else 'không rõ'}\n"
+        f"Tin nhắn: {user_message}\n\n"
+        "Trả lời:"
+    )
+
+
+def _build_tenant_sales_listing_prompt(user_message: str, evidence: List[Dict[str, Any]], slots: Dict[str, Any]) -> str:
+    ev_lines = []
+    for e in evidence:
+        pstr = f", giá ~{e.get('price')}" if e.get("price") else ""
+        ev_lines.append(f"- {e.get('name','')} (SKU {e.get('sku','')}{pstr}, link {e.get('url','')})")
+    ev = "\n".join(ev_lines)
+    cat = slots.get("product_category") or slots.get("product_type") or ""
+    room = slots.get("room") or ""
+    budget = slots.get("budget_text") or slots.get("budget") or ""
+    return (
+        "Bạn là nhân viên tư vấn nội thất. Viết câu trả lời tự nhiên bằng tiếng Việt.\n\n"
+        "CHỈ DÙNG EVIDENCE. KHÔNG BỊA sản phẩm, giá, link, tính năng, khuyến mãi.\n"
+        "KHÔNG BỊA SKU. KHÔNG BỊA tình trạng kho / availability.\n"
+        "Chỉ nhắc SKU hoặc tình trạng kho nếu có trong Evidence.\n\n"
+        f"Evidence:\n{ev}\n\n"
+        f"Nhu cầu: category={cat}, phòng={room}, ngân sách={budget}\n"
+        f"Tin nhắn: {user_message}\n\n"
+        "Viết câu trả lời:"
+    )
 
 
 from .retrievers.text import fold_accents as _fold_sku
@@ -1281,6 +1347,21 @@ def chat(req: ChatReq):
             debug=debug_trace,
         )
 
+    # Phase 11C: initialize interpreter + consultation vars early (used in debug_trace for all paths)
+    _interpreter_result = None
+    _interpreter_used = False
+    _interpreter_attempted = False
+    _interpreter_called = False
+    _interpreter_skip_reason = ""
+    _interpreter_error_type = ""
+    _interpreter_intent = None
+    _slots_after_interpreter = None
+    _deterministic_slots = {}  # Phase 11C: always define for debug trace
+    # Phase 11C: consultation debug vars
+    _consultation_attempted = False
+    _consultation_called = False
+    _consultation_skip_reason = ""
+    _consultation_error_type = ""
     if sales_enabled:
         previous_purchase_status = None
         sales_state = _load_sales_state(req.tenant_id, req.conversation_id)
@@ -1346,7 +1427,61 @@ def chat(req: ChatReq):
                     trigger_purchase_request=False,
                     debug=debug_trace,
                 )
-        sales_result = apply_message_to_state(sales_state, req.message)
+        # Phase 11C: deterministic extract + Claude state interpreter BEFORE action selection
+        _deterministic_slots = extract_sales_slots(req.message)
+        if _is_tenant_sales_mode(mode) and sales_enabled:
+            _interpreter_attempted = True
+            _api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+            # Phase 11C: enable interpreter when Claude configured OR in test mode (monkeypatch)
+            _claude_configured = bool(_api_key) or _is_test_mode()
+            _use_interpreter_flag = os.getenv("SALES_USE_LLM_STATE_INTERPRETER", "true").lower() in ("1", "true", "yes", "on")
+            if _claude_configured and _use_interpreter_flag:
+                try:
+                    _interpreter_result = call_state_interpreter(
+                        req.message, sales_state.slots,
+                        api_key=_api_key,
+                        api_model=os.getenv("CLAUDE_MODEL") or "claude-sonnet-4-6",
+                        api_base_url=os.getenv("CLAUDE_API_BASE_URL") or "https://api.anthropic.com",
+                    )
+                    if _interpreter_result is not None:
+                        _interpreter_called = True
+                        _interpreter_intent = _interpreter_result.get("intent", "unknown")
+                        apply_interpreter_to_state(sales_state, _interpreter_result, _deterministic_slots)
+                        _interpreter_used = True
+                        # Phase 11C: snapshot after interpreter (for debug)
+                        _slots_after_interpreter = dict(sales_state.slots)
+                    else:
+                        _interpreter_skip_reason = "null_response_or_invalid_json"
+                except Exception as _iexc:
+                    _interpreter_error_type = _iexc.__class__.__name__
+                    _interpreter_skip_reason = "fallback_after_error"
+            else:
+                if not _use_interpreter_flag:
+                    _interpreter_skip_reason = "feature_flag_disabled"
+                elif not _api_key and not _is_test_mode():
+                    _interpreter_skip_reason = "missing_api_key"
+                else:
+                    _interpreter_skip_reason = "llm_not_configured"
+        # Phase 11C: Always apply deterministic on top of interpreter result (or as base)
+        # Build sales_result safely from state (never raw interpreter slot_updates)
+        if not _interpreter_used:
+            sales_result = apply_message_to_state(sales_state, req.message)
+        else:
+            # Phase 11C: Build from final safe state + deterministic (no raw LLM leakage)
+            sales_result = {"slots": {}, "resolved_product": None}
+            # Start from current state slots (already safely updated by apply_interpreter_to_state)
+            for _k, _v in (sales_state.slots or {}).items():
+                if _v is not None and _v not in ("", [], {}):
+                    sales_result["slots"][_k] = _v
+            # Overlay deterministic (authoritative)
+            for _k, _v in (_deterministic_slots or {}).items():
+                if _v is not None and _v not in ("", [], {}):
+                    sales_result["slots"][_k] = _v
+                else:
+                    sales_result["slots"].pop(_k, None)
+            _ii = _interpreter_intent or "consultation"
+            sales_result["slots"]["intents"] = [_ii] if _ii else ["unknown"]
+            sales_result["slots"]["intent"] = _ii
         sales_slots_for_action = sales_result.get("slots") or {}
         sales_intents_for_action = sales_slots_for_action.get("intents") or []
         scored_purchase = score_purchase_intent(
@@ -1400,7 +1535,9 @@ def chat(req: ChatReq):
             # _sales_action_from_state will see purchase_intent + category -> ask_product.
         sales_action_taken = _sales_action_from_state(sales_state, sales_result, sales_draft)
         _save_sales_state(sales_state)
-        if sales_mode == "active" and sales_action_taken != "none":
+        # Phase 11D: compute force flag early so we enter early-return block for interpreter-driven consultation
+        _force_consult_from_interpreter = (_interpreter_result or {}).get("should_ask") or (_interpreter_result or {}).get("response_mode") == "consultation_llm"
+        if sales_mode == "active" and (sales_action_taken != "none" or bool(_force_consult_from_interpreter) or sales_action_taken == "ask_discovery"):
             debug_trace = _build_debug_trace(
                 mode=mode,
                 stage=_mode_default_stage(mode),
@@ -1441,15 +1578,162 @@ def chat(req: ChatReq):
                 if _k in _snap:
                     _snap[_k] = "***"
             debug_trace.setdefault("slots_snapshot", _snap)
-            reply = render_sales_response(sales_action_taken, sales_draft, sales_state)
+            # Phase 11C: ensure interpreter debug fields are present even in early return paths
+            debug_trace.setdefault("state_interpreter_llm_attempted", _interpreter_attempted)
+            debug_trace.setdefault("state_interpreter_llm_called", _interpreter_called)
+            debug_trace.setdefault("state_interpreter_skip_reason", _interpreter_skip_reason)
+            debug_trace.setdefault("state_interpreter_error_type", _interpreter_error_type)
+            debug_trace.setdefault("state_interpreter_intent", _interpreter_intent or "")
+            debug_trace.setdefault("state_interpreter_confidence", float(_interpreter_result.get("confidence", 0.0)) if _interpreter_result else 0.0)
+            debug_trace.setdefault("deterministic_slots", _mask_contact_in_value(dict(_deterministic_slots or {})))
+            debug_trace.setdefault("slots_snapshot_after_interpreter", _mask_contact_in_value(dict(_slots_after_interpreter or (sales_state.slots if sales_state else {}))))
+            # Phase 11C: consultation LLM after interpreter/action decision
+            # Only for response wording when action is ask/consultation
+            # Must not decide product list, must not mutate state, must not invent products
+            _llm_reply = None
+            _llm_consultation_used = False
+            _consultation_attempted = False
+            _consultation_called = False
+            _consultation_skip_reason = ""
+            _consultation_error_type = ""
+            # Phase 11C: consultation LLM for ask_discovery OR when interpreter explicitly requests it
+            _force_consult_from_interpreter = (_interpreter_result or {}).get("should_ask") or (_interpreter_result or {}).get("response_mode") == "consultation_llm"
+            if (sales_action_taken in ("ask_discovery",) or _force_consult_from_interpreter) and sales_state:
+                _consultation_attempted = True
+                _api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+                if _api_key or _is_test_mode():
+                    try:
+                        _consult_text = _call_consultation_llm(
+                            req.message,
+                            sales_state.slots,
+                            list(sales_state.slots.get("consultation_missing_slots", [])),
+                            api_key=_api_key,
+                            api_model=os.getenv("CLAUDE_MODEL") or "claude-sonnet-4-6",
+                            api_base_url=os.getenv("CLAUDE_API_BASE_URL") or "https://api.anthropic.com",
+                        )
+                        if _consult_text:
+                            _llm_reply = _consult_text
+                            _llm_consultation_used = True
+                            _consultation_called = True
+                        else:
+                            _consultation_skip_reason = "null_response"
+                    except Exception as _cexc:
+                        _consultation_error_type = _cexc.__class__.__name__
+                        _consultation_skip_reason = "fallback_after_error"
+                else:
+                    _consultation_skip_reason = "missing_api_key"
+            # Phase 11D: Prefer real Claude for tenant_sales consultation if configured.
+            _real_claude_consult_attempted = False
+            _real_claude_consult_called = False
+            _real_claude_consult_skip = ""
+            _real_claude_consult_err = ""
+            _api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+            _force_consult_from_interpreter = (_interpreter_result or {}).get("should_ask") or (_interpreter_result or {}).get("response_mode") == "consultation_llm"
+            if (sales_action_taken in ("ask_discovery",) or _force_consult_from_interpreter) and sales_state:
+                if _api_key and not _is_pytest_blocking_real_claude():
+                    try:
+                        _real_claude_consult_attempted = True
+                        _c_prompt = _build_tenant_sales_consult_prompt(
+                            req.message, sales_state.slots,
+                            list(sales_state.slots.get("consultation_missing_slots", []))
+                        )
+                        _cout, _cerr, _cprev = _call_claude_api(
+                            _c_prompt, _api_key,
+                            os.getenv("CLAUDE_MODEL") or "claude-sonnet-4-6",
+                            os.getenv("CLAUDE_API_BASE_URL") or "https://api.anthropic.com",
+                            512, 0.7, 1.0, 30
+                        )
+                        if _cout and not _cerr:
+                            reply = _cout.strip()
+                            _real_claude_consult_called = True
+                            debug_trace["real_claude_response_attempted"] = True
+                            debug_trace["real_claude_response_called"] = True
+                            debug_trace["real_claude_response_mode"] = "consultation"
+                            debug_trace["answer_mode"] = "claude_tenant_sales"
+                            try:
+                                log_event({"event": "tenant_sales_claude_consult", "conversation_id": conv_id})
+                            except Exception:
+                                pass
+                            print(f"[LLM] tenant_sales_response success mode=consultation")
+                        else:
+                            _real_claude_consult_skip = "claude_error_or_empty"
+                            _real_claude_consult_err = _cerr or "empty"
+                            debug_trace["real_claude_response_attempted"] = True
+                            debug_trace["real_claude_response_called"] = False
+                            debug_trace["real_claude_skip_reason"] = _real_claude_consult_skip
+                            debug_trace["real_claude_error_type"] = _real_claude_consult_err
+                            print(f"[LLM] tenant_sales_response failed error_type={_real_claude_consult_err}")
+                    except Exception as _eex:
+                        _real_claude_consult_skip = "exception"
+                        _real_claude_consult_err = _eex.__class__.__name__
+                        debug_trace["real_claude_response_attempted"] = True
+                        debug_trace["real_claude_response_called"] = False
+                        debug_trace["real_claude_skip_reason"] = _real_claude_consult_skip
+                        debug_trace["real_claude_error_type"] = _real_claude_consult_err
+                        print(f"[LLM] tenant_sales_response failed error_type={_real_claude_consult_err}")
+                else:
+                    if _is_pytest_blocking_real_claude():
+                        debug_trace.setdefault("real_claude_response_attempted", False)
+                        debug_trace["real_claude_skip_reason"] = "pytest_real_llm_disabled"
+                    else:
+                        debug_trace.setdefault("real_claude_response_attempted", False)
+                        debug_trace["real_claude_skip_reason"] = "missing_api_key"
+                    print(f"[LLM] tenant_sales_response skipped reason={debug_trace.get('real_claude_skip_reason')}")
+            if not _real_claude_consult_called:
+                # Fallback to previous interpreter LLM or template
+                if (sales_action_taken in ("ask_discovery",) or _force_consult_from_interpreter) and sales_state:
+                    _consultation_attempted = True
+                    if _api_key or _is_test_mode():
+                        try:
+                            _consult_text = _call_consultation_llm(
+                                req.message,
+                                sales_state.slots,
+                                list(sales_state.slots.get("consultation_missing_slots", [])),
+                                api_key=_api_key,
+                                api_model=os.getenv("CLAUDE_MODEL") or "claude-sonnet-4-6",
+                                api_base_url=os.getenv("CLAUDE_API_BASE_URL") or "https://api.anthropic.com",
+                            )
+                            if _consult_text:
+                                _llm_reply = _consult_text
+                                _llm_consultation_used = True
+                                _consultation_called = True
+                            else:
+                                _consultation_skip_reason = "null_response"
+                        except Exception as _cexc:
+                            _consultation_error_type = _cexc.__class__.__name__
+                            _consultation_skip_reason = "fallback_after_error"
+                    else:
+                        _consultation_skip_reason = "missing_api_key"
+                if _llm_consultation_used:
+                    reply = _llm_reply
+                    debug_trace["consultation_llm_attempted"] = True
+                    debug_trace["consultation_llm_called"] = True
+                    debug_trace["consultation_llm_skip_reason"] = ""
+                    debug_trace["consultation_llm_error_type"] = ""
+                    debug_trace["llm_called"] = True
+                    debug_trace["llm_skip_reason"] = ""
+                    debug_trace["answer_mode"] = "consultation_llm"
+                else:
+                    reply = render_sales_response(sales_action_taken, sales_draft, sales_state)
+                    if _consultation_attempted:
+                        debug_trace["consultation_llm_attempted"] = True
+                        debug_trace["consultation_llm_called"] = _consultation_called
+                        debug_trace["consultation_llm_skip_reason"] = _consultation_skip_reason
+                        debug_trace["consultation_llm_error_type"] = _consultation_error_type
+                if _real_claude_consult_attempted and not _real_claude_consult_called:
+                    debug_trace.setdefault("real_claude_response_attempted", True)
+                    debug_trace.setdefault("real_claude_response_called", False)
+                    debug_trace.setdefault("real_claude_skip_reason", _real_claude_consult_skip or "fallback_after_error")
+                    debug_trace.setdefault("real_claude_error_type", _real_claude_consult_err or "")
             try:
                 save_turn(conv_id, req.message, reply[:1200])
             except Exception:
                 pass
+            _final_model = "claude-tenant-sales" if _real_claude_consult_called else ("consultation-llm" if _llm_consultation_used else "sales-template")
             return ChatResp(
                 reply=reply[:1200],
                 latency_ms=0,
-                model="sales-template",
+                model=_final_model,
                 adapter=None,
                 trigger_purchase_request=False,
                 debug=debug_trace,
@@ -1514,6 +1798,31 @@ def chat(req: ChatReq):
     # Phase 10G: initialize tenant_sales query vars early so debug traces can reference them
     _tenant_sales_requested_cat = None
     _tenant_sales_search_query = req.message
+    _tenant_sales_claude_rewritten = None
+
+    # Phase 11F: initialize debug_trace early (before any listing rewrite) with real_claude defaults
+    debug_trace = _build_debug_trace(
+        mode=mode,
+        stage=stage_for_debug if 'stage_for_debug' in dir() else _mode_default_stage(mode),
+        slots=slots_for_debug if 'slots_for_debug' in dir() else {},
+        retrieval_mode=retrieval_mode,
+        answer_mode="template",
+        template_reason="early_init",
+        llm_enabled=False,
+        llm_provider="none",
+        llm_call_attempted=False,
+        llm_called=False,
+        llm_skip_reason="not_yet",
+        retrieval_query=req.message,
+        requested_category="",
+        slots_snapshot={},
+    )
+    # Phase 11F: initialize real_claude debug defaults
+    debug_trace.setdefault("real_claude_response_attempted", False)
+    debug_trace.setdefault("real_claude_response_called", False)
+    debug_trace.setdefault("real_claude_response_mode", "not_applicable")
+    debug_trace.setdefault("real_claude_skip_reason", "not_applicable")
+    debug_trace.setdefault("real_claude_error_type", None)
 
     # update slots from this user message
     try:
@@ -1675,6 +1984,60 @@ def chat(req: ChatReq):
                 debug_trace["price_filter_min"] = _min_price_vnd
                 debug_trace["price_filter_max"] = _max_price_vnd
 
+    # Phase 11D: if Claude configured for tenant_sales and we have filtered hits, generate natural response using ONLY evidence
+    if _is_tenant_sales_mode(mode) and sales_state and retrieval_hits:
+        _claude_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+        if _claude_key and not _is_pytest_blocking_real_claude():
+            _ev = []
+            for _h in retrieval_hits[:5]:
+                _m = getattr(_h, "metadata", {}) if hasattr(_h, "metadata") else {}
+                if not isinstance(_m, dict):
+                    _m = {}
+                _ev.append({
+                    "name": _m.get("product_name") or getattr(_h, "title", "") or "",
+                    "sku": _m.get("sku") or getattr(_h, "sku", "") or "",
+                    "price": _m.get("price"),
+                    "url": _m.get("source_url") or getattr(_h, "source", "") or getattr(_h, "source_url", ""),
+                })
+            _prompt = _build_tenant_sales_listing_prompt(_tenant_sales_search_query or req.message, _ev, (sales_state.slots if sales_state else {}))
+            _t0c = time.time()
+            _cout, _cerr, _cprev = _call_claude_api(
+                _prompt, _claude_key,
+                os.getenv("CLAUDE_MODEL") or "claude-sonnet-4-6",
+                os.getenv("CLAUDE_API_BASE_URL") or "https://api.anthropic.com",
+                800, 0.6, 1.0, 30
+            )
+            debug_trace["real_claude_response_attempted"] = True
+            if _cout and not _cerr:
+                _tenant_sales_claude_rewritten = _cout.strip()
+                debug_trace["real_claude_response_called"] = True
+                debug_trace["real_claude_response_mode"] = "product_listing"
+                try:
+                    log_event({
+                        "event": "tenant_sales_claude_listing",
+                        "conversation_id": conv_id,
+                        "latency_ms": int((time.time() - _t0c) * 1000),
+                    })
+                except Exception:
+                    pass
+                print(f"[LLM] tenant_sales_response success mode=product_listing latency_ms={int((time.time()-_t0c)*1000)}")
+            else:
+                debug_trace["real_claude_response_called"] = False
+                debug_trace["real_claude_skip_reason"] = "claude_error_or_empty"
+                debug_trace["real_claude_error_type"] = _cerr or "empty"
+                print(f"[LLM] tenant_sales_response failed error_type={debug_trace.get('real_claude_error_type')}")
+        else:
+            if 'debug_trace' in dir() and debug_trace is not None:
+                if _is_pytest_blocking_real_claude():
+                    debug_trace.setdefault("real_claude_response_attempted", False)
+                    debug_trace["real_claude_skip_reason"] = "pytest_real_llm_disabled"
+                else:
+                    debug_trace.setdefault("real_claude_response_attempted", False)
+                    debug_trace["real_claude_skip_reason"] = "missing_api_key"
+                print(f"[LLM] tenant_sales_response skipped reason={debug_trace.get('real_claude_skip_reason')}")
+            else:
+                print("[LLM] tenant_sales_response skipped (no debug_trace yet)")
+
     # Phase 6C: resolve pending_sku from KB hits -> real selected_product
     if sales_state and _is_tenant_sales_mode(mode) and retrieval_hits:
         pending_sku = sales_state.slots.get("pending_sku_ref") or (
@@ -1824,6 +2187,24 @@ def chat(req: ChatReq):
         "answer_mode": answer_mode,
         "template_renderer": answer_mode == "template",
         "retrieval_count": len(retrieval_hits),
+        # Phase 11C: state interpreter debug - exact field names required
+        "state_interpreter_llm_attempted": _interpreter_attempted,
+        "state_interpreter_llm_called": _interpreter_called,
+        "state_interpreter_skip_reason": _interpreter_skip_reason,
+        "state_interpreter_error_type": _interpreter_error_type,
+        "state_interpreter_intent": _interpreter_intent or "",
+        "state_interpreter_confidence": float(_interpreter_result.get("confidence", 0.0)) if _interpreter_result else 0.0,
+        "deterministic_slots": _mask_contact_in_value(dict(_deterministic_slots or {})),
+        "slots_snapshot_after_interpreter": _mask_contact_in_value(dict(_slots_after_interpreter or (sales_state.slots if sales_state else {}))),
+        # Legacy aliases for backward compat
+        "state_interpreter_attempted": _interpreter_attempted,
+        "state_interpreter_called": _interpreter_called,
+        "state_interpreter_used": _interpreter_used,
+        # Phase 11C: consultation LLM debug
+        "consultation_llm_attempted": _consultation_attempted,
+        "consultation_llm_called": _consultation_called,
+        "consultation_llm_skip_reason": _consultation_skip_reason,
+        "consultation_llm_error_type": _consultation_error_type,
     })
     if sales_enabled:
         debug_trace.update(_sales_debug_payload(
@@ -1849,13 +2230,25 @@ def chat(req: ChatReq):
         if mode == ChatMode.GENERAL_COMPARE.value and backend_items:
             resp = render_general_compare(req.message, backend_items)
         else:
-            resp = render_product_answer(req.message, context)
+            # Phase 11D: if we have Claude rewritten for tenant_sales, use it instead of raw product renderer
+            if _is_tenant_sales_mode(mode) and _tenant_sales_claude_rewritten:
+                resp = _tenant_sales_claude_rewritten
+                debug_trace.update({
+                    "answer_mode": "claude_tenant_sales",
+                    "template_renderer": False,
+                    "retrieval_count": len(retrieval_hits),
+                    "real_claude_response_attempted": True,
+                    "real_claude_response_called": True,
+                    "real_claude_response_mode": "product_listing",
+                })
+            else:
+                resp = render_product_answer(req.message, context)
+                debug_trace.update({
+                    "answer_mode": "template",
+                    "template_renderer": True,
+                    "retrieval_count": len(retrieval_hits),
+                })
         latency_ms = int((time.time() - t0) * 1000)
-        debug_trace.update({
-            "answer_mode": "template",
-            "template_renderer": True,
-            "retrieval_count": len(retrieval_hits),
-        })
         if sales_enabled:
             debug_trace.update(_sales_debug_payload(
                 sales_mode,
@@ -1870,7 +2263,7 @@ def chat(req: ChatReq):
             "question": req.message,
             "answer": resp[:1200],
             "latency_ms": latency_ms,
-            "model": "product-template",
+            "model": "claude-tenant-sales" if (_is_tenant_sales_mode(mode) and _tenant_sales_claude_rewritten) else "product-template",
             "adapter": None,
             "provider": provider,
             "channel": req.channel,
@@ -1892,7 +2285,7 @@ def chat(req: ChatReq):
         return ChatResp(
             reply=resp[:1200],
             latency_ms=latency_ms,
-            model="product-template",
+            model="claude-tenant-sales" if (_is_tenant_sales_mode(mode) and _tenant_sales_claude_rewritten) else "product-template",
             adapter=None,
             trigger_purchase_request=response_trigger_purchase_request,
             captured_phone=captured_phone if _is_tenant_sales_mode(mode) else None,
@@ -2027,6 +2420,12 @@ def chat(req: ChatReq):
         # Missing key is a safe error; do not fallback to request-level or hardcoded values
         if not api_key:
             out, claude_error_code, claude_error_preview = "", "missing_api_key", "System env ANTHROPIC_API_KEY or CLAUDE_API_KEY not set"
+        elif _is_pytest_blocking_real_claude():
+            # Phase 11F: pytest guard - never call real Claude in normal pytest
+            out = ""
+            claude_error_code = "pytest_real_llm_disabled"
+            claude_error_preview = "pytest blocked real claude"
+            debug_trace["real_claude_skip_reason"] = "pytest_real_llm_disabled"
         else:
             llm_called = True
             out, claude_error_code, claude_error_preview = _call_claude_api(

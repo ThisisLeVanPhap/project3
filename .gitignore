@@ -96,3 +96,8 @@ cookies.txt
 #kb
 chatbot/kb/*
 !chatbot/kb/.gitkeep
+
+# Thesis / design / submission artifacts (local only; not needed for VPS deploy)
+diagram/
+docs/
+latex/

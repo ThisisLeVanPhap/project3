@@ -178,7 +178,7 @@ def extract_slots(text: str) -> Dict[str, Any]:
     if RX_SMALL.search(t) or RX_SMALL_VI.search(t) or re.search(r"\b(small|tiny|compact|studio|apartment|nho|chat|gon|can ho|chung cu|phong nho)\b", mt):
         slots["space"] = "small"
         constraints.append("small_room")
-    if RX_PETS.search(t) or RX_PETS_VI.search(t) or re.search(r"\b(pet|dog|cat|thu cung|cho|meo)\b", mt):
+    if RX_PETS.search(t) or RX_PETS_VI.search(t) or re.search(r"\b(pet|dog|cat|thu cung|con cho|nha co cho|cho meo|meo)\b", mt):
         slots["pets"] = True
         constraints.append("pets")
     if RX_KIDS.search(t) or RX_KIDS_VI.search(t) or re.search(r"\b(kid|child|toddler|baby|tre em|em be|be|con nho)\b", mt):
@@ -192,6 +192,9 @@ def extract_slots(text: str) -> Dict[str, Any]:
     if RX_EASY_CLEAN.search(t) or RX_EASY_CLEAN_VI.search(t) or re.search(r"\b(easy clean|easy to clean|washable|de ve sinh|de lau|chong ban|it bam bui)\b", mt):
         slots["easy_clean"] = True
         constraints.append("easy_clean")
+    if re.search(r"\b(bo me|ba me|nguoi gia|nguoi lon tuoi|ong ba|elderly|senior)\b", mt):
+        slots["health_need"] = "elder_friendly"
+        constraints.append("elder_friendly")
 
     objection_type = None
     if RX_EXPENSIVE_OBJECTION.search(t) or re.search(r"\b(dat qua|hoi dat|mac qua|too expensive|over budget)\b", mt):

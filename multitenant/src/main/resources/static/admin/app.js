@@ -17,7 +17,8 @@ const cfgKeys = {
     apiBase: "adminui.apiBase",
     basicAuth: "adminui.basicAuth",
     apiKey: "adminui.apiKey",
-    tenantId: "adminui.tenantId"
+    tenantId: "adminui.tenantId",
+    theme: "adminui.theme"
 };
 
 const state = {
@@ -211,6 +212,29 @@ function saveCfg(){
     localStorage.setItem(cfgKeys.apiKey, $("apiKey").value.trim());
     localStorage.setItem(cfgKeys.tenantId, $("tenantId").value.trim());
     showMsg("cfgMsg", "Saved");
+}
+
+function applyTheme(theme){
+    const normalizedTheme = theme === "light" ? "light" : "dark";
+    document.body.classList.toggle("light-theme", normalizedTheme === "light");
+    const toggle = $("toggleTheme");
+    if(toggle){
+        toggle.textContent = normalizedTheme === "light" ? "Giao diện tối" : "Giao diện sáng";
+        toggle.setAttribute(
+            "aria-label",
+            normalizedTheme === "light" ? "Switch to dark background" : "Switch to white background"
+        );
+    }
+}
+
+function loadTheme(){
+    applyTheme(localStorage.getItem(cfgKeys.theme) || "dark");
+}
+
+function toggleTheme(){
+    const nextTheme = document.body.classList.contains("light-theme") ? "dark" : "light";
+    localStorage.setItem(cfgKeys.theme, nextTheme);
+    applyTheme(nextTheme);
 }
 
 function baseUrl(){
@@ -2777,6 +2801,80 @@ function renderTokenState(binding){
     return "Not configured";
 }
 
+function renderTelegramBindings(bindings){
+    const panel = $("telegramBindingsPanel");
+    if(!panel) return;
+
+    const rows = Array.isArray(bindings) ? bindings : [];
+    panel.classList.remove("hidden");
+
+    if(rows.length === 0){
+        panel.innerHTML = `
+            <div><b>Telegram bindings</b></div>
+            <div class="panel-state empty">No Telegram bindings found for the selected tenant.</div>
+            <div class="muted">Selected tenant: ${escapeHtml(selectedTenantLabel())}</div>
+        `;
+        return;
+    }
+
+    panel.innerHTML = `
+        <div><b>Telegram bindings</b></div>
+        <div class="muted">Selected tenant: ${escapeHtml(selectedTenantLabel())}</div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Bot</th>
+                        <th>Tenant</th>
+                        <th>Status</th>
+                        <th>Token</th>
+                        <th>Secret path</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.map(row => `
+                        <tr>
+                            <td>${escapeHtml(findBotLabel(row.chatbot_id || row.chatbotId))}</td>
+                            <td>${escapeHtml(findTenantLabel(row.tenant_id || row.tenantId))}</td>
+                            <td>${renderKbStatusBadge(row.status || "-")}</td>
+                            <td>${escapeHtml(maskSecret(row.bot_token || row.botToken || ""))}</td>
+                            <td class="table-preview" title="${escapeHtml(row.secret_path || row.secretPath || "")}">${escapeHtml(shortPreview(row.secret_path || row.secretPath || "", 32))}</td>
+                            <td>${escapeHtml(fmtDateTime(row.created_at || row.createdAt) || "-")}</td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+async function loadTelegramBindings(button=null){
+    if(!state.selectedTenant){
+        showMsg("cfgMsg", "Chua chon tenant");
+        return null;
+    }
+    renderPanelState("telegramBindingsPanel", "Loading Telegram bindings...", "loading");
+    let r;
+    try{
+        r = await req("GET", "/api/telegram/bindings");
+    }catch(err){
+        renderPanelState("telegramBindingsPanel", err.message || "Load Telegram bindings failed", "error");
+        showMsg("cfgMsg", err.message || "Load Telegram bindings failed", 2200);
+        return null;
+    }
+    if(r.ok && Array.isArray(r.data)){
+        renderTelegramBindings(r.data);
+        setJsonOutput("bindingsOut", r, true);
+        showMsg("cfgMsg", `Loaded ${r.data.length} Telegram binding(s)`, 1800);
+    } else {
+        renderPanelState("telegramBindingsPanel", r.data?.message || `Load Telegram bindings failed (${r.status})`, "error");
+        setJsonOutput("bindingsOut", r, true);
+        showMsg("cfgMsg", r.data?.message || `Load Telegram bindings FAIL (${r.status})`, 2200);
+    }
+    return r;
+}
+
 function renderMessengerBindings(bindings){
     const panel = $("messengerBindingsPanel");
     if(!panel) return;
@@ -3076,7 +3174,7 @@ $("createTgBinding").addEventListener("click", async (event)=>{
             }
 
             $("tgToken").value = "";
-            await loadTgBindings();
+            await loadTelegramBindings();
 
             if(r.data?.webhookOk){
                 showMsg("cfgMsg", "Telegram binding + webhook OK", 2500);
@@ -3141,8 +3239,7 @@ $("createTgBinding").addEventListener("click", async (event)=>{
 
 $("loadTgBindings").addEventListener("click", async ()=>{
     if(!state.selectedTenant){ showMsg("cfgMsg", "Chưa chọn tenant"); return; }
-    const r = await req("GET", "/api/telegram/bindings");
-    setJsonOutput("bindingsOut", r, true);
+    await loadTelegramBindings();
 });
 
 $("createMsgBinding").addEventListener("click", async (event)=>{
@@ -3198,6 +3295,10 @@ $("messengerBindingsPanel")?.addEventListener("click", async (event)=>{
 
 $("clearBindingsOut").addEventListener("click", ()=>{
     $("bindingsOut").innerText = "";
+    if($("telegramBindingsPanel")){
+        $("telegramBindingsPanel").classList.add("hidden");
+        $("telegramBindingsPanel").innerHTML = "";
+    }
     if($("messengerBindingsPanel")){
         $("messengerBindingsPanel").classList.add("hidden");
         $("messengerBindingsPanel").innerHTML = "";
@@ -3982,12 +4083,14 @@ async function loadMembersForSelectedTenant(){
 
 /* ---------------- Init ---------------- */
 $("saveCfg").addEventListener("click", saveCfg);
+$("toggleTheme")?.addEventListener("click", toggleTheme);
 $("toggleDevDebug")?.addEventListener("click", ()=>{
     const panel = $("devDebugPanel");
     if(!panel) return;
     panel.classList.toggle("hidden");
 });
 loadCfg();
+loadTheme();
 wireRawOutputToggles();
 wireTenantProvisioningUi();
 wireMemberManagementUi();

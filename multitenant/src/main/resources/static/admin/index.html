@@ -17,6 +17,7 @@
         <div class="right">
             <span class="chip">User: <b id="adminIdentity">-</b></span>
             <span class="chip">Selected tenant: <b id="selectedTenantName">—</b></span>
+            <button class="secondary theme-toggle" id="toggleTheme" title="Switch between dark and white background">Giao diện sáng</button>
             <button class="secondary" id="toggleDevDebug" title="Show or hide API headers and manual request settings">Dev debug</button>
             <button class="danger" id="btn-admin-logout" title="Sign out">Logout</button>
         </div>
@@ -496,6 +497,7 @@
                 </div>
             </div>
 
+            <div id="telegramBindingsPanel" class="note hidden"></div>
             <div id="messengerBindingsPanel" class="note hidden"></div>
             <div id="messengerBindingStatusPanel" class="note hidden"></div>
             <pre id="bindingsOut" class="out debug-output hidden"></pre>

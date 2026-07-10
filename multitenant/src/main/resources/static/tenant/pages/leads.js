@@ -11,6 +11,8 @@ export async function render(container, params) {
         '<option value="">All Statuses</option>' +
         '<option value="NEW">NEW</option>' +
         '<option value="CONTACTED">CONTACTED</option>' +
+        '<option value="CONVERTED">CONVERTED</option>' +
+        '<option value="FALSE_SIGNAL">FALSE SIGNAL</option>' +
         '<option value="CLOSED">CLOSED</option>' +
         '</select>' +
         '<select id="filter-stage">' +
@@ -20,12 +22,6 @@ export async function render(container, params) {
         '<option value="CONFIRM">CONFIRM</option>' +
         '<option value="HANDOFF">HANDOFF</option>' +
         '<option value="FULFILLED">FULFILLED</option>' +
-        '</select>' +
-        '<select id="filter-shipping">' +
-        '<option value="">All Shipping</option>' +
-        '<option value="NEW">NEW</option>' +
-        '<option value="READY">READY</option>' +
-        '<option value="SHIPPED">SHIPPED</option>' +
         '</select>' +
         '<input type="date" id="filter-from" placeholder="From">' +
         '<input type="date" id="filter-to" placeholder="To">' +
@@ -59,7 +55,7 @@ export async function render(container, params) {
                 if (window.showToast) window.showToast('No data to export', 'warning');
                 return;
             }
-            var headers = ['id','createdAt','channel','customerHandle','status','stage','shippingStatus'];
+            var headers = ['id','createdAt','channel','customerHandle','status','stage'];
             var rows = allData.map(function(row) {
                 return headers.map(function(h) {
                     var v = row[h] || '';
@@ -89,15 +85,12 @@ export async function render(container, params) {
     function filterData(data) {
         var statusFilter = document.getElementById('filter-status').value;
         var stageFilter = document.getElementById('filter-stage').value;
-        var shippingFilter = document.getElementById('filter-shipping').value;
         var fromDate = document.getElementById('filter-from').value;
         var toDate = document.getElementById('filter-to').value;
 
         return data.filter(function(row) {
             if (statusFilter && row.status !== statusFilter) return false;
             if (stageFilter && row.stage !== stageFilter) return false;
-            if (shippingFilter && row.shippingStatus !== shippingFilter) return false;
-
             if (fromDate && row.createdAt) {
                 var rowDate = new Date(row.createdAt).toISOString().split('T')[0];
                 if (rowDate < fromDate) return false;
@@ -163,7 +156,7 @@ export async function render(container, params) {
                 }},
                 { key: 'status', label: 'Status', sortable: true, render: function(row) {
                     var s = row.status || 'NEW';
-                    var cls = s === 'NEW' ? 'badge-new' : s === 'CONTACTED' ? 'badge-contacted' : 'badge-closed';
+                    var cls = statusBadgeClass(s);
                     return '<span class="badge ' + cls + '">' + s + '</span>';
                 }},
                 { key: 'channel', label: 'Channel', sortable: true },
@@ -173,11 +166,6 @@ export async function render(container, params) {
                     var cls = s === 'DISCOVER' ? 'badge-discover' : s === 'SUGGEST' ? 'badge-suggest' : s === 'CONFIRM' ? 'badge-confirm' : s === 'HANDOFF' ? 'badge-handoff' : 'badge-fulfilled';
                     return '<span class="badge ' + cls + '">' + s + '</span>';
                 }},
-                { key: 'shippingStatus', label: 'Shipping', sortable: true, render: function(row) {
-                    var s = row.shippingStatus || 'NEW';
-                    var cls = s === 'NEW' ? 'badge-new' : s === 'READY' ? 'badge-ready' : 'badge-shipped';
-                    return '<span class="badge ' + cls + '">' + s + '</span>';
-                }}
             ],
             data: filteredData,
             onRowClick: function(row) {
@@ -213,7 +201,7 @@ export async function render(container, params) {
         });
 
         // Filter inputs
-        ['filter-status', 'filter-stage', 'filter-shipping', 'filter-from', 'filter-to'].forEach(function(id) {
+        ['filter-status', 'filter-stage', 'filter-from', 'filter-to'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.addEventListener('change', function() {
                 renderLeadsTable(contentEl, allData);
@@ -226,7 +214,6 @@ export async function render(container, params) {
             clearBtn.addEventListener('click', function() {
                 document.getElementById('filter-status').value = '';
                 document.getElementById('filter-stage').value = '';
-                document.getElementById('filter-shipping').value = '';
                 document.getElementById('filter-from').value = '';
                 document.getElementById('filter-to').value = '';
                 renderLeadsTable(contentEl, allData);
@@ -251,7 +238,6 @@ export async function render(container, params) {
 
     function openLeadDrawer(lead) {
         var status = lead.status || 'NEW';
-        var shippingStatus = lead.shippingStatus || 'NEW';
 
         var html = '' +
             '<div class="drawer-section">' +
@@ -260,62 +246,25 @@ export async function render(container, params) {
             '<p><strong>Channel:</strong> ' + (lead.channel || '-') + '</p>' +
             '<p><strong>Customer:</strong> ' + (lead.customerHandle || '-') + '</p>' +
             '<p><strong>Created:</strong> ' + (lead.createdAt ? new Date(lead.createdAt).toLocaleString() : '-') + '</p>' +
-            '<p><strong>Status:</strong> <span class="badge badge-' + status.toLowerCase() + '">' + status + '</span></p>' +
+            '<p><strong>Status:</strong> <span class="badge ' + statusBadgeClass(status) + '">' + status + '</span></p>' +
             '</div>' +
             '<div class="drawer-section">' +
             '<h4>Conversation</h4>' +
-            '<pre class="pre">' + (lead.transcript || 'No transcript') + '</pre>' +
+            renderConversationPanel(lead.transcript) +
             '</div>' +
             '<div class="drawer-section">' +
             '<h4>Slots</h4>' +
-            '<pre class="pre">' + (lead.slotsJson || '{}') + '</pre>' +
-            '</div>' +
-            '<div class="drawer-section">' +
-            '<h4>Delivery Info</h4>' +
-            '<textarea id="drawer-order-info" class="form-input">' + (lead.orderInfo || '') + '</textarea>' +
-            '<div style="margin-top: 8px;">' +
-            '<button class="btn btn-secondary" id="btn-save-order">Save delivery info</button>' +
-            '<button class="btn btn-primary" id="btn-mark-shipped" ' + (shippingStatus !== 'READY' ? 'disabled' : '') + '>Mark shipped</button>' +
-            '</div>' +
-            '<p class="muted" id="order-status" style="margin-top: 8px;">Shipping status: ' + shippingStatus + '</p>' +
-            '</div>' +
-            '<div class="drawer-section">' +
-            '<h4>Reply to Customer</h4>' +
-            '<textarea id="drawer-reply-text" class="form-input" placeholder="Type a message..."></textarea>' +
-            '<button class="btn btn-primary" id="btn-send-reply" style="margin-top: 8px;">Send</button>' +
-            '<p class="muted" id="reply-status" style="margin-top: 8px;"></p>' +
+            '<pre class="pre">' + escapeHtml(lead.slotsJson || '{}') + '</pre>' +
             '</div>' +
             '<div class="drawer-section">' +
             '<h4>Actions</h4>' +
             '<button class="btn btn-secondary" id="btn-status-contacted">Mark Contacted</button>' +
-            '<button class="btn btn-secondary" id="btn-status-closed">Mark Closed</button>' +
+            '<button class="btn btn-secondary" id="btn-false-signal">False signal</button>' +
+            '<button class="btn btn-primary" id="btn-convert-pr">Convert to purchase request</button>' +
+            '<button class="btn btn-secondary" id="btn-status-closed">Close lead</button>' +
             '</div>';
 
         var body = window.openDrawer('Lead Details', html);
-
-        body.querySelector('#btn-save-order').addEventListener('click', function() {
-            var info = body.querySelector('#drawer-order-info').value;
-            window.api.post('/tenant/api/leads-ops/order-info?tid=' + encodeURIComponent(tenantId), { leadId: lead.id, orderInfo: info })
-                .then(function() {
-                    window.showToast('Saved delivery info', 'success');
-                    body.querySelector('#order-status').textContent = 'Shipping status: READY';
-                    body.querySelector('#btn-mark-shipped').disabled = false;
-                })
-                .catch(function(err) {
-                    window.showToast('Failed: ' + err.message, 'error');
-                });
-        });
-
-        body.querySelector('#btn-mark-shipped').addEventListener('click', function() {
-            window.api.post('/tenant/api/leads-ops/' + lead.id + '/ship?tid=' + encodeURIComponent(tenantId))
-                .then(function() {
-                    window.showToast('Marked as shipped', 'success');
-                    body.querySelector('#order-status').textContent = 'Shipping status: SHIPPED';
-                })
-                .catch(function(err) {
-                    window.showToast('Failed: ' + err.message, 'error');
-                });
-        });
 
         body.querySelector('#btn-send-reply').addEventListener('click', function() {
             var msg = body.querySelector('#drawer-reply-text').value.trim();
@@ -323,6 +272,7 @@ export async function render(container, params) {
             window.api.post('/tenant/api/reply?tid=' + encodeURIComponent(tenantId), { leadId: lead.id, message: msg })
                 .then(function() {
                     window.showToast('Reply sent', 'success');
+                    appendStoreMessage(body, msg);
                     body.querySelector('#drawer-reply-text').value = '';
                     body.querySelector('#reply-status').textContent = 'Sent';
                 })
@@ -343,6 +293,30 @@ export async function render(container, params) {
                 });
         });
 
+        body.querySelector('#btn-false-signal').addEventListener('click', function() {
+            window.api.post('/tenant/api/leads/' + lead.id + '/status?status=FALSE_SIGNAL&tid=' + encodeURIComponent(tenantId))
+                .then(function() {
+                    window.showToast('Marked as false signal', 'success');
+                    window.closeDrawer();
+                    render(container, params);
+                })
+                .catch(function(err) {
+                    window.showToast('Failed: ' + err.message, 'error');
+                });
+        });
+
+        body.querySelector('#btn-convert-pr').addEventListener('click', function() {
+            window.api.post('/tenant/api/leads-ops/' + lead.id + '/convert-purchase-request?tid=' + encodeURIComponent(tenantId))
+                .then(function(pr) {
+                    window.showToast('Created purchase request #' + pr.id, 'success');
+                    window.closeDrawer();
+                    window.location.hash = '#/purchase-requests';
+                })
+                .catch(function(err) {
+                    window.showToast('Failed: ' + err.message, 'error');
+                });
+        });
+
         body.querySelector('#btn-status-closed').addEventListener('click', function() {
             window.api.post('/tenant/api/leads/' + lead.id + '/status?status=CLOSED&tid=' + encodeURIComponent(tenantId))
                 .then(function() {
@@ -353,6 +327,115 @@ export async function render(container, params) {
                 .catch(function(err) {
                     window.showToast('Failed: ' + err.message, 'error');
                 });
+        });
+    }
+
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function statusBadgeClass(status) {
+        var s = status || 'NEW';
+        if (s === 'NEW') return 'badge-new';
+        if (s === 'CONTACTED') return 'badge-contacted';
+        if (s === 'CONVERTED') return 'badge-converted';
+        if (s === 'FALSE_SIGNAL') return 'badge-false-signal';
+        return 'badge-closed';
+    }
+
+    function renderConversation(transcript) {
+        var messages = parseTranscript(transcript || '');
+        if (!messages.length) {
+            return '<div class="conversation-chat conversation-empty">No transcript</div>';
+        }
+
+        var html = '<div class="conversation-chat" aria-label="Conversation transcript">';
+        messages.forEach(function(message) {
+            var isStore = message.role === 'assistant';
+            html += '' +
+                '<div class="chat-row ' + (isStore ? 'chat-row-store' : 'chat-row-customer') + '">' +
+                '<div class="chat-bubble ' + (isStore ? 'chat-bubble-store' : 'chat-bubble-customer') + '">' +
+                '<div class="chat-sender">' + (isStore ? 'Cửa hàng' : 'Khách hàng') + '</div>' +
+                '<div class="chat-message">' + escapeHtml(formatChatText(message.text)) + '</div>' +
+                '</div>' +
+                '</div>';
+        });
+        html += '</div>';
+        return html;
+    }
+
+    function renderConversationPanel(transcript) {
+        return '<div class="chat-panel">' +
+            renderConversation(transcript) +
+            '<div class="chat-composer">' +
+            '<textarea id="drawer-reply-text" class="form-input" placeholder="Type a message to customer..."></textarea>' +
+            '<div class="chat-composer-actions">' +
+            '<span class="muted" id="reply-status"></span>' +
+            '<button class="btn btn-primary" id="btn-send-reply">Send</button>' +
+            '</div>' +
+            '</div>' +
+            '</div>';
+    }
+
+    function appendStoreMessage(body, text) {
+        var chat = body.querySelector('.conversation-chat');
+        if (!chat || chat.classList.contains('conversation-empty')) return;
+        chat.insertAdjacentHTML('beforeend',
+            '<div class="chat-row chat-row-store">' +
+            '<div class="chat-bubble chat-bubble-store">' +
+            '<div class="chat-sender">Cua hang</div>' +
+            '<div class="chat-message">' + escapeHtml(text) + '</div>' +
+            '</div>' +
+            '</div>'
+        );
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function formatChatText(text) {
+        return String(text == null ? '' : text)
+            .replace(/\r\n/g, '\n')
+            .replace(/[ \t]+/g, ' ')
+            .replace(/\s+(?=\d+\.\s+\S)/g, '\n\n')
+            .replace(/\s+-\s+(?=(Gi[aá]|Danh mục|Ph[uù] hợp|Thuộc tính|SKU|Trạng thái|Link|Nguồn|Mã sản phẩm))/gi, '\n- ')
+            .replace(/\s+(?=https?:\/\/)/g, '\n')
+            .replace(/\s+(?=(Lưu ý|Luu y):)/gi, '\n\n')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+    }
+
+    function parseTranscript(transcript) {
+        var messages = [];
+        String(transcript || '').split(/\r?\n/).forEach(function(line) {
+            var trimmed = line.trim();
+            var match;
+            if (!trimmed) return;
+
+            match = trimmed.match(/^(user|customer|kh[aá]ch(?: hàng)?):\s*(.*)$/i);
+            if (match) {
+                messages.push({ role: 'user', text: match[2] || '' });
+                return;
+            }
+
+            match = trimmed.match(/^(assistant|bot|chatbot|store|shop|c[uử]a hàng):\s*(.*)$/i);
+            if (match) {
+                messages.push({ role: 'assistant', text: match[2] || '' });
+                return;
+            }
+
+            if (messages.length) {
+                messages[messages.length - 1].text += '\n' + trimmed;
+            } else {
+                messages.push({ role: 'assistant', text: trimmed });
+            }
+        });
+
+        return messages.filter(function(message) {
+            return message.text.trim().length > 0;
         });
     }
 }

@@ -73,6 +73,16 @@ class SalesStateTests(unittest.TestCase):
 
         self.assertEqual(draft["status"], "cancelled")
 
+    def test_thoi_after_room_size_is_not_cancel_or_confirmation_reject(self):
+        slots = extract_sales_slots("cho day cua t chac khoang 3x3 m thoi")
+
+        self.assertNotIn("cancel", slots["intents"])
+        self.assertNotEqual(slots["intent"], "cancel")
+        self.assertIsNone(slots["confirmation_intent"])
+        self.assertEqual(slots.get("room_size"), "3x3 m")
+        self.assertEqual(slots.get("width_m"), 3.0)
+        self.assertEqual(slots.get("length_m"), 3.0)
+
     def test_product_inquiry_does_not_create_hot_lead(self):
         state = self.make_state()
         result = apply_message_to_state(state, "Co mau sofa nao nho khong?")

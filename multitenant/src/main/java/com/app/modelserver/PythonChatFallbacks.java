@@ -5,13 +5,13 @@ import com.app.modelserver.dto.ChatResponse;
 public final class PythonChatFallbacks {
 
     private static final String UNAVAILABLE_MESSAGE =
-            "Sorry, the chatbot service is unavailable right now. Please try again in a moment.";
+            "Dịch vụ chatbot đang chưa sẵn sàng. Bạn thử gửi lại sau một chút nhé.";
     private static final String TIMEOUT_MESSAGE =
-            "Sorry, the chatbot is taking longer than expected. Please try again in a moment.";
+            "Chatbot đang phản hồi lâu hơn bình thường. Bạn thử gửi lại sau một chút nhé.";
     private static final String UPSTREAM_4XX_MESSAGE =
-            "Sorry, this chatbot request could not be processed for the current tenant configuration.";
+            "Yêu cầu này chưa xử lý được với cấu hình chatbot hiện tại.";
     private static final String UPSTREAM_5XX_MESSAGE =
-            "Sorry, the chatbot service had an internal error. Please try again in a moment.";
+            "Dịch vụ chatbot vừa gặp lỗi nội bộ. Bạn thử gửi lại sau một chút nhé.";
 
     private PythonChatFallbacks() {
     }

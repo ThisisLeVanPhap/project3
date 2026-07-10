@@ -136,20 +136,60 @@ class PurchaseRequestServiceTest {
     }
 
     @Test
-    void blocksNewPurchaseRequestWhenLastAssistantReplyWasFallback() {
-        Lead lead = Lead.createNew("tenant-1", "web", "conv-4", "", "{}", "");
+    void createsDraftPurchaseRequestWhenBuyerDetailsAreMissing() {
+        Lead lead = Lead.createNew("tenant-1", "web", "conv-4", "messenger-user-1", "{}", "");
         lead.setTranscript("""
-                user: Vay toi muon tao yeu cau mua hang. Ten toi la Nguyen Van A, so dien thoai la 0912345678.
-                user: Dia chi nhan hang cua toi la 123 Nguyen Trai, Ha Noi. Hay xac nhan lai yeu cau mua hang giup toi.
-                assistant: Sorry, the chatbot is taking longer than expected. Please try again in a moment.
-                user: CONFIRM
+                user: Toi muon mua cai ban sofa nay
+                assistant: Ban cho minh xin thong tin de cua hang xu ly tiep nhe
                 """);
 
         when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdAndStatusInOrderByCreatedAtDesc(eq("tenant-1"), eq("conv-4"), any(List.class)))
                 .thenReturn(Optional.empty());
+        when(purchaseRequestRepo.save(any(PurchaseRequest.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThrows(IllegalStateException.class, () -> purchaseRequestService.findOrCreateFromLead(lead));
-        verify(purchaseRequestRepo, never()).save(any(PurchaseRequest.class));
+        PurchaseRequest saved = purchaseRequestService.findOrCreateFromLead(lead);
+
+        assertEquals("", saved.getCustomerName());
+        assertEquals("", saved.getPhone());
+        assertEquals("", saved.getShippingAddress());
+        assertEquals("NEW", saved.getStatus());
+        verify(purchaseRequestRepo).save(any(PurchaseRequest.class));
+    }
+
+    @Test
+    void doesNotExtractBuyerDetailsFromAssistantSummaryOrProductText() {
+        Lead lead = Lead.createNew("tenant-1", "messenger", "conv-4b", "sender-1", "{}", "");
+        lead.setTranscript("""
+                user: Den tha tran trang tri kieu dang dep GHO-239 mau A hay day, toi muon mua
+                assistant: Minh da tao yeu cau mua hang nhap:
+                assistant: - San pham: Den tha tran trang tri kieu dang dep va gia re GHO-239
+                assistant: - So luong: 1
+                assistant: - Gia tham khao theo du lieu hien co: 700000.0
+                assistant: - Lien he: phap@gmail.com
+                assistant: - Khu vuc/dia chi: Chua co
+                assistant: Luu y: Day chua phai don hang da chot.
+                user: 098877833
+                assistant: Ban xac nhan gui yeu cau nay cho cua hang khong?
+                user: BUY_CONFIRM
+                """);
+
+        when(purchaseRequestRepo.findTop1ByTenantIdAndConversationIdAndStatusInOrderByCreatedAtDesc(eq("tenant-1"), eq("conv-4b"), any(List.class)))
+                .thenReturn(Optional.empty());
+        when(purchaseRequestRepo.save(any(PurchaseRequest.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        PurchaseRequest saved = purchaseRequestService.findOrCreateFromLead(lead);
+
+        assertEquals("", saved.getCustomerName());
+        assertEquals("098877833", saved.getPhone());
+        assertEquals("", saved.getShippingAddress());
+        assertEquals("phap@gmail.com", saved.getEmail());
+        assertEquals("Den tha tran trang tri kieu dang dep va gia re GHO-239", saved.getRequestedProductRef());
+        assertEquals("GHO-239", saved.getProductSku());
+        assertEquals(0, new BigDecimal("700000.0").compareTo(saved.getPrice()));
+        assertEquals(1, saved.getQuantity());
+        assertEquals("NEW", saved.getStatus());
     }
 
     @Test
@@ -173,6 +213,53 @@ class PurchaseRequestServiceTest {
     }
 
     @Test
+    void rejectsProcessingWhenBuyerDetailsAreMissing() {
+        PurchaseRequest existing = new PurchaseRequest();
+        existing.setTenantId("tenant-1");
+        existing.setChannel("web");
+        existing.setConversationId("conv-5");
+        existing.setCustomerName("Nguyen Van A");
+        existing.setPhone("");
+        existing.setShippingAddress("");
+        existing.setStatus("NEW");
+
+        when(purchaseRequestRepo.findByIdAndTenantId(7L, "tenant-1"))
+                .thenReturn(Optional.of(existing));
+
+        var ex = assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> purchaseRequestService.updateStatus("tenant-1", 7L, "PROCESSING")
+        );
+
+        assertEquals(400, ex.getStatusCode().value());
+        assertTrue(ex.getReason().contains("customer name, phone, and shipping address"));
+        verify(purchaseRequestRepo, never()).save(any(PurchaseRequest.class));
+    }
+
+    @Test
+    void movesToProcessingWhenBuyerDetailsAreComplete() {
+        PurchaseRequest existing = new PurchaseRequest();
+        existing.setTenantId("tenant-1");
+        existing.setChannel("web");
+        existing.setConversationId("conv-5");
+        existing.setCustomerName("Nguyen Van A");
+        existing.setPhone("0912345678");
+        existing.setShippingAddress("12 Nguyen Trai");
+        existing.setStatus("NEW");
+
+        when(purchaseRequestRepo.findByIdAndTenantId(7L, "tenant-1"))
+                .thenReturn(Optional.of(existing));
+        when(purchaseRequestRepo.save(any(PurchaseRequest.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        PurchaseRequest updated = purchaseRequestService.updateStatus("tenant-1", 7L, "PROCESSING");
+
+        assertSame(existing, updated);
+        assertEquals("PROCESSING", updated.getStatus());
+        verify(purchaseRequestRepo).save(existing);
+    }
+
+    @Test
     void rejectsUnsupportedStatusUpdate() {
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
@@ -190,7 +277,7 @@ class PurchaseRequestServiceTest {
 
         var ex = assertThrows(
                 org.springframework.web.server.ResponseStatusException.class,
-                () -> purchaseRequestService.updateStatus("tenant-1", 7L, "CONTACTED")
+                () -> purchaseRequestService.updateStatus("tenant-1", 7L, "PROCESSING")
         );
 
         assertEquals(404, ex.getStatusCode().value());

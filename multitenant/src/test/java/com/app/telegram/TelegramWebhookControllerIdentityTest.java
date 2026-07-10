@@ -6,6 +6,7 @@ import com.app.chat.ChannelConversationService;
 import com.app.chat.Conversation;
 import com.app.chat.ConversationRepository;
 import com.app.chat.ConversationResetService;
+import com.app.chat.CrossChannelConversationContextService;
 import com.app.chat.Message;
 import com.app.chat.MessageRepository;
 import com.app.customers.CustomerIdentityService;
@@ -70,6 +71,8 @@ class TelegramWebhookControllerIdentityTest {
     private CustomerIdentityService customerIdentityService;
     @Mock
     private ConversationResetService conversationResetService;
+    @Mock
+    private CrossChannelConversationContextService crossChannelConversationContextService;
 
     @AfterEach
     void tearDown() {
@@ -159,13 +162,14 @@ class TelegramWebhookControllerIdentityTest {
                 purchaseRequestService,
                 feedbackRepo,
                 customerIdentityService,
-                conversationResetService
+                conversationResetService,
+                crossChannelConversationContextService
         );
 
         invokeHandle(controller, secretPath, telegramPayload(chatId, "Xin chào", "An", "Nguyen", 1001L));
 
         verify(customerIdentityService, times(1))
-                .resolveOrCreateIdentity(tenantId, "telegram", senderKey, "An Nguyen", null, null);
+                .resolveOrCreateIdentity(tenantId, "telegram", senderKey, null, null, null);
         verify(sendService).sendText("bot-token", chatId, "Chào bạn!");
         assertEquals(1, savedConversations.size());
     }
@@ -198,7 +202,7 @@ class TelegramWebhookControllerIdentityTest {
         );
         verify(msgRepo, never()).save(any(Message.class));
         verify(chatRuntimeService, never()).chat(any(UUID.class), any(ChatbotInstance.class), any(String.class), any(List.class), any(String.class), any(String.class));
-        verify(sendService).sendText("bot-token", chatId, "Đã reset hội thoại hiện tại.");
+        verify(sendService).sendText("bot-token", chatId, "Xong.");
     }
 
     @Test
@@ -229,7 +233,7 @@ class TelegramWebhookControllerIdentityTest {
         );
         verify(msgRepo, never()).save(any(Message.class));
         verify(purchaseRequestService, never()).findOrCreateFromLead(any());
-        verify(sendService).sendText("bot-token", chatId, "Đã reset hội thoại hiện tại.");
+        verify(sendService).sendText("bot-token", chatId, "Xong.");
     }
 
     @Test
@@ -271,7 +275,7 @@ class TelegramWebhookControllerIdentityTest {
         );
         verify(msgRepo, never()).save(any(Message.class));
         verify(chatRuntimeService, never()).chat(any(UUID.class), any(ChatbotInstance.class), any(String.class), any(List.class), any(String.class), any(String.class));
-        verify(sendService).sendText("bot-token", chatId, "Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.");
+        verify(sendService).sendText("bot-token", chatId, "Xong.");
     }
 
     private TelegramWebhookController controller() {
@@ -288,7 +292,8 @@ class TelegramWebhookControllerIdentityTest {
                 purchaseRequestService,
                 feedbackRepo,
                 customerIdentityService,
-                conversationResetService
+                conversationResetService,
+                crossChannelConversationContextService
         );
     }
 

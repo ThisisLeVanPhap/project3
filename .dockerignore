@@ -16,12 +16,23 @@ chatbot/logs
 chatbot/kb
 chatbot/adapters
 chatbot/out
+chatbot/data_pipeline/raw
+chatbot/data_pipeline/output
+chatbot/data_pipeline/input
+chatbot/data_pipeline/**/raw/**
+chatbot/data_pipeline/**/output/**
+chatbot/data_pipeline/**/input/**
+chatbot/data_pipeline/**/*.jsonl
+chatbot/data_pipeline/**/*.csv
+chatbot/models
 out
 datasetv2
 diagram
 latex
 newscope.md
 tmp
+.codegraph
+logs
 **/*.md
 
 # data pipeline — chỉ cần code, không cần raw/output/input

@@ -83,6 +83,14 @@ class ProductFilterTests(unittest.TestCase):
         self.assertIn("Đèn", categories)
         self.assertLess(categories.index("Rèm"), categories.index("Đèn"))
 
+    def test_parse_product_categories_does_not_read_den_from_den_preposition(self):
+        categories = parse_product_categories("t dang nghi den viec mua noi that cho nha moi")
+
+        self.assertNotIn("Đèn", categories)
+
+        lamp_categories = parse_product_categories("t muon mua den trang tri cho phong khach")
+        self.assertIn("Đèn", lamp_categories)
+
     def test_parse_product_categories_distinguishes_sofa_and_chair(self):
         categories = parse_product_categories("so sanh sofa va ghe thu gian")
 

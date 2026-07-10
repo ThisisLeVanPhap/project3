@@ -38,6 +38,7 @@ public class ChatController {
     private final PurchaseRequestService purchaseRequestService;
     private final LeadRepository leadRepo;
     private final ConversationResetService conversationResetService;
+    private final CrossChannelConversationContextService crossChannelConversationContextService;
 
     @GetMapping("/conversations")
     public List<Map<String, Object>> listConversations(
@@ -243,19 +244,24 @@ public class ChatController {
                 history.add(m.getContent());
             }
         }
+        List<String> enrichedHistory = crossChannelConversationContextService.enrichHistory(tenantId, conv, history);
+        if (enrichedHistory != null && (!enrichedHistory.isEmpty() || history.isEmpty())) {
+            history = enrichedHistory;
+        }
 
+        String requestedMode = ChatbotMode.TENANT_SALES;
         ChatRuntimeService.Result runtimeResult = chatRuntimeService.chat(
                 tenantId,
                 bot,
                 userMsg,
                 history,
                 convId.toString(),
-                "web"
+                "web",
+                requestedMode
         );
         String baseUrl = runtimeResult.baseUrl();
         ChatResponse resp = runtimeResult.response();
 
-        String requestedMode = ChatbotMode.normalize(bot.getMode());
         String finalMode = ChatbotMode.finalMode(resp, requestedMode);
         log.info(
                 "Chat mode contract channel=web tenant={} conversationId={} requestedMode={} finalMode={} triggerPurchaseRequest={}",
@@ -266,7 +272,70 @@ public class ChatController {
                 resp.trigger_purchase_request()
         );
 
-        if (ChatbotMode.allowsPurchaseRequest(requestedMode, resp) && !baseUrl.isBlank()) {
+        if (shouldCreateLeadFromChatbotResponse(requestedMode, resp) && !conv.isLeadCreated()) {
+            try {
+                Lead lead = leadService.createFromChatbotHandoff(new LeadService.ChatbotHandoffLeadData(
+                        tenantId.toString(),
+                        convId.toString(),
+                        "web",
+                        conv.getUserExternalId(),
+                        conv.getUnifiedCustomerId() == null ? "" : conv.getUnifiedCustomerId().toString(),
+                        resp.captured_name(),
+                        resp.captured_phone(),
+                        valueFromDebug(resp, "email"),
+                        firstNonBlank(
+                                valueFromDebug(resp, "requested_product_ref"),
+                                valueFromDebug(resp, "product_name"),
+                                valueFromDebug(resp, "product_sku")
+                        ),
+                        valueFromDebug(resp, "product_sku"),
+                        valueFromDebug(resp, "product_url"),
+                        null,
+                        integerFromDebug(resp, "quantity"),
+                        valueFromDebug(resp, "notes"),
+                        valueFromDebug(resp, "handoff_id"),
+                        valueFromDebug(resp, "idempotency_key"),
+                        "",
+                        "HANDOFF",
+                        resp.debug()
+                ));
+                conv.setLeadCreated(true);
+                convRepo.save(conv);
+                resp = new ChatResponse(
+                        buildLeadHandoffReply(lead),
+                        resp.latency_ms(),
+                        resp.model(),
+                        resp.adapter(),
+                        false,
+                        null,
+                        null,
+                        resp.debug()
+                );
+            } catch (Exception ex) {
+                log.error("Failed to persist lead tenant={} conversationId={}", tenantId, convId, ex);
+                resp = new ChatResponse(
+                        PURCHASE_REQUEST_ERROR_REPLY,
+                        resp.latency_ms(),
+                        resp.model(),
+                        resp.adapter(),
+                        false,
+                        null,
+                        null,
+                        resp.debug()
+                );
+            }
+        } else if (shouldCreateLeadFromChatbotResponse(requestedMode, resp) && conv.isLeadCreated()) {
+            resp = new ChatResponse(
+                    "Minh da gui thong tin cua ban cho cua hang roi. Nhan vien se som lien he voi ban.",
+                    resp.latency_ms(),
+                    resp.model(),
+                    resp.adapter(),
+                    false,
+                    null,
+                    null,
+                    resp.debug()
+            );
+        } else if (false && ChatbotMode.allowsPurchaseRequest(requestedMode, resp) && !baseUrl.isBlank()) {
             // Check if lead already created for this conversation (duplicate prevention)
             if (conv.isLeadCreated()) {
                 resp = new ChatResponse(
@@ -383,7 +452,7 @@ public class ChatController {
                     conversationId,
                     conversation.getUnifiedCustomerId()
             );
-            out.put("reply", "Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.");
+            out.put("reply", "Xong.");
             out.put("newConversationId", response.newConversationId());
         } else {
             conversationResetService.reset(
@@ -397,7 +466,7 @@ public class ChatController {
                             true
                     )
             );
-            out.put("reply", "Đã reset hội thoại hiện tại.");
+            out.put("reply", "Xong.");
         }
         out.put("latencyMs", 0);
         out.put("model", "system");
@@ -462,5 +531,53 @@ public class ChatController {
 
     private static String safe(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private static String buildLeadHandoffReply(Lead lead) {
+        return "Minh da gui thong tin cua ban cho cua hang roi. Ma lead: " + lead.getId()
+                + ". Nhan vien se som lien he voi ban.";
+    }
+
+    private static boolean shouldCreateLeadFromChatbotResponse(String requestedMode, ChatResponse resp) {
+        if (resp == null) {
+            return false;
+        }
+        if (ChatbotMode.allowsPurchaseRequest(requestedMode, resp)) {
+            return true;
+        }
+        String action = valueFromDebug(resp, "sales_action_taken");
+        String confirmationStatus = valueFromDebug(resp, "confirmation_status");
+        String handoffStatus = valueFromDebug(resp, "handoff_status");
+        return "handoff_sent".equals(action)
+                || "confirmed".equals(confirmationStatus)
+                || "sent".equals(handoffStatus);
+    }
+
+    private static String valueFromDebug(ChatResponse resp, String key) {
+        if (resp == null || resp.debug() == null || resp.debug().get(key) == null) {
+            return "";
+        }
+        return String.valueOf(resp.debug().get(key)).trim();
+    }
+
+    private static Integer integerFromDebug(ChatResponse resp, String key) {
+        String value = valueFromDebug(resp, key);
+        if (value.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.trim().isBlank()) {
+                return value.trim();
+            }
+        }
+        return "";
     }
 }

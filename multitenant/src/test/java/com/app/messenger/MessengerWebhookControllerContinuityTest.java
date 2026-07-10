@@ -6,10 +6,12 @@ import com.app.chat.ChannelConversationService;
 import com.app.chat.Conversation;
 import com.app.chat.ConversationRepository;
 import com.app.chat.ConversationResetService;
+import com.app.chat.CrossChannelConversationContextService;
 import com.app.chat.Message;
 import com.app.chat.MessageRepository;
 import com.app.customers.CustomerIdentityService;
 import com.app.feedback.FeedbackRepository;
+import com.app.leads.Lead;
 import com.app.leads.LeadRepository;
 import com.app.leads.LeadService;
 // ✅ NEW: ChannelConversationService now requires CustomerIdentityService
@@ -73,6 +75,8 @@ class MessengerWebhookControllerContinuityTest {
     private CustomerIdentityService customerIdentityService;
     @Mock
     private ConversationResetService conversationResetService;
+    @Mock
+    private CrossChannelConversationContextService crossChannelConversationContextService;
     // ✅ customerIdentityService is also passed to ChannelConversationService below
 
     @AfterEach
@@ -147,11 +151,13 @@ class MessengerWebhookControllerContinuityTest {
                 any(String.class),
                 any(List.class),
                 any(String.class),
+                any(String.class),
                 any(String.class)
         )).thenAnswer(invocation -> {
             String prompt = invocation.getArgument(2);
             @SuppressWarnings("unchecked")
             List<String> history = invocation.getArgument(3);
+            assertEquals("tenant_sales", invocation.getArgument(6));
             if (prompt.equals(firstText)) {
                 return new ChatRuntimeService.Result(
                         new ChatResponse("What style and budget are you aiming for?", 6, "model-a", null, false, null, null,
@@ -187,7 +193,8 @@ class MessengerWebhookControllerContinuityTest {
                 purchaseRequestService,
                 feedbackRepo,
                 customerIdentityService,
-                conversationResetService
+                conversationResetService,
+                crossChannelConversationContextService
         );
 
         invokeHandlePayload(controller, messengerPayload(pageId, senderId, "mid-1", firstText));
@@ -233,7 +240,8 @@ class MessengerWebhookControllerContinuityTest {
                 purchaseRequestService,
                 feedbackRepo,
                 customerIdentityService,
-                conversationResetService
+                conversationResetService,
+                crossChannelConversationContextService
         );
 
         invokeHandlePayload(controller, messengerPayload(pageId, senderId, "mid-inactive", "Hello"));
@@ -241,6 +249,194 @@ class MessengerWebhookControllerContinuityTest {
         verify(botRepo, never()).findById(any(UUID.class));
         verify(llmInstanceManager, never()).getOrStartSession(any(UUID.class), any(ChatbotInstance.class));
         verify(sendService, never()).sendText(any(String.class), any(String.class), any(String.class), any(String.class));
+    }
+
+    @Test
+    void askConfirmationReplyUsesMessengerQuickReplies() throws Exception {
+        UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
+        UUID chatbotId = UUID.randomUUID();
+        String pageId = "page-confirm";
+        String senderId = "sender-confirm";
+        String expectedConversationKey = "messenger:page:page-confirm:sender:sender-confirm";
+        Conversation conversation = conversation(tenantId, chatbotId, expectedConversationKey);
+        MessengerPageBinding binding = binding(tenantId, chatbotId, pageId);
+        ChatbotInstance bot = new ChatbotInstance();
+        bot.setId(chatbotId);
+        bot.setBaseModel("model-a");
+
+        when(bindingRepo.findByPageIdAndStatus(pageId, "ACTIVE")).thenReturn(Optional.of(binding));
+        when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+                tenantId,
+                chatbotId,
+                expectedConversationKey,
+                "ACTIVE"
+        )).thenReturn(Optional.of(conversation));
+        when(botRepo.findById(chatbotId)).thenReturn(Optional.of(bot));
+        when(leadRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(any(), any()))
+                .thenReturn(Optional.empty());
+        when(msgRepo.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(msgRepo.findTop20ByConversationIdOrderByCreatedAtAsc(any(UUID.class))).thenReturn(List.of());
+        when(chatRuntimeService.chat(
+                any(UUID.class),
+                any(ChatbotInstance.class),
+                any(String.class),
+                any(List.class),
+                any(String.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(new ChatRuntimeService.Result(
+                new ChatResponse(
+                        "Bạn xác nhận gửi yêu cầu này cho cửa hàng không?",
+                        4,
+                        "sales-template",
+                        null,
+                        false,
+                        null,
+                        null,
+                        Map.of(
+                                "mode", "tenant_sales",
+                                "sales_action_taken", "ask_confirmation",
+                                "confirmation_status", "pending",
+                                "handoff_status", "pending_confirmation"
+                        )
+                ),
+                "http://127.0.0.1:8101",
+                ""
+        ));
+
+        MessengerWebhookController controller = controller();
+        invokeHandlePayload(controller, messengerPayload(pageId, senderId, "mid-confirm", "Toi lay P1, so toi 0987654321"));
+
+        verify(sendService).sendTextWithQuickReplies(
+                eq(pageId),
+                eq(senderId),
+                eq("Bạn xác nhận gửi yêu cầu này cho cửa hàng không?"),
+                eq("token-1"),
+                argThat(replies -> replies.stream().anyMatch(item -> "BUY_CONFIRM".equals(item.get("payload")))
+                        && replies.stream().anyMatch(item -> "BUY_REJECT".equals(item.get("payload"))))
+        );
+        verify(sendService, never()).sendText(eq(pageId), eq(senderId), eq("Bạn xác nhận gửi yêu cầu này cho cửa hàng không?"), eq("token-1"));
+    }
+
+    @Test
+    void buyConfirmQuickReplyCreatesLeadWithoutPurchaseRequest() throws Exception {
+        UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
+        UUID chatbotId = UUID.randomUUID();
+        String pageId = "page-confirm";
+        String senderId = "sender-confirm";
+        String expectedConversationKey = "messenger:page:page-confirm:sender:sender-confirm";
+        Conversation conversation = conversation(tenantId, chatbotId, expectedConversationKey);
+        MessengerPageBinding binding = binding(tenantId, chatbotId, pageId);
+        ChatbotInstance bot = new ChatbotInstance();
+        bot.setId(chatbotId);
+        bot.setBaseModel("model-a");
+        Lead lead = Lead.createNew(tenantId.toString(), "messenger", conversation.getId().toString(), senderId, "{}", "");
+
+        mockConfirmedMessengerTurn(tenantId, chatbotId, pageId, expectedConversationKey, conversation, binding, bot, lead);
+
+        MessengerWebhookController controller = controller();
+        invokeHandlePayload(controller, messengerQuickReplyPayload(pageId, senderId, "mid-buy-confirm", "BUY_CONFIRM"));
+
+        verify(leadService).createFromChatbotHandoff(argThat(data ->
+                tenantId.toString().equals(data.tenantId())
+                        && conversation.getId().toString().equals(data.conversationId())
+                        && "messenger".equals(data.channel())
+                        && senderId.equals(data.customerExternalId())
+                        && "handoff-1".equals(data.handoffId())
+        ));
+        verify(purchaseRequestService, never()).findOrCreateFromLead(any());
+    }
+
+    @Test
+    void textConfirmCreatesLeadWithoutPurchaseRequest() throws Exception {
+        UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
+        UUID chatbotId = UUID.randomUUID();
+        String pageId = "page-text-confirm";
+        String senderId = "sender-text-confirm";
+        String expectedConversationKey = "messenger:page:page-text-confirm:sender:sender-text-confirm";
+        Conversation conversation = conversation(tenantId, chatbotId, expectedConversationKey);
+        MessengerPageBinding binding = binding(tenantId, chatbotId, pageId);
+        ChatbotInstance bot = new ChatbotInstance();
+        bot.setId(chatbotId);
+        bot.setBaseModel("model-a");
+        Lead lead = Lead.createNew(tenantId.toString(), "messenger", conversation.getId().toString(), senderId, "{}", "");
+
+        mockConfirmedMessengerTurn(tenantId, chatbotId, pageId, expectedConversationKey, conversation, binding, bot, lead);
+
+        MessengerWebhookController controller = controller();
+        invokeHandlePayload(controller, messengerPayload(pageId, senderId, "mid-text-confirm", "co"));
+
+        verify(leadService).createFromChatbotHandoff(any(LeadService.ChatbotHandoffLeadData.class));
+        verify(purchaseRequestService, never()).findOrCreateFromLead(any());
+    }
+
+    @Test
+    void repeatedConfirmDoesNotCreateDuplicateLead() throws Exception {
+        UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
+        UUID chatbotId = UUID.randomUUID();
+        String pageId = "page-repeat-confirm";
+        String senderId = "sender-repeat-confirm";
+        String expectedConversationKey = "messenger:page:page-repeat-confirm:sender:sender-repeat-confirm";
+        Conversation conversation = conversation(tenantId, chatbotId, expectedConversationKey);
+        MessengerPageBinding binding = binding(tenantId, chatbotId, pageId);
+        ChatbotInstance bot = new ChatbotInstance();
+        bot.setId(chatbotId);
+        bot.setBaseModel("model-a");
+        Lead lead = Lead.createNew(tenantId.toString(), "messenger", conversation.getId().toString(), senderId, "{}", "");
+
+        mockConfirmedMessengerTurn(tenantId, chatbotId, pageId, expectedConversationKey, conversation, binding, bot, lead);
+
+        MessengerWebhookController controller = controller();
+        invokeHandlePayload(controller, messengerQuickReplyPayload(pageId, senderId, "mid-repeat-1", "BUY_CONFIRM"));
+        invokeHandlePayload(controller, messengerQuickReplyPayload(pageId, senderId, "mid-repeat-2", "BUY_CONFIRM"));
+
+        verify(leadService, times(1)).createFromChatbotHandoff(any(LeadService.ChatbotHandoffLeadData.class));
+        verify(purchaseRequestService, never()).findOrCreateFromLead(any());
+    }
+
+    @Test
+    void buyRejectDoesNotCreateLead() throws Exception {
+        UUID tenantId = UUID.fromString("daf0378f-53e1-4705-8234-41c74287e489");
+        UUID chatbotId = UUID.randomUUID();
+        String pageId = "page-reject";
+        String senderId = "sender-reject";
+        String expectedConversationKey = "messenger:page:page-reject:sender:sender-reject";
+        Conversation conversation = conversation(tenantId, chatbotId, expectedConversationKey);
+        MessengerPageBinding binding = binding(tenantId, chatbotId, pageId);
+        ChatbotInstance bot = new ChatbotInstance();
+        bot.setId(chatbotId);
+        bot.setBaseModel("model-a");
+
+        when(bindingRepo.findByPageIdAndStatus(pageId, "ACTIVE")).thenReturn(Optional.of(binding));
+        when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+                tenantId,
+                chatbotId,
+                expectedConversationKey,
+                "ACTIVE"
+        )).thenReturn(Optional.of(conversation));
+        when(botRepo.findById(chatbotId)).thenReturn(Optional.of(bot));
+        when(leadRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(any(), any()))
+                .thenReturn(Optional.empty());
+        when(msgRepo.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(msgRepo.findTop20ByConversationIdOrderByCreatedAtAsc(any(UUID.class))).thenReturn(List.of());
+        when(chatRuntimeService.chat(any(UUID.class), any(ChatbotInstance.class), any(String.class), any(List.class), any(String.class), any(String.class), any(String.class)))
+                .thenReturn(new ChatRuntimeService.Result(
+                        new ChatResponse("Da huy.", 4, "sales-template", null, false, null, null,
+                                Map.of(
+                                        "mode", "tenant_sales",
+                                        "sales_action_taken", "confirmation_cancelled",
+                                        "confirmation_status", "cancelled",
+                                        "handoff_status", "cancelled"
+                                )),
+                        "http://127.0.0.1:8101",
+                        ""
+                ));
+
+        MessengerWebhookController controller = controller();
+        invokeHandlePayload(controller, messengerQuickReplyPayload(pageId, senderId, "mid-reject", "BUY_REJECT"));
+
+        verify(leadService, never()).createFromChatbotHandoff(any());
+        verify(purchaseRequestService, never()).findOrCreateFromLead(any());
     }
 
     @Test
@@ -272,7 +468,7 @@ class MessengerWebhookControllerContinuityTest {
         );
         verify(msgRepo, never()).save(any(Message.class));
         verify(chatRuntimeService, never()).chat(any(UUID.class), any(ChatbotInstance.class), any(String.class), any(List.class), any(String.class), any(String.class));
-        verify(sendService).sendText(pageId, senderId, "Đã reset hội thoại hiện tại.", "token-1");
+        verify(sendService).sendText(pageId, senderId, "Xong.", "token-1");
     }
 
     @Test
@@ -321,7 +517,8 @@ class MessengerWebhookControllerContinuityTest {
                 purchaseRequestService,
                 feedbackRepo,
                 customerIdentityService,
-                conversationResetService
+                conversationResetService,
+                crossChannelConversationContextService
         );
     }
 
@@ -345,6 +542,46 @@ class MessengerWebhookControllerContinuityTest {
         return conversation;
     }
 
+    private void mockConfirmedMessengerTurn(
+            UUID tenantId,
+            UUID chatbotId,
+            String pageId,
+            String expectedConversationKey,
+            Conversation conversation,
+            MessengerPageBinding binding,
+            ChatbotInstance bot,
+            Lead lead
+    ) {
+        when(bindingRepo.findByPageIdAndStatus(pageId, "ACTIVE")).thenReturn(Optional.of(binding));
+        when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+                tenantId,
+                chatbotId,
+                expectedConversationKey,
+                "ACTIVE"
+        )).thenReturn(Optional.of(conversation));
+        when(botRepo.findById(chatbotId)).thenReturn(Optional.of(bot));
+        when(leadRepo.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(any(), any()))
+                .thenReturn(Optional.empty());
+        when(msgRepo.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(msgRepo.findTop20ByConversationIdOrderByCreatedAtAsc(any(UUID.class))).thenReturn(List.of());
+        when(leadService.createFromChatbotHandoff(any(LeadService.ChatbotHandoffLeadData.class))).thenReturn(lead);
+        when(chatRuntimeService.chat(any(UUID.class), any(ChatbotInstance.class), any(String.class), any(List.class), any(String.class), any(String.class), any(String.class)))
+                .thenReturn(new ChatRuntimeService.Result(
+                        new ChatResponse("Da gui yeu cau cho cua hang.", 4, "sales-template", null, false, "0912345678", "Nguyen Van A",
+                                Map.of(
+                                        "mode", "tenant_sales",
+                                        "sales_action_taken", "handoff_sent",
+                                        "confirmation_status", "confirmed",
+                                        "handoff_status", "sent",
+                                        "handoff_id", "handoff-1",
+                                        "product_sku", "GHO-607",
+                                        "quantity", 1
+                                )),
+                        "http://127.0.0.1:8101",
+                        ""
+                ));
+    }
+
     private static void invokeHandlePayload(MessengerWebhookController controller, Map<String, Object> payload) throws Exception {
         Method method = MessengerWebhookController.class.getDeclaredMethod("handlePayload", Map.class);
         method.setAccessible(true);
@@ -360,6 +597,24 @@ class MessengerWebhookControllerContinuityTest {
                                 "sender", Map.of("id", senderId),
                                 "recipient", Map.of("id", pageId),
                                 "message", Map.of("mid", mid, "text", text)
+                        ))
+                ))
+        );
+    }
+
+    private static Map<String, Object> messengerQuickReplyPayload(String pageId, String senderId, String mid, String payload) {
+        return Map.of(
+                "object", "page",
+                "entry", List.of(Map.of(
+                        "id", pageId,
+                        "messaging", List.of(Map.of(
+                                "sender", Map.of("id", senderId),
+                                "recipient", Map.of("id", pageId),
+                                "message", Map.of(
+                                        "mid", mid,
+                                        "text", payload,
+                                        "quick_reply", Map.of("payload", payload)
+                                )
                         ))
                 ))
         );

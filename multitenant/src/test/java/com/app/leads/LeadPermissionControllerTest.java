@@ -98,6 +98,22 @@ class LeadPermissionControllerTest {
     }
 
     @Test
+    void tenantMemberListsOwnTenantLeads() throws Exception {
+        String tenantId = "8e0f40c4-83de-4d44-bf0f-5e53769595e0";
+        Lead lead = lead(15L, tenantId, "messenger", "conv-5", "psid-5");
+        when(principalAccessor.requireTenantOperator()).thenReturn(tenantMember(tenantId));
+        when(principalAccessor.requireTenantIdMatching(tenantId)).thenReturn(tenantId);
+        when(leadRepository.findTop200ByTenantIdOrderByCreatedAtDesc(tenantId)).thenReturn(List.of(lead));
+
+        mvc(new TenantLeadController(leadRepository, principalAccessor))
+                .perform(get("/tenant/api/leads").param("tid", tenantId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(15))
+                .andExpect(jsonPath("$[0].tenantId").value(tenantId))
+                .andExpect(jsonPath("$[0].channel").value("messenger"));
+    }
+
+    @Test
     void tenantMemberCannotUpdateLeadFromDifferentTenant() throws Exception {
         String tenantId = "8e0f40c4-83de-4d44-bf0f-5e53769595e0";
         when(principalAccessor.requireTenantOperator()).thenReturn(tenantMember(tenantId));

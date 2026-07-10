@@ -29,7 +29,7 @@ class PurchaseRequestOpsStatsServiceTest {
     void computesPlatformAndTenantStats() {
         when(purchaseRequestRepository.findAll()).thenReturn(List.of(
                 purchaseRequest("tenant-a", "NEW", null),
-                purchaseRequest("tenant-a", "CONTACTED", UUID.randomUUID()),
+                purchaseRequest("tenant-a", "PROCESSING", UUID.randomUUID()),
                 purchaseRequest("tenant-a", "COMPLETED", UUID.randomUUID()),
                 purchaseRequest("tenant-b", "NEW", null)
         ));

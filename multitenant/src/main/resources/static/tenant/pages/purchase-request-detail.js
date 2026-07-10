@@ -20,11 +20,38 @@
 
     function statusBadge(s) {
         s = (s || 'NEW').toUpperCase();
-        var cls = s === 'NEW' ? 'badge-pr-new' : s === 'CONTACTED' ? 'badge-pr-contacted' : 'badge-pr-completed';
+        if (s === 'CONTACTED') s = 'PROCESSING';
+        var cls = s === 'NEW' ? 'badge-pr-new' : s === 'PROCESSING' ? 'badge-pr-processing' : 'badge-pr-completed';
         return '<span class="badge ' + cls + '">' + s + '</span>';
     }
 
+    function firstNonBlank() {
+        for (var i = 0; i < arguments.length; i++) {
+            var value = arguments[i];
+            if (value !== null && value !== undefined && String(value).trim() !== '') {
+                return String(value).trim();
+            }
+        }
+        return '';
+    }
+
+    function missingProcessingFields(pr) {
+        var missing = [];
+        if (!firstNonBlank(pr.customerName)) missing.push('customer name');
+        var phone = firstNonBlank(pr.phone, pr.customerPhone);
+        if (!phone) missing.push('phone');
+        else if (!isValidVietnamPhone(phone)) missing.push('valid phone');
+        if (!firstNonBlank(pr.shippingAddress, pr.customerAddress)) missing.push('delivery address');
+        return missing;
+    }
+
+    function isValidVietnamPhone(phone) {
+        var digits = String(phone || '').replace(/[^\d+]/g, '').replace(/^\+/, '');
+        return /^(0[3-9]\d{8}|84[3-9]\d{8})$/.test(digits);
+    }
+
     function openPurchaseRequestDetail(pr) {
+        var missing = missingProcessingFields(pr);
         var html = '<div class="pr-tabs">' +
             '<div class="tab-nav">' +
             '<button class="tab-btn active" data-tab="details">Details</button>' +
@@ -71,7 +98,19 @@
         html += '</div><div class="action-group"><h4>Status</h4>';
 
         var st = (pr.status || 'NEW').toUpperCase();
-        html += '<button class="btn btn-secondary" id="btn-pr-contacted"' + (st === 'CONTACTED' || st === 'COMPLETED' ? ' disabled' : '') + '>Mark Contacted</button>';
+        if (st === 'CONTACTED') st = 'PROCESSING';
+        var processingDisabled = st === 'PROCESSING' || st === 'COMPLETED' || missing.length > 0;
+        var processingTitle = st === 'COMPLETED'
+            ? 'Completed requests cannot be moved back to processing here'
+            : st === 'PROCESSING'
+                ? 'This request is already processing'
+                : missing.length
+                    ? 'Complete buyer details before processing: ' + missing.join(', ')
+                    : '';
+        if (missing.length && st === 'NEW') {
+            html += '<p class="muted">Missing before processing: ' + escapeHtml(missing.join(', ')) + '</p>';
+        }
+        html += '<button class="btn btn-secondary" id="btn-pr-processing"' + (processingDisabled ? ' disabled' : '') + (processingTitle ? ' title="' + escapeHtml(processingTitle) + '"' : '') + '>Move to Processing</button>';
         html += '<button class="btn btn-secondary" id="btn-pr-completed"' + (st === 'COMPLETED' ? ' disabled' : '') + '>Mark Completed</button>';
         html += '</div></div></div></div></div>';
 
@@ -121,12 +160,12 @@
             });
         }
 
-        var contactedBtn = body.querySelector('#btn-pr-contacted');
-        if (contactedBtn) {
-            contactedBtn.addEventListener('click', function() {
-                window.api.put('/api/purchase-requests/' + pr.id + '/status', { status: 'CONTACTED' })
+        var processingBtn = body.querySelector('#btn-pr-processing');
+        if (processingBtn) {
+            processingBtn.addEventListener('click', function() {
+                window.api.put('/api/purchase-requests/' + pr.id + '/status', { status: 'PROCESSING' })
                     .then(function() {
-                        window.showToast('Marked CONTACTED', 'success');
+                        window.showToast('Moved to PROCESSING', 'success');
                         window.closeDrawer();
                         reloadParent();
                     })

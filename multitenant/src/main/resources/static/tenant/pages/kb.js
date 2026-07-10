@@ -129,6 +129,7 @@ export async function render(container, params) {
         try {
             var ops = await window.api.get('/api/ops/tenant');
             var kb = ops.knowledgeBase || {};
+            await loadActiveProducts(kb);
             var historyHtml = '';
             if (kb.rebuildHistory && kb.rebuildHistory.length) {
                 historyHtml = '<div class="kb-history"><h3>Recent Rebuilds</h3>';
@@ -148,5 +149,65 @@ export async function render(container, params) {
         } catch (err) {
             // silent
         }
+    }
+
+    async function loadActiveProducts(kb) {
+        if (kb.status !== 'READY') {
+            return;
+        }
+        var emptyState = contentEl.querySelector('.empty-state');
+        if (!emptyState) {
+            return;
+        }
+        try {
+            var active = await window.api.get('/api/kb/active-products?limit=50');
+            if (!active || !active.total) {
+                return;
+            }
+            emptyState.outerHTML = renderActiveDatasetKb(kb, active);
+        } catch (err) {
+            // The manual source list can still be managed even if active products are unavailable.
+        }
+    }
+
+    function renderActiveDatasetKb(kb, active) {
+        var sourceUrl = kb.sourceUrl || '';
+        var source = kb.source || '-';
+        var datasetId = kb.datasetId || '-';
+        var sourceType = kb.sourceType || 'ACTIVE_VERSION';
+        var kbDir = active.kbDir || kb.kbDir || '';
+        var count = active.total != null ? active.total : (kb.artifactCount != null ? kb.artifactCount : '-');
+        var products = Array.isArray(active.products) ? active.products : [];
+        var rows = products.map(function(product) {
+            var url = product.url || '';
+            return '<tr>' +
+                '<td>' + escapeHtml(product.name || '-') + '</td>' +
+                '<td>' + escapeHtml(product.sku || '-') + '</td>' +
+                '<td>' + escapeHtml(product.category || '-') + '</td>' +
+                '<td>' + (url ? '<a href="' + escapeHtml(url) + '" target="_blank" style="color: var(--primary);">' + escapeHtml(url) + '</a>' : '-') + '</td>' +
+                '</tr>';
+        }).join('');
+        return '<div class="card2" style="padding: 16px; margin-top: 16px;">' +
+            '<h3 style="margin-top:0;">Active dataset KB</h3>' +
+            '<div class="settings-row"><span class="settings-label">Status</span><span class="settings-value">' + escapeHtml(kb.status || '-') + '</span></div>' +
+            '<div class="settings-row"><span class="settings-label">Source type</span><span class="settings-value">' + escapeHtml(sourceType) + '</span></div>' +
+            '<div class="settings-row"><span class="settings-label">Dataset</span><span class="settings-value">' + escapeHtml(datasetId) + '</span></div>' +
+            '<div class="settings-row"><span class="settings-label">Source</span><span class="settings-value">' + escapeHtml(source) + '</span></div>' +
+            '<div class="settings-row"><span class="settings-label">Source URL</span><span class="settings-value">' + (sourceUrl ? '<a href="' + escapeHtml(sourceUrl) + '" target="_blank" style="color: var(--primary);">' + escapeHtml(sourceUrl) + '</a>' : '-') + '</span></div>' +
+            '<div class="settings-row"><span class="settings-label">Artifacts</span><span class="settings-value">' + escapeHtml(String(count)) + '</span></div>' +
+            '<div class="settings-row"><span class="settings-label">KB directory</span><span class="settings-value">' + escapeHtml(kbDir) + '</span></div>' +
+            '<p class="muted">This tenant is using a built product dataset artifact. The curated URL list above is only for manual URL/sitemap rebuilds.</p>' +
+            '<div class="table-wrap"><table class="data-table"><thead><tr><th>Product</th><th>SKU</th><th>Category</th><th>URL</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+            '<p class="muted" style="margin-bottom:0;">Showing ' + products.length + ' of ' + escapeHtml(String(count)) + ' active KB products.</p>' +
+            '</div>';
+    }
+
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 }

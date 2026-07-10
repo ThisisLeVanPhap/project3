@@ -53,6 +53,7 @@ button.secondary{background:#0f1a33}
 button.danger{background:#b42318}
 button:disabled{opacity:.45;cursor:not-allowed}
 button.is-loading{opacity:.7}
+button.theme-toggle{min-width:126px}
 
 .muted{opacity:.75;font-size:12px}
 .out{background:#0b1326;border:1px solid rgba(255,255,255,.08);padding:10px;border-radius:10px;overflow:auto;min-height:110px}
@@ -428,6 +429,82 @@ button.is-loading{opacity:.7}
 
 .benchmark-summary-copy{
     margin-top:10px;
+}
+
+body.light-theme{
+    background:#ffffff;
+    color:#172033;
+}
+body.light-theme .card{
+    background:#ffffff;
+    border-color:#d8e0ee;
+    box-shadow:0 10px 28px rgba(15,23,42,.08);
+}
+body.light-theme .card2,
+body.light-theme .note{
+    background:#f7f9fc;
+    border-color:#d8e0ee;
+}
+body.light-theme .tab,
+body.light-theme .primary-tab,
+body.light-theme .sub-tab,
+body.light-theme button.secondary,
+body.light-theme .chip,
+body.light-theme .drawer{
+    background:#f2f5fb;
+    border-color:#cdd7e8;
+    color:#172033;
+}
+body.light-theme .tab.active,
+body.light-theme .primary-tab.active,
+body.light-theme .sub-tab.active{
+    background:#dfe8ff;
+    border-color:#6f8df5;
+    color:#16275a;
+}
+body.light-theme input,
+body.light-theme select,
+body.light-theme textarea,
+body.light-theme .out,
+body.light-theme .pre,
+body.light-theme .dataset-detail-row,
+body.light-theme .panel-state,
+body.light-theme .reset-result-grid > div,
+body.light-theme .ops-stat-card,
+body.light-theme .kb-history-item,
+body.light-theme .kb-history-tenant,
+body.light-theme .benchmark-stat{
+    background:#ffffff;
+    border-color:#cdd7e8;
+    color:#172033;
+}
+body.light-theme .table th,
+body.light-theme .table td,
+body.light-theme .ops-stats-table th,
+body.light-theme .ops-stats-table td,
+body.light-theme .benchmark-table th,
+body.light-theme .benchmark-table td{
+    border-bottom-color:#d8e0ee;
+}
+body.light-theme .tenant-context-notice.warning{
+    border-color:#f0c36c;
+    background:#fff8e8;
+}
+body.light-theme .panel-state.error{
+    color:#8a1f1f;
+    border-color:#f0b4b4;
+    background:#fff1f1;
+}
+body.light-theme .muted,
+body.light-theme .sub,
+body.light-theme label,
+body.light-theme .table th,
+body.light-theme .ops-stats-table th,
+body.light-theme .benchmark-table th{
+    opacity:.78;
+}
+body.light-theme button:not(.secondary):not(.danger){
+    border-color:#2445db;
 }
 
 @media (max-width: 720px){

@@ -28,7 +28,7 @@ class PythonChatClientTest {
 
         ChatResponse response = client.chat("http://127.0.0.1:" + port, request(), false, false);
 
-        assertEquals("Sorry, the chatbot service is unavailable right now. Please try again in a moment.", response.reply());
+        assertEquals("Dịch vụ chatbot đang chưa sẵn sàng. Bạn thử gửi lại sau một chút nhé.", response.reply());
         assertEquals("base-model", response.model());
         assertEquals("adapter-path", response.adapter());
     }
@@ -44,7 +44,7 @@ class PythonChatClientTest {
 
             ChatResponse response = client.chat(baseUrl(server), request(), true, false);
 
-            assertEquals("Sorry, the chatbot is taking longer than expected. Please try again in a moment.", response.reply());
+            assertEquals("Chatbot đang phản hồi lâu hơn bình thường. Bạn thử gửi lại sau một chút nhé.", response.reply());
         } finally {
             server.stop(0);
         }
@@ -58,7 +58,7 @@ class PythonChatClientTest {
 
             ChatResponse response = client.chat(baseUrl(server), request(), false, true);
 
-            assertEquals("Sorry, the chatbot service had an internal error. Please try again in a moment.", response.reply());
+            assertEquals("Dịch vụ chatbot vừa gặp lỗi nội bộ. Bạn thử gửi lại sau một chút nhé.", response.reply());
         } finally {
             server.stop(0);
         }
@@ -72,7 +72,7 @@ class PythonChatClientTest {
 
             ChatResponse response = client.chat(baseUrl(server), request(), false, false);
 
-            assertEquals("Sorry, this chatbot request could not be processed for the current tenant configuration.", response.reply());
+            assertEquals("Yêu cầu này chưa xử lý được với cấu hình chatbot hiện tại.", response.reply());
         } finally {
             server.stop(0);
         }
@@ -111,7 +111,45 @@ class PythonChatClientTest {
             assertEquals("general_compare", response.debug().get("mode"));
             assertTrue(requestBody.get().contains("\"mode\":\"general_compare\""));
             assertTrue(requestBody.get().contains("\"retrieval_mode\":\"keyword\""));
+            assertTrue(requestBody.get().contains("\"sales_mode\":null"));
             assertTrue(requestBody.get().contains("\"tenant_id\":\"tenant-1\""));
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void sendsActiveSalesModeForTenantSalesChat() throws Exception {
+        AtomicReference<String> requestBody = new AtomicReference<>("");
+        HttpServer server = server(exchange -> {
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            writeJson(exchange, 200, """
+                    {"reply":"ok","latency_ms":1,"model":"m","adapter":null,"trigger_purchase_request":false,"debug":{"mode":"tenant_sales","sales_mode":"active"}}
+                    """);
+        });
+        try {
+            ChatbotInstance bot = new ChatbotInstance();
+            bot.setBaseModel("base-model");
+            bot.setProvider("claude");
+            bot.setMode("tenant_sales");
+
+            PythonChatClient client = new PythonChatClient(WebClient.builder(), properties(2_000, 10_000));
+
+            ChatResponse response = client.chat(
+                    baseUrl(server),
+                    "toi muon mua GHS-41380",
+                    List.of(),
+                    bot,
+                    "conv-1",
+                    "messenger",
+                    "tenant-1",
+                    false,
+                    false
+            );
+
+            assertEquals("tenant_sales", response.debug().get("mode"));
+            assertTrue(requestBody.get().contains("\"mode\":\"tenant_sales\""));
+            assertTrue(requestBody.get().contains("\"sales_mode\":\"active\""));
         } finally {
             server.stop(0);
         }
@@ -138,6 +176,7 @@ class PythonChatClientTest {
                         null,      // api_base_url
                         "tenant_sales",  // mode
                         "keyword",
+                        null,
                         null
                 ),
                 "conv-1",

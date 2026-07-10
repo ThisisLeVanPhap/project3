@@ -25,6 +25,8 @@
         if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
 
         document.addEventListener('keydown', handleEsc);
+
+        return drawerEl.querySelector('.drawer-body');
     }
 
     function closeDrawer() {

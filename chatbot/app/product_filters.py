@@ -65,6 +65,26 @@ def _normalize_query(query: str) -> str:
     return re.sub(r"\s+", " ", folded).strip()
 
 
+def _has_lamp_category_signal(query: str, normalized: str) -> bool:
+    raw = repair_mojibake(query or "").lower()
+    if re.search(r"\bđèn\b", raw, flags=re.IGNORECASE):
+        return True
+    return bool(
+        re.search(
+            r"\b(?:mua|tim|chon|lay|can|xem|goi y|tu van)\s+(?:\d+\s+)?(?:cai\s+)?den\b",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        or re.search(
+            r"\bden\s+(?:trang tri|decor|chum|tha|tran|tuong|ban|cay|ngu|led|hoc|doc sach|phong)\b",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        or re.search(r"\b(?:bong|choa)\s+den\b", normalized, flags=re.IGNORECASE)
+        or re.search(r"\b(?:lamp|light)\b", normalized, flags=re.IGNORECASE)
+    )
+
+
 def _unit_multiplier(unit: Optional[str]) -> int:
     if unit in ("trieu", "tr", "m"):
         return 1_000_000
@@ -145,6 +165,8 @@ def parse_product_categories(query: str) -> List[str]:
     for category, patterns in CATEGORY_PATTERNS:
         for pattern in patterns:
             for match in re.finditer(pattern, normalized, flags=re.IGNORECASE):
+                if fold_accents(category).lower() == "den" and not _has_lamp_category_signal(query, normalized):
+                    continue
                 matches.append((match.start(), -(match.end() - match.start()), category))
 
     matches.sort(key=lambda item: (item[0], item[1]))

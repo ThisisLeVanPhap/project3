@@ -36,7 +36,7 @@
                         var msg = text;
                         try {
                             var json = JSON.parse(text);
-                            msg = json.message || json.error || text;
+                            msg = json.message || json.detail || json.error || text;
                         } catch(e) {}
                         return Promise.reject(new Error(msg || res.statusText));
                     });

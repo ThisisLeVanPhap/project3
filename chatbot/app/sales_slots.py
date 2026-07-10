@@ -114,7 +114,14 @@ def detect_intents(text: str) -> List[str]:
     if OUT_OF_SCOPE_RE.search(raw) or OUT_OF_SCOPE_RE.search(folded):
         return ["out_of_scope"]
     is_topic_change = re.search(r"\b(thoi\s+)?(doi|chuyen)\s+sang\b", folded) is not None
-    if not is_topic_change and (CANCEL_RE.search(raw) or re.search(r"\b(thoi|khong mua nua|huy|de sau|cancel)\b", folded)):
+    is_topic_change = is_topic_change or bool(
+        re.search(r"\bthoi\b.*\b(sofa|ban|ghe|tu|giuong|ke|den|tham|tranh|guong|rem)\b", folded)
+        and re.search(r"\b(hon|thich|hoi|xem|tham khao|mau)\b", folded)
+    )
+    is_soft_thoi = _is_soft_thoi_particle(folded)
+    if not is_topic_change and not is_soft_thoi and (
+        CANCEL_RE.search(raw) or re.search(r"\b(thoi|khong mua nua|huy|de sau|cancel)\b", folded)
+    ):
         intents.append("cancel")
     if HANDOFF_RE.search(raw) or re.search(r"\b(gap nhan vien|tu van vien|goi toi|lien he toi|nhan vien|human|agent|staff)\b", folded):
         intents.append("handoff_request")
@@ -129,10 +136,33 @@ def detect_intents(text: str) -> List[str]:
     return intents
 
 
+def _is_soft_thoi_particle(folded: str) -> bool:
+    """Return True when "thoi" means "just/only", not cancel/reject."""
+    value = re.sub(r"\s+", " ", folded or "").strip()
+    if not re.search(r"\bthoi\b", value):
+        return False
+    explicit_reject = re.search(
+        r"\b(?:thoi\s*)?(?:khong\s+(?:mua|lay|can|dat|gui)|huy|de\s+sau|bo\s+di|khoi|cancel|nevermind)\b",
+        value,
+    )
+    if explicit_reject:
+        return False
+    if re.search(r"\b\d+(?:[.,]\d+)?\s*(?:m|met)?\s*[x*]\s*\d+(?:[.,]\d+)?\s*m?\s*thoi\b", value):
+        return True
+    if re.search(
+        r"\b\d+(?:[.,]\d+)?\s*(?:m2|m|met|met vuong|trieu|tr|nghin|k|cai|bo|chiec|san pham)\s*thoi\b",
+        value,
+    ):
+        return True
+    if re.search(r"\b(?:chi|co|chac|tam|khoang|quanh|do|uoc chung)\b.{0,50}\bthoi\b", value):
+        return True
+    return False
+
+
 def detect_confirmation_intent(message: str) -> str | None:
     raw = repair_mojibake(message or "")
     folded = fold_text(raw)
-    if CONFIRM_REJECT_RE.search(raw) or CONFIRM_REJECT_RE.search(folded):
+    if not _is_soft_thoi_particle(folded) and (CONFIRM_REJECT_RE.search(raw) or CONFIRM_REJECT_RE.search(folded)):
         return "reject"
     if CONFIRM_RE.search(raw) or CONFIRM_RE.search(folded):
         return "confirm"
@@ -265,6 +295,11 @@ def extract_sales_slots(message: str) -> Dict[str, Any]:
                 if tro_xuong2:
                     amount = tro_xuong2.group(1) + " " + tro_xuong2.group(2)
                     slots["budget"] = amount.strip()
+    if not slots.get("budget"):
+        approx = re.search(r'\b(?:tren\s+duoi|quanh|tam|khoang)\s*(\d+(?:[\.,]\d+)?)\s*(trieu|tr|nghin)\b', folded, re.I)
+        if approx:
+            slots["budget"] = (approx.group(1) + " " + approx.group(2)).strip()
+
     # Phase 10F: lower-bound budget ("hơn 10 triệu", "trên 10 triệu", "phải hơn X")
     if not slots.get("budget"):
         lower = re.search(r'(?:hon|hon hon|tren|trên|phai hon|phai hon hon)\s*(\d+(?:[\.,]\d+)?)\s*(trieu|tr|nghin)\b', folded, re.I)
@@ -286,10 +321,26 @@ def extract_sales_slots(message: str) -> Dict[str, Any]:
         if "area_m2" in _dim:
             slots["area_m2"] = _dim["area_m2"]
 
+    _is_from_budget = bool(
+        re.search(r'\btu\s*\d+(?:[\.,]\d+)?\s*(trieu|tr|nghin)\s*tro\s*len\b', folded, re.I)
+        or re.search(r'\btu\s*\d+(?:[\.,]\d+)?\s*(trieu|tr|nghin)\b', folded, re.I)
+    )
     categories = parse_product_categories(raw)
+    if _is_from_budget and categories and fold_text(categories[0]) == "tu":
+        categories = []
     if categories:
         slots["product_category"] = categories[0]
         slots.setdefault("product_type", categories[0])
+    if re.search(r"\bghe\s+(?:thu\s*gian|em|mem|boc\s*nem|boc\s*vai|boc\s*da)\b", folded):
+        slots["product_category"] = "Ghế"
+        slots["product_type"] = "Ghế thư giãn"
+        slots["product_subtype"] = "Ghế thư giãn"
+    if re.search(r"\b(bo me|ba me|nguoi gia|nguoi lon tuoi|ong ba|elderly|senior)\b", folded):
+        slots["health_need"] = "elder_friendly"
+        constraints = list(slots.get("constraints") or [])
+        if "elder_friendly" not in constraints:
+            constraints.append("elder_friendly")
+        slots["constraints"] = constraints
 
     # Phase 6B: extract explicit SKU reference (e.g. GHO-239, GHS-42048)
     sku_ref = extract_sku_reference(raw)

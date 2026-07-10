@@ -44,9 +44,15 @@ public record PurchaseRequestResponse(
         @JsonProperty("created_at")
         Instant createdAt,
         @JsonProperty("updated_at")
-        Instant updatedAt
+        Instant updatedAt,
+        @JsonProperty("conversation_transcript")
+        String conversationTranscript
 ) {
     public static PurchaseRequestResponse from(PurchaseRequest purchaseRequest, String assignedToDisplayName) {
+        return from(purchaseRequest, assignedToDisplayName, null);
+    }
+
+    public static PurchaseRequestResponse from(PurchaseRequest purchaseRequest, String assignedToDisplayName, String conversationTranscript) {
         return new PurchaseRequestResponse(
                 purchaseRequest.getId(),
                 purchaseRequest.getTenantId(),
@@ -70,7 +76,8 @@ public record PurchaseRequestResponse(
                 assignedToDisplayName,
                 purchaseRequest.getClaimedAt(),
                 purchaseRequest.getCreatedAt(),
-                purchaseRequest.getUpdatedAt()
+                purchaseRequest.getUpdatedAt(),
+                conversationTranscript
         );
     }
 }

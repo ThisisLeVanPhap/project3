@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -72,6 +73,12 @@ class ChannelConversationServiceTest {
                 eq("messenger:page:page-1:sender:sender-1"),
                 eq("ACTIVE")
         )).thenReturn(Optional.empty());
+        when(conversationRepository.findByTenantIdAndChatbotIdAndUserExternalIdStartingWithAndStatusOrderByCreatedAtDesc(
+                tenantB,
+                chatbotId,
+                "messenger:page:page-1:sender:sender-1#demo:",
+                "ACTIVE"
+        )).thenReturn(List.of());
         when(conversationRepository.save(any(Conversation.class))).thenReturn(createdTenantB);
 
         Conversation resolvedA = channelConversationService.findOrCreateActiveConversation(
@@ -113,6 +120,12 @@ class ChannelConversationServiceTest {
                 "messenger:page:page-1:sender:sender-1",
                 "ACTIVE"
         )).thenReturn(Optional.empty());
+        when(conversationRepository.findByTenantIdAndChatbotIdAndUserExternalIdStartingWithAndStatusOrderByCreatedAtDesc(
+                tenantId,
+                chatbotB,
+                "messenger:page:page-1:sender:sender-1#demo:",
+                "ACTIVE"
+        )).thenReturn(List.of());
         when(conversationRepository.save(any(Conversation.class))).thenReturn(createdBotB);
 
         Conversation resolvedA = channelConversationService.findOrCreateActiveConversation(tenantId, chatbotA, "messenger", senderKey);
@@ -136,6 +149,12 @@ class ChannelConversationServiceTest {
                 "messenger:page:page-1:sender:sender-2",
                 "ACTIVE"
         )).thenReturn(Optional.empty());
+        when(conversationRepository.findByTenantIdAndChatbotIdAndUserExternalIdStartingWithAndStatusOrderByCreatedAtDesc(
+                tenantId,
+                chatbotId,
+                "messenger:page:page-1:sender:sender-2#demo:",
+                "ACTIVE"
+        )).thenReturn(List.of());
         when(conversationRepository.save(savedConversation.capture()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -150,6 +169,37 @@ class ChannelConversationServiceTest {
         assertEquals(tenantId, resolved.getTenantId());
         assertEquals("messenger:page:page-1:sender:sender-2", resolved.getUserExternalId());
         assertEquals(resolved.getId(), savedConversation.getValue().getId());
+    }
+
+    @Test
+    void activeDemoConversationTakesPriorityWhenBaseConversationIsClosed() {
+        UUID tenantId = UUID.randomUUID();
+        UUID chatbotId = UUID.randomUUID();
+        String senderKey = channelConversationService.buildMessengerSenderKey("page-1", "sender-3");
+        Conversation demoConversation = conversation(tenantId, chatbotId);
+        demoConversation.setUserExternalId("messenger:page:page-1:sender:sender-3#demo:abc");
+
+        when(conversationRepository.findTop1ByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+                tenantId,
+                chatbotId,
+                "messenger:page:page-1:sender:sender-3",
+                "ACTIVE"
+        )).thenReturn(Optional.empty());
+        when(conversationRepository.findByTenantIdAndChatbotIdAndUserExternalIdStartingWithAndStatusOrderByCreatedAtDesc(
+                tenantId,
+                chatbotId,
+                "messenger:page:page-1:sender:sender-3#demo:",
+                "ACTIVE"
+        )).thenReturn(List.of(demoConversation));
+
+        Conversation resolved = channelConversationService.findOrCreateActiveConversation(
+                tenantId,
+                chatbotId,
+                "messenger",
+                senderKey
+        );
+
+        assertEquals(demoConversation.getId(), resolved.getId());
     }
 
     @Test

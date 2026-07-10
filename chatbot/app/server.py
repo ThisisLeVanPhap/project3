@@ -6,6 +6,7 @@ import threading
 import gc
 import unicodedata
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List, Optional, Dict, Tuple, Any
 
 from fastapi import FastAPI, HTTPException
@@ -34,6 +35,12 @@ from .sales_state import (
 )
 
 from .claude_provider import call_claude_api as _call_claude_api
+from .conversation_orchestrator import (
+    ConversationOrchestrator,
+    OrchestratorContext,
+    OrchestratorRequest,
+)
+from .llm_client import ClaudeLLMClient
 # Phase 11C: module-level import for interpreter so tests can patch at app.server.*
 from . import sales_state_interpreter as _sales_state_interpreter
 # Re-export names for direct patch('app.server.*') convenience
@@ -76,6 +83,35 @@ from .retrieval_service import (
     summarize_retrieval_debug,
     top_similar_items,
 )
+from .tenant_sales_agent import (
+    BRIEF_SLOT as TENANT_SALES_BRIEF_SLOT,
+    build_search_query as _agent_build_search_query,
+    compose_advice as _agent_compose_advice,
+    compose_listing as _agent_compose_listing,
+    decide_next_response as _agent_decide_next_response,
+    update_customer_brief as _agent_update_customer_brief,
+)
+
+
+def _load_project_dotenv() -> None:
+    env_path = Path(__file__).resolve().parents[2] / ".env"
+    if not env_path.exists():
+        return
+    try:
+        for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and not os.getenv(key):
+                os.environ[key] = value
+    except Exception:
+        pass
+
+
+_load_project_dotenv()
 
 
 def _detect_and_track_preference_changes(existing_slots: Dict[str, Any], new_slots: Dict[str, Any]) -> None:
@@ -167,7 +203,7 @@ READY = False
 READY_ERR: Optional[str] = None
 READY_LOCK = threading.Lock()
 
-# KB: load theo env KB_DIR (mỗi process python 1 tenant)
+# KB: load theo env KB_DIR (mÃƒÂ¡Ã‚Â»Ã¢â‚¬â€i process python 1 tenant)
 KB_DIR = os.getenv("KB_DIR")
 KB = None
 KB_RETRIEVAL_MODE = normalize_retrieval_mode(RETRIEVAL_MODE_DEFAULT)
@@ -418,41 +454,324 @@ def _is_pytest_blocking_real_claude() -> bool:
     return bool(os.getenv("PYTEST_CURRENT_TEST"))
 
 
+def _conversation_orchestrator_enabled() -> bool:
+    return os.getenv("CONVERSATION_ORCHESTRATOR_ENABLED", "0").strip().lower() in TRUE_VALUES
+
+
+def _orchestrator_debug_disabled(reason: str = "") -> Dict[str, Any]:
+    return {
+        "planner_attempted": False,
+        "planner_called": False,
+        "planner_skip_reason": reason,
+        "planner_error_type": "",
+        "planner_intent": "",
+        "planner_need_retrieval": False,
+        "finalizer_attempted": False,
+        "finalizer_called": False,
+        "finalizer_skip_reason": reason,
+        "finalizer_error_type": "",
+        "orchestrator_enabled": False,
+        "orchestrator_fallback_reason": "",
+    }
+
+
 def _build_tenant_sales_consult_prompt(user_message: str, slots: Dict[str, Any], missing: List[str]) -> str:
     snap = {k: slots.get(k) for k in ("product_category", "product_type", "room", "budget_text", "budget", "style", "material", "color") if slots.get(k)}
     return (
-        "Bạn là nhân viên tư vấn nội thất chuyên nghiệp. Trả lời khách hàng bằng tiếng Việt tự nhiên, ngắn gọn (2-3 câu).\n\n"
-        "QUY TẮC:\n"
-        "- Đưa 1 câu tư vấn hữu ích trước khi hỏi.\n"
-        "- Hỏi đúng 1 câu tiếp theo.\n"
-        "- KHÔNG liệt kê sản phẩm, SKU, giá, link nếu chưa có evidence từ tìm kiếm.\n"
-        "- KHÔNG nói \"mình tìm thấy\" nếu chưa có kết quả tìm kiếm.\n\n"
-        f"Trạng thái: {json.dumps(snap, ensure_ascii=False)}\n"
-        f"Thiếu: {', '.join(missing) if missing else 'không rõ'}\n"
-        f"Tin nhắn: {user_message}\n\n"
-        "Trả lời:"
+        "BÃƒÂ¡Ã‚ÂºÃ‚Â¡n lÃƒÆ’Ã‚Â  nhÃƒÆ’Ã‚Â¢n viÃƒÆ’Ã‚Âªn tÃƒâ€ Ã‚Â° vÃƒÂ¡Ã‚ÂºÃ‚Â¥n nÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢i thÃƒÂ¡Ã‚ÂºÃ‚Â¥t chuyÃƒÆ’Ã‚Âªn nghiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡p. TrÃƒÂ¡Ã‚ÂºÃ‚Â£ lÃƒÂ¡Ã‚Â»Ã‚Âi khÃƒÆ’Ã‚Â¡ch hÃƒÆ’Ã‚Â ng bÃƒÂ¡Ã‚ÂºÃ‚Â±ng tiÃƒÂ¡Ã‚ÂºÃ‚Â¿ng ViÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡t tÃƒÂ¡Ã‚Â»Ã‚Â± nhiÃƒÆ’Ã‚Âªn, ngÃƒÂ¡Ã‚ÂºÃ‚Â¯n gÃƒÂ¡Ã‚Â»Ã‚Ân (2-3 cÃƒÆ’Ã‚Â¢u).\n\n"
+        "QUY TÃƒÂ¡Ã‚ÂºÃ‚Â®C:\n"
+        "- Ãƒâ€žÃ‚ÂÃƒâ€ Ã‚Â°a 1 cÃƒÆ’Ã‚Â¢u tÃƒâ€ Ã‚Â° vÃƒÂ¡Ã‚ÂºÃ‚Â¥n hÃƒÂ¡Ã‚Â»Ã‚Â¯u ÃƒÆ’Ã‚Â­ch trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºc khi hÃƒÂ¡Ã‚Â»Ã‚Âi.\n"
+        "- HÃƒÂ¡Ã‚Â»Ã‚Âi Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Âºng 1 cÃƒÆ’Ã‚Â¢u tiÃƒÂ¡Ã‚ÂºÃ‚Â¿p theo.\n"
+        "- KHÃƒÆ’Ã¢â‚¬ÂNG liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡t kÃƒÆ’Ã‚Âª sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m, SKU, giÃƒÆ’Ã‚Â¡, link nÃƒÂ¡Ã‚ÂºÃ‚Â¿u chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ evidence tÃƒÂ¡Ã‚Â»Ã‚Â« tÃƒÆ’Ã‚Â¬m kiÃƒÂ¡Ã‚ÂºÃ‚Â¿m.\n"
+        "- KHÃƒÆ’Ã¢â‚¬ÂNG nÃƒÆ’Ã‚Â³i \"mÃƒÆ’Ã‚Â¬nh tÃƒÆ’Ã‚Â¬m thÃƒÂ¡Ã‚ÂºÃ‚Â¥y\" nÃƒÂ¡Ã‚ÂºÃ‚Â¿u chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ kÃƒÂ¡Ã‚ÂºÃ‚Â¿t quÃƒÂ¡Ã‚ÂºÃ‚Â£ tÃƒÆ’Ã‚Â¬m kiÃƒÂ¡Ã‚ÂºÃ‚Â¿m.\n\n"
+        f"TrÃƒÂ¡Ã‚ÂºÃ‚Â¡ng thÃƒÆ’Ã‚Â¡i: {json.dumps(snap, ensure_ascii=False)}\n"
+        f"ThiÃƒÂ¡Ã‚ÂºÃ‚Â¿u: {', '.join(missing) if missing else 'khÃƒÆ’Ã‚Â´ng rÃƒÆ’Ã‚Âµ'}\n"
+        f"Tin nhÃƒÂ¡Ã‚ÂºÃ‚Â¯n: {user_message}\n\n"
+        "TrÃƒÂ¡Ã‚ÂºÃ‚Â£ lÃƒÂ¡Ã‚Â»Ã‚Âi:"
     )
 
 
 def _build_tenant_sales_listing_prompt(user_message: str, evidence: List[Dict[str, Any]], slots: Dict[str, Any]) -> str:
     ev_lines = []
     for e in evidence:
-        pstr = f", giá ~{e.get('price')}" if e.get("price") else ""
-        ev_lines.append(f"- {e.get('name','')} (SKU {e.get('sku','')}{pstr}, link {e.get('url','')})")
+        pstr = f", giÃƒÆ’Ã‚Â¡ ~{e.get('price')}" if e.get("price") else ""
+        cstr = f", danh mÃƒÂ¡Ã‚Â»Ã‚Â¥c {e.get('category')}" if e.get("category") else ""
+        ev_lines.append(f"- {e.get('name','')} (SKU {e.get('sku','')}{pstr}{cstr}, link {e.get('url','')})")
     ev = "\n".join(ev_lines)
     cat = slots.get("product_category") or slots.get("product_type") or ""
     room = slots.get("room") or ""
     budget = slots.get("budget_text") or slots.get("budget") or ""
     return (
-        "Bạn là nhân viên tư vấn nội thất. Viết câu trả lời tự nhiên bằng tiếng Việt.\n\n"
-        "CHỈ DÙNG EVIDENCE. KHÔNG BỊA sản phẩm, giá, link, tính năng, khuyến mãi.\n"
-        "KHÔNG BỊA SKU. KHÔNG BỊA tình trạng kho / availability.\n"
-        "Chỉ nhắc SKU hoặc tình trạng kho nếu có trong Evidence.\n\n"
+        "BÃƒÂ¡Ã‚ÂºÃ‚Â¡n lÃƒÆ’Ã‚Â  nhÃƒÆ’Ã‚Â¢n viÃƒÆ’Ã‚Âªn tÃƒâ€ Ã‚Â° vÃƒÂ¡Ã‚ÂºÃ‚Â¥n nÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢i thÃƒÂ¡Ã‚ÂºÃ‚Â¥t. ViÃƒÂ¡Ã‚ÂºÃ‚Â¿t cÃƒÆ’Ã‚Â¢u trÃƒÂ¡Ã‚ÂºÃ‚Â£ lÃƒÂ¡Ã‚Â»Ã‚Âi tÃƒÂ¡Ã‚Â»Ã‚Â± nhiÃƒÆ’Ã‚Âªn bÃƒÂ¡Ã‚ÂºÃ‚Â±ng tiÃƒÂ¡Ã‚ÂºÃ‚Â¿ng ViÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡t.\n\n"
+        "CHÃƒÂ¡Ã‚Â»Ã‹â€  DÃƒÆ’Ã¢â€žÂ¢NG EVIDENCE. KHÃƒÆ’Ã¢â‚¬ÂNG BÃƒÂ¡Ã‚Â»Ã…Â A sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m, giÃƒÆ’Ã‚Â¡, link, tÃƒÆ’Ã‚Â­nh nÃƒâ€žÃ†â€™ng, khuyÃƒÂ¡Ã‚ÂºÃ‚Â¿n mÃƒÆ’Ã‚Â£i.\n"
+        "KHÃƒÆ’Ã¢â‚¬ÂNG BÃƒÂ¡Ã‚Â»Ã…Â A SKU. KHÃƒÆ’Ã¢â‚¬ÂNG BÃƒÂ¡Ã‚Â»Ã…Â A tÃƒÆ’Ã‚Â¬nh trÃƒÂ¡Ã‚ÂºÃ‚Â¡ng kho / availability.\n"
+        "ChÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° nhÃƒÂ¡Ã‚ÂºÃ‚Â¯c SKU hoÃƒÂ¡Ã‚ÂºÃ‚Â·c tÃƒÆ’Ã‚Â¬nh trÃƒÂ¡Ã‚ÂºÃ‚Â¡ng kho nÃƒÂ¡Ã‚ÂºÃ‚Â¿u cÃƒÆ’Ã‚Â³ trong Evidence.\n\n"
         f"Evidence:\n{ev}\n\n"
-        f"Nhu cầu: category={cat}, phòng={room}, ngân sách={budget}\n"
-        f"Tin nhắn: {user_message}\n\n"
-        "Viết câu trả lời:"
+        f"Nhu cÃƒÂ¡Ã‚ÂºÃ‚Â§u: category={cat}, phÃƒÆ’Ã‚Â²ng={room}, ngÃƒÆ’Ã‚Â¢n sÃƒÆ’Ã‚Â¡ch={budget}\n"
+        f"Tin nhÃƒÂ¡Ã‚ÂºÃ‚Â¯n: {user_message}\n\n"
+        "ViÃƒÂ¡Ã‚ÂºÃ‚Â¿t cÃƒÆ’Ã‚Â¢u trÃƒÂ¡Ã‚ÂºÃ‚Â£ lÃƒÂ¡Ã‚Â»Ã‚Âi:"
     )
+
+
+def _build_tenant_sales_advice_prompt(user_message: str, brief: Dict[str, Any], slots: Dict[str, Any]) -> str:
+    safe_slots = {
+        k: slots.get(k)
+        for k in (
+            "product_category",
+            "product_type",
+            "product_subtype",
+            "room",
+            "budget",
+            "budget_text",
+            "style",
+            "material",
+            "color",
+            "constraints",
+            "health_need",
+        )
+        if slots.get(k) not in (None, "", [])
+    }
+    return (
+        "BÃƒÂ¡Ã‚ÂºÃ‚Â¡n lÃƒÆ’Ã‚Â  nhÃƒÆ’Ã‚Â¢n viÃƒÆ’Ã‚Âªn tÃƒâ€ Ã‚Â° vÃƒÂ¡Ã‚ÂºÃ‚Â¥n nÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢i thÃƒÂ¡Ã‚ÂºÃ‚Â¥t Ãƒâ€žÃ¢â‚¬Ëœang chat 1-1 vÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi khÃƒÆ’Ã‚Â¡ch. "
+        "ViÃƒÂ¡Ã‚ÂºÃ‚Â¿t tiÃƒÂ¡Ã‚ÂºÃ‚Â¿ng ViÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡t tÃƒÂ¡Ã‚Â»Ã‚Â± nhiÃƒÆ’Ã‚Âªn, thÃƒÆ’Ã‚Â¢n thiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n, cÃƒÆ’Ã‚Â³ cÃƒÂ¡Ã‚ÂºÃ‚Â£m giÃƒÆ’Ã‚Â¡c Ãƒâ€žÃ¢â‚¬Ëœang tÃƒâ€ Ã‚Â° vÃƒÂ¡Ã‚ÂºÃ‚Â¥n thÃƒÂ¡Ã‚ÂºÃ‚Â­t chÃƒÂ¡Ã‚Â»Ã‚Â© khÃƒÆ’Ã‚Â´ng Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Âc form.\n\n"
+        "MÃƒÂ¡Ã‚Â»Ã‚Â¤C TIÃƒÆ’Ã…Â U:\n"
+        "- TrÃƒÂ¡Ã‚ÂºÃ‚Â£ lÃƒÂ¡Ã‚Â»Ã‚Âi trÃƒÂ¡Ã‚Â»Ã‚Â±c tiÃƒÂ¡Ã‚ÂºÃ‚Â¿p tin nhÃƒÂ¡Ã‚ÂºÃ‚Â¯n mÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi nhÃƒÂ¡Ã‚ÂºÃ‚Â¥t cÃƒÂ¡Ã‚Â»Ã‚Â§a khÃƒÆ’Ã‚Â¡ch.\n"
+        "- DÃƒÂ¡Ã‚Â»Ã‚Â±a trÃƒÆ’Ã‚Âªn customer_brief Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ nhÃƒÂ¡Ã‚Â»Ã¢â‚¬Âº ngÃƒÂ¡Ã‚Â»Ã‚Â¯ cÃƒÂ¡Ã‚ÂºÃ‚Â£nh, trÃƒÆ’Ã‚Â¡nh hÃƒÂ¡Ã‚Â»Ã‚Âi lÃƒÂ¡Ã‚ÂºÃ‚Â¡i Ãƒâ€žÃ¢â‚¬ËœiÃƒÂ¡Ã‚Â»Ã‚Âu khÃƒÆ’Ã‚Â¡ch Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ nÃƒÆ’Ã‚Â³i.\n"
+        "- NÃƒÂ¡Ã‚ÂºÃ‚Â¿u chÃƒâ€ Ã‚Â°a cÃƒÂ¡Ã‚ÂºÃ‚Â§n liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡t kÃƒÆ’Ã‚Âª sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m, hÃƒÆ’Ã‚Â£y tÃƒâ€ Ã‚Â° vÃƒÂ¡Ã‚ÂºÃ‚Â¥n Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹nh hÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºng/chÃƒÂ¡Ã‚ÂºÃ‚Â¥t liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u/phong cÃƒÆ’Ã‚Â¡ch/cÃƒÆ’Ã‚Â¡ch chÃƒÂ¡Ã‚Â»Ã‚Ân.\n"
+        "- HÃƒÂ¡Ã‚Â»Ã‚Âi tÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœi Ãƒâ€žÃ¢â‚¬Ëœa 1 cÃƒÆ’Ã‚Â¢u tiÃƒÂ¡Ã‚ÂºÃ‚Â¿p theo, chÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° hÃƒÂ¡Ã‚Â»Ã‚Âi Ãƒâ€žÃ¢â‚¬ËœiÃƒÂ¡Ã‚Â»Ã‚Âu thÃƒÂ¡Ã‚ÂºÃ‚Â­t sÃƒÂ¡Ã‚Â»Ã‚Â± giÃƒÆ’Ã‚Âºp lÃƒÂ¡Ã‚Â»Ã‚Âc tÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœt hÃƒâ€ Ã‚Â¡n.\n\n"
+        "GIÃƒÂ¡Ã‚Â»Ã…Â¡I HÃƒÂ¡Ã‚ÂºÃ‚Â N AN TOÃƒÆ’Ã¢â€šÂ¬N:\n"
+        "- Không bịa sản phẩm, SKU, giá, link, khuyến mãi hoặc tình trạng còn hàng.\n"
+        "- KhÃƒÆ’Ã‚Â´ng nÃƒÆ’Ã‚Â³i 'mÃƒÆ’Ã‚Â¬nh tÃƒÆ’Ã‚Â¬m thÃƒÂ¡Ã‚ÂºÃ‚Â¥y' nÃƒÂ¡Ã‚ÂºÃ‚Â¿u chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ evidence sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m.\n"
+        "- KhÃƒÆ’Ã‚Â´ng lÃƒÂ¡Ã‚ÂºÃ‚Â·p lÃƒÂ¡Ã‚ÂºÃ‚Â¡i cÃƒÆ’Ã‚Â¢u hÃƒÂ¡Ã‚Â»Ã‚Âi dÃƒÂ¡Ã‚ÂºÃ‚Â¡ng form nhÃƒâ€ Ã‚Â° 'BÃƒÂ¡Ã‚ÂºÃ‚Â¡n muÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœn lÃƒÂ¡Ã‚Â»Ã‚Âc theo ngÃƒÆ’Ã‚Â¢n sÃƒÆ’Ã‚Â¡ch hay chÃƒÂ¡Ã‚ÂºÃ‚Â¥t liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u/phong cÃƒÆ’Ã‚Â¡ch trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºc?'.\n"
+        "- KhÃƒÆ’Ã‚Â´ng tÃƒÂ¡Ã‚Â»Ã‚Â± nhÃƒÂ¡Ã‚ÂºÃ‚Â­n Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ gÃƒÂ¡Ã‚Â»Ã‚Âi cÃƒÂ¡Ã‚Â»Ã‚Â­a hÃƒÆ’Ã‚Â ng, kiÃƒÂ¡Ã‚Â»Ã†â€™m kho hoÃƒÂ¡Ã‚ÂºÃ‚Â·c xÃƒÆ’Ã‚Â¡c nhÃƒÂ¡Ã‚ÂºÃ‚Â­n tÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n kho.\n\n"
+        f"customer_brief={json.dumps(brief or {}, ensure_ascii=False)}\n"
+        f"slots={json.dumps(safe_slots, ensure_ascii=False)}\n"
+        f"tin_nhan_moi_nhat={user_message}\n\n"
+        "TrÃƒÂ¡Ã‚ÂºÃ‚Â£ lÃƒÂ¡Ã‚Â»Ã‚Âi 2-4 cÃƒÆ’Ã‚Â¢u:"
+    )
+
+
+def _build_claude_advisor_prompt(
+    *,
+    mode: str,
+    user_message: str,
+    context: str,
+    customer_brief: Optional[Dict[str, Any]] = None,
+    slots: Optional[Dict[str, Any]] = None,
+) -> str:
+    evidence = (context or "").strip()
+    brief = customer_brief or {}
+    safe_slots = _mask_contact_in_value(dict(slots or {}))
+    if mode == ChatMode.GENERAL_COMPARE.value:
+        role = (
+            "BÃƒÂ¡Ã‚ÂºÃ‚Â¡n lÃƒÆ’Ã‚Â  cÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœ vÃƒÂ¡Ã‚ÂºÃ‚Â¥n so sÃƒÆ’Ã‚Â¡nh sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m trung lÃƒÂ¡Ã‚ÂºÃ‚Â­p. GiÃƒÆ’Ã‚Âºp khÃƒÆ’Ã‚Â¡ch hiÃƒÂ¡Ã‚Â»Ã†â€™u khÃƒÆ’Ã‚Â¡c biÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡t, Ãƒâ€žÃ¢â‚¬ËœiÃƒÂ¡Ã‚Â»Ã†â€™m hÃƒÂ¡Ã‚Â»Ã‚Â£p/khÃƒÆ’Ã‚Â´ng hÃƒÂ¡Ã‚Â»Ã‚Â£p theo nhu cÃƒÂ¡Ã‚ÂºÃ‚Â§u, "
+            "khÃƒÆ’Ã‚Â´ng chÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœt Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â¡n vÃƒÆ’Ã‚Â  khÃƒÆ’Ã‚Â´ng Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â©y mua."
+        )
+        mode_rules = (
+            "- So sÃƒÆ’Ã‚Â¡nh theo cÃƒÆ’Ã‚Â¡c tiÃƒÆ’Ã‚Âªu chÃƒÆ’Ã‚Â­ cÃƒÆ’Ã‚Â³ ÃƒÆ’Ã‚Â­ch nhÃƒâ€ Ã‚Â° cÃƒÆ’Ã‚Â´ng nÃƒâ€žÃ†â€™ng, chÃƒÂ¡Ã‚ÂºÃ‚Â¥t liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u, kÃƒÆ’Ã‚Â­ch thÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºc, phong cÃƒÆ’Ã‚Â¡ch, giÃƒÆ’Ã‚Â¡ nÃƒÂ¡Ã‚ÂºÃ‚Â¿u cÃƒÆ’Ã‚Â³.\n"
+            "- NÃƒÂ¡Ã‚ÂºÃ‚Â¿u dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u thiÃƒÂ¡Ã‚ÂºÃ‚Â¿u, nÃƒÆ’Ã‚Â³i mÃƒÂ¡Ã‚Â»Ã‚Âm theo hÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºng cÃƒÂ¡Ã‚ÂºÃ‚Â§n thÃƒÆ’Ã‚Âªm thÃƒÆ’Ã‚Â´ng tin Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ so kÃƒÂ¡Ã‚Â»Ã‚Â¹ hÃƒâ€ Ã‚Â¡n; khÃƒÆ’Ã‚Â´ng dÃƒÆ’Ã‚Â¹ng cÃƒÆ’Ã‚Â¢u phÃƒÂ¡Ã‚Â»Ã‚Â§ Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹nh cÃƒÂ¡Ã‚Â»Ã‚Â©ng.\n"
+            "- KhÃƒÆ’Ã‚Â´ng bÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹a thÃƒÆ’Ã‚Â´ng sÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœ, giÃƒÆ’Ã‚Â¡, SKU, link hoÃƒÂ¡Ã‚ÂºÃ‚Â·c nguÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u."
+        )
+    elif mode == ChatMode.MARKET_PRICE.value:
+        role = (
+            "BÃƒÂ¡Ã‚ÂºÃ‚Â¡n lÃƒÆ’Ã‚Â  cÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœ vÃƒÂ¡Ã‚ÂºÃ‚Â¥n tham chiÃƒÂ¡Ã‚ÂºÃ‚Â¿u giÃƒÆ’Ã‚Â¡. GiÃƒÂ¡Ã‚ÂºÃ‚Â£i thÃƒÆ’Ã‚Â­ch khoÃƒÂ¡Ã‚ÂºÃ‚Â£ng giÃƒÆ’Ã‚Â¡ vÃƒÆ’Ã‚Â  mÃƒÂ¡Ã‚Â»Ã‚Â©c hÃƒÂ¡Ã‚Â»Ã‚Â£p lÃƒÆ’Ã‚Â½ bÃƒÂ¡Ã‚ÂºÃ‚Â±ng ngÃƒÆ’Ã‚Â´n ngÃƒÂ¡Ã‚Â»Ã‚Â¯ dÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¦ hiÃƒÂ¡Ã‚Â»Ã†â€™u, "
+            "khÃƒÆ’Ã‚Â´ng thÃƒÆ’Ã‚Âºc Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â©y mua sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m cÃƒÂ¡Ã‚Â»Ã‚Â¥ thÃƒÂ¡Ã‚Â»Ã†â€™."
+        )
+        mode_rules = (
+            "- ChÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° nhÃƒÂ¡Ã‚ÂºÃ‚Â­n xÃƒÆ’Ã‚Â©t giÃƒÆ’Ã‚Â¡ dÃƒÂ¡Ã‚Â»Ã‚Â±a trÃƒÆ’Ã‚Âªn evidence/provider context.\n"
+            "- NÃƒÆ’Ã‚Âªu yÃƒÂ¡Ã‚ÂºÃ‚Â¿u tÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœ lÃƒÆ’Ã‚Â m giÃƒÆ’Ã‚Â¡ thay Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¢i nhÃƒâ€ Ã‚Â° chÃƒÂ¡Ã‚ÂºÃ‚Â¥t liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u, kÃƒÆ’Ã‚Â­ch thÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºc, tÃƒÆ’Ã‚Â¬nh trÃƒÂ¡Ã‚ÂºÃ‚Â¡ng, vÃƒÂ¡Ã‚ÂºÃ‚Â­n chuyÃƒÂ¡Ã‚Â»Ã†â€™n/lÃƒÂ¡Ã‚ÂºÃ‚Â¯p Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â·t nÃƒÂ¡Ã‚ÂºÃ‚Â¿u phÃƒÆ’Ã‚Â¹ hÃƒÂ¡Ã‚Â»Ã‚Â£p.\n"
+            "- KhÃƒÆ’Ã‚Â´ng bÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹a giÃƒÆ’Ã‚Â¡ thÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹ trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âng, nguÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n tham chiÃƒÂ¡Ã‚ÂºÃ‚Â¿u, SKU, link hoÃƒÂ¡Ã‚ÂºÃ‚Â·c tÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n kho."
+        )
+    else:
+        role = (
+            "BÃƒÂ¡Ã‚ÂºÃ‚Â¡n lÃƒÆ’Ã‚Â  nhÃƒÆ’Ã‚Â¢n viÃƒÆ’Ã‚Âªn tÃƒâ€ Ã‚Â° vÃƒÂ¡Ã‚ÂºÃ‚Â¥n nÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢i thÃƒÂ¡Ã‚ÂºÃ‚Â¥t Ãƒâ€žÃ¢â‚¬Ëœang chat 1-1 vÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi khÃƒÆ’Ã‚Â¡ch. HÃƒÆ’Ã‚Â£y tÃƒâ€ Ã‚Â° vÃƒÂ¡Ã‚ÂºÃ‚Â¥n nhÃƒâ€ Ã‚Â° ngÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âi thÃƒÂ¡Ã‚ÂºÃ‚Â­t: nhÃƒÂ¡Ã‚Â»Ã¢â‚¬Âº ngÃƒÂ¡Ã‚Â»Ã‚Â¯ cÃƒÂ¡Ã‚ÂºÃ‚Â£nh, "
+            "thÃƒÆ’Ã‚Âªm insight nhÃƒÂ¡Ã‚Â»Ã‚Â, gÃƒÂ¡Ã‚Â»Ã‚Â£i ÃƒÆ’Ã‚Â½ hÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºng chÃƒÂ¡Ã‚Â»Ã‚Ân hÃƒÂ¡Ã‚Â»Ã‚Â£p lÃƒÆ’Ã‚Â½ rÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“i mÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi hÃƒÂ¡Ã‚Â»Ã‚Âi tiÃƒÂ¡Ã‚ÂºÃ‚Â¿p nÃƒÂ¡Ã‚ÂºÃ‚Â¿u cÃƒÂ¡Ã‚ÂºÃ‚Â§n."
+        )
+        mode_rules = (
+            "- NÃƒÂ¡Ã‚ÂºÃ‚Â¿u cÃƒÆ’Ã‚Â³ evidence sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m, chÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° dÃƒÆ’Ã‚Â¹ng sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m/giÃƒÆ’Ã‚Â¡/SKU/link trong evidence.\n"
+            "- NÃƒÂ¡Ã‚ÂºÃ‚Â¿u chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ evidence sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m, tÃƒâ€ Ã‚Â° vÃƒÂ¡Ã‚ÂºÃ‚Â¥n Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹nh hÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºng theo nhu cÃƒÂ¡Ã‚ÂºÃ‚Â§u; khÃƒÆ’Ã‚Â´ng nÃƒÆ’Ã‚Â³i 'mÃƒÆ’Ã‚Â¬nh tÃƒÆ’Ã‚Â¬m thÃƒÂ¡Ã‚ÂºÃ‚Â¥y'.\n"
+            "- Không bịa sản phẩm, SKU, giá, link, khuyến mãi hoặc tình trạng tồn kho."
+        )
+    return (
+        f"{role}\n\n"
+        "GIÃƒÂ¡Ã‚Â»Ã…â€™NG Ãƒâ€žÃ‚ÂIÃƒÂ¡Ã‚Â»Ã¢â‚¬Â U:\n"
+        "- TiÃƒÂ¡Ã‚ÂºÃ‚Â¿ng ViÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡t tÃƒÂ¡Ã‚Â»Ã‚Â± nhiÃƒÆ’Ã‚Âªn, thÃƒÆ’Ã‚Â¢n thiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n, khÃƒÆ’Ã‚Â´ng Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Âc form.\n"
+        "- KhÃƒÆ’Ã‚Â´ng mÃƒÂ¡Ã‚Â»Ã…Â¸ Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â§u bÃƒÂ¡Ã‚ÂºÃ‚Â±ng cÃƒÆ’Ã‚Â¡c cÃƒÆ’Ã‚Â¢u phÃƒÂ¡Ã‚Â»Ã‚Â§ Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹nh/cÃƒÂ¡Ã‚Â»Ã‚Â©ng nhÃƒâ€ Ã‚Â° 'mÃƒÆ’Ã‚Â¬nh khÃƒÆ’Ã‚Â´ng...', 'mÃƒÆ’Ã‚Â¬nh chÃƒâ€ Ã‚Â°a...', 'tÃƒÆ’Ã‚Â´i khÃƒÆ’Ã‚Â´ng cÃƒÆ’Ã‚Â³...'.\n"
+        "- KhÃƒÆ’Ã‚Â´ng lÃƒÂ¡Ã‚ÂºÃ‚Â·p lÃƒÂ¡Ã‚ÂºÃ‚Â¡i cÃƒÆ’Ã‚Â¢u kiÃƒÂ¡Ã‚Â»Ã†â€™u 'MÃƒÆ’Ã‚Â¬nh Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ hiÃƒÂ¡Ã‚Â»Ã†â€™u hÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºng chÃƒÆ’Ã‚Â­nh lÃƒÆ’Ã‚Â ...' hoÃƒÂ¡Ã‚ÂºÃ‚Â·c 'BÃƒÂ¡Ã‚ÂºÃ‚Â¡n muÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœn mÃƒÆ’Ã‚Â¬nh lÃƒÂ¡Ã‚Â»Ã‚Âc theo ngÃƒÆ’Ã‚Â¢n sÃƒÆ’Ã‚Â¡ch hay chÃƒÂ¡Ã‚ÂºÃ‚Â¥t liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u/phong cÃƒÆ’Ã‚Â¡ch trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºc?'.\n"
+        "- TrÃƒÂ¡Ã‚ÂºÃ‚Â£ lÃƒÂ¡Ã‚Â»Ã‚Âi trÃƒÂ¡Ã‚Â»Ã‚Â±c tiÃƒÂ¡Ã‚ÂºÃ‚Â¿p tin nhÃƒÂ¡Ã‚ÂºÃ‚Â¯n mÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi nhÃƒÂ¡Ã‚ÂºÃ‚Â¥t; nÃƒÂ¡Ã‚ÂºÃ‚Â¿u hÃƒÂ¡Ã‚Â»Ã‚Âi tiÃƒÂ¡Ã‚ÂºÃ‚Â¿p thÃƒÆ’Ã‚Â¬ hÃƒÂ¡Ã‚Â»Ã‚Âi tÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœi Ãƒâ€žÃ¢â‚¬Ëœa 1 cÃƒÆ’Ã‚Â¢u thÃƒÂ¡Ã‚ÂºÃ‚Â­t sÃƒÂ¡Ã‚Â»Ã‚Â± cÃƒÂ¡Ã‚ÂºÃ‚Â§n.\n\n"
+        "QUY TÃƒÂ¡Ã‚ÂºÃ‚Â®C AN TOÃƒÆ’Ã¢â€šÂ¬N:\n"
+        f"{mode_rules}\n\n"
+        f"mode={mode}\n"
+        f"customer_brief={json.dumps(brief, ensure_ascii=False)}\n"
+        f"slots={json.dumps(safe_slots, ensure_ascii=False)}\n"
+        f"evidence_or_provider_context:\n{evidence if evidence else '(khÃƒÆ’Ã‚Â´ng cÃƒÆ’Ã‚Â³ evidence sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m cÃƒÂ¡Ã‚Â»Ã‚Â¥ thÃƒÂ¡Ã‚Â»Ã†â€™)'}\n\n"
+        f"tin_nhan_moi_nhat={user_message}\n\n"
+        "ViÃƒÂ¡Ã‚ÂºÃ‚Â¿t cÃƒÆ’Ã‚Â¢u trÃƒÂ¡Ã‚ÂºÃ‚Â£ lÃƒÂ¡Ã‚Â»Ã‚Âi cuÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœi cÃƒÆ’Ã‚Â¹ng 2-5 cÃƒÆ’Ã‚Â¢u:"
+    )
+
+
+def _try_claude_advisor_response(
+    *,
+    mode: str,
+    user_message: str,
+    context: str,
+    customer_brief: Optional[Dict[str, Any]],
+    slots: Optional[Dict[str, Any]],
+    debug_trace: Dict[str, Any],
+    max_tokens: int = 800,
+    temperature: float = 0.72,
+) -> Optional[str]:
+    api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+    debug_trace.setdefault("real_claude_response_attempted", False)
+    debug_trace.setdefault("real_claude_response_called", False)
+    debug_trace.setdefault("real_claude_response_mode", "not_applicable")
+    debug_trace.setdefault("real_claude_skip_reason", "not_applicable")
+    debug_trace.setdefault("real_claude_error_type", None)
+    if not api_key:
+        debug_trace["real_claude_skip_reason"] = "missing_api_key"
+        return None
+    if _is_pytest_blocking_real_claude():
+        debug_trace["real_claude_skip_reason"] = "pytest_real_llm_disabled"
+        debug_trace["llm_skip_reason"] = "pytest_real_llm_disabled"
+        return None
+
+    prompt = _build_claude_advisor_prompt(
+        mode=mode,
+        user_message=user_message,
+        context=context,
+        customer_brief=customer_brief,
+        slots=slots,
+    )
+    debug_trace["real_claude_response_attempted"] = True
+    debug_trace["real_claude_response_mode"] = f"{mode}_advisor"
+    debug_trace["llm_enabled"] = True
+    debug_trace["llm_provider"] = "claude"
+    debug_trace["llm_call_attempted"] = True
+    try:
+        started = time.time()
+        out, err, preview = _call_claude_api(
+            prompt,
+            api_key,
+            os.getenv("CLAUDE_MODEL") or "claude-sonnet-4-6",
+            os.getenv("CLAUDE_API_BASE_URL") or "https://api.anthropic.com",
+            max_tokens,
+            temperature,
+            1.0,
+            30,
+        )
+        if out and not err:
+            debug_trace.update({
+                "answer_mode": "claude_advisor",
+                "template_renderer": False,
+                "llm_called": True,
+                "llm_skip_reason": "",
+                "real_claude_response_called": True,
+                "real_claude_skip_reason": "",
+                "real_claude_error_type": None,
+            })
+            try:
+                log_event({
+                    "event": "claude_advisor_response",
+                    "mode": mode,
+                    "latency_ms": int((time.time() - started) * 1000),
+                })
+            except Exception:
+                pass
+            print(f"[LLM] claude_advisor success mode={mode} latency_ms={int((time.time()-started)*1000)}")
+            return out.strip()
+        debug_trace.update({
+            "real_claude_response_called": False,
+            "real_claude_skip_reason": "claude_error_or_empty",
+            "real_claude_error_type": err or "empty",
+            "llm_skip_reason": "claude_error_or_empty",
+        })
+        print(f"[LLM] claude_advisor failed mode={mode} error_type={debug_trace.get('real_claude_error_type')}")
+    except Exception as exc:
+        debug_trace.update({
+            "real_claude_response_called": False,
+            "real_claude_skip_reason": "exception",
+            "real_claude_error_type": exc.__class__.__name__,
+            "llm_skip_reason": "fallback_after_error",
+        })
+        print(f"[LLM] claude_advisor failed mode={mode} error_type={exc.__class__.__name__}")
+    return None
+
+
+def _tenant_sales_style_question(message: str) -> bool:
+    text = _fold_sku(message or "")
+    return bool(
+        re.search(r"\b(phong cach|style|kieu|kieu dang|loai|nhung phong cach)\b", text)
+        and re.search(r"\b(co|ban|cua hang|shop|ben)\b", text)
+    )
+
+
+def _tenant_sales_soft_preference(message: str) -> bool:
+    text = _fold_sku(message or "")
+    return bool(re.search(r"\b(mem|em|em ai|ngoi lau|thu gian|boc nem|boc vai|boc da)\b", text))
+
+
+def _tenant_sales_style_consult_reply(slots: Dict[str, Any], message: str) -> str:
+    category = slots.get("product_category") or slots.get("product_type") or "sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m"
+    room = slots.get("room") or "khÃƒÆ’Ã‚Â´ng gian cÃƒÂ¡Ã‚Â»Ã‚Â§a bÃƒÂ¡Ã‚ÂºÃ‚Â¡n"
+    if _fold_sku(str(category)) == "ghe":
+        lead = (
+            f"NÃƒÂ¡Ã‚ÂºÃ‚Â¿u bÃƒÂ¡Ã‚ÂºÃ‚Â¡n Ãƒâ€žÃ¢â‚¬Ëœang nghiÃƒÆ’Ã‚Âªng vÃƒÂ¡Ã‚Â»Ã‚Â ghÃƒÂ¡Ã‚ÂºÃ‚Â¿ cho {room}, mÃƒÆ’Ã‚Â¬nh sÃƒÂ¡Ã‚ÂºÃ‚Â½ Ãƒâ€ Ã‚Â°u tiÃƒÆ’Ã‚Âªn cÃƒÆ’Ã‚Â¡c mÃƒÂ¡Ã‚ÂºÃ‚Â«u cÃƒÆ’Ã‚Â³ nÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡m, bÃƒÂ¡Ã‚Â»Ã‚Âc vÃƒÂ¡Ã‚ÂºÃ‚Â£i/da "
+            "hoÃƒÂ¡Ã‚ÂºÃ‚Â·c dÃƒÆ’Ã‚Â¡ng thÃƒâ€ Ã‚Â° giÃƒÆ’Ã‚Â£n thay vÃƒÆ’Ã‚Â¬ ghÃƒÂ¡Ã‚ÂºÃ‚Â¿ vÃƒâ€žÃ†â€™n phÃƒÆ’Ã‚Â²ng/lÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi khÃƒÆ’Ã‚Â´ cÃƒÂ¡Ã‚Â»Ã‚Â©ng."
+        )
+        styles = (
+            "BÃƒÆ’Ã‚Âªn mÃƒÆ’Ã‚Â¬nh thÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âng cÃƒÆ’Ã‚Â³ vÃƒÆ’Ã‚Â i hÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºng dÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¦ chÃƒÂ¡Ã‚Â»Ã‚Ân: hiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â¡i gÃƒÂ¡Ã‚Â»Ã‚Ân, tÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœi giÃƒÂ¡Ã‚ÂºÃ‚Â£n, BÃƒÂ¡Ã‚ÂºÃ‚Â¯c ÃƒÆ’Ã¢â‚¬Å¡u sÃƒÆ’Ã‚Â¡ng mÃƒÆ’Ã‚Â u, "
+            "cafe/lounge mÃƒÂ¡Ã‚Â»Ã‚Âm mÃƒÂ¡Ã‚ÂºÃ‚Â¡i vÃƒÆ’Ã‚Â  mÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢t sÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœ mÃƒÂ¡Ã‚ÂºÃ‚Â«u cÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¢ Ãƒâ€žÃ¢â‚¬ËœiÃƒÂ¡Ã‚Â»Ã†â€™n nhÃƒÂ¡Ã‚ÂºÃ‚Â¹."
+        )
+        return f"{lead} {styles} BÃƒÂ¡Ã‚ÂºÃ‚Â¡n muÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœn mÃƒÆ’Ã‚Â¬nh lÃƒÂ¡Ã‚Â»Ã‚Âc ghÃƒÂ¡Ã‚ÂºÃ‚Â¿ Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â¡n ÃƒÆ’Ã‚Âªm hay bÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢ ghÃƒÂ¡Ã‚ÂºÃ‚Â¿/sofa nhÃƒÂ¡Ã‚Â»Ã‚Â cho phÃƒÆ’Ã‚Â²ng khÃƒÆ’Ã‚Â¡ch?"
+    return (
+        f"VÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi {category} cho {room}, mÃƒÆ’Ã‚Â¬nh cÃƒÆ’Ã‚Â³ thÃƒÂ¡Ã‚Â»Ã†â€™ lÃƒÂ¡Ã‚Â»Ã‚Âc theo cÃƒÆ’Ã‚Â¡c hÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºng hiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â¡i, tÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœi giÃƒÂ¡Ã‚ÂºÃ‚Â£n, BÃƒÂ¡Ã‚ÂºÃ‚Â¯c ÃƒÆ’Ã¢â‚¬Å¡u, "
+        "cÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¢ Ãƒâ€žÃ¢â‚¬ËœiÃƒÂ¡Ã‚Â»Ã†â€™n nhÃƒÂ¡Ã‚ÂºÃ‚Â¹ hoÃƒÂ¡Ã‚ÂºÃ‚Â·c kiÃƒÂ¡Ã‚Â»Ã†â€™u ÃƒÂ¡Ã‚ÂºÃ‚Â¥m cÃƒÆ’Ã‚Âºng tÃƒÂ¡Ã‚Â»Ã‚Â± nhiÃƒÆ’Ã‚Âªn. BÃƒÂ¡Ã‚ÂºÃ‚Â¡n thÃƒÆ’Ã‚Â­ch cÃƒÂ¡Ã‚ÂºÃ‚Â£m giÃƒÆ’Ã‚Â¡c gÃƒÂ¡Ã‚Â»Ã‚Ân sÃƒÆ’Ã‚Â¡ng hay mÃƒÂ¡Ã‚Â»Ã‚Âm ÃƒÂ¡Ã‚ÂºÃ‚Â¥m hÃƒâ€ Ã‚Â¡n?"
+    )
+
+
+def _tenant_sales_hit_meta(hit: Any) -> Dict[str, Any]:
+    metadata = getattr(hit, "metadata", {}) if hasattr(hit, "metadata") else {}
+    return metadata if isinstance(metadata, dict) else {}
+
+
+def _tenant_sales_hit_name(hit: Any) -> str:
+    meta = _tenant_sales_hit_meta(hit)
+    return str(meta.get("product_name") or getattr(hit, "title", "") or "").strip()
+
+
+def _tenant_sales_hit_sku(hit: Any) -> str:
+    meta = _tenant_sales_hit_meta(hit)
+    return str(meta.get("sku") or getattr(hit, "sku", "") or "").strip()
+
+
+def _tenant_sales_hit_price(hit: Any) -> Any:
+    return _tenant_sales_hit_meta(hit).get("price")
+
+
+def _tenant_sales_soft_listing_reply(message: str, hits: List[Any], slots: Dict[str, Any]) -> str:
+    category = slots.get("product_category") or slots.get("product_type") or "sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m"
+    room = slots.get("room") or "khÃƒÆ’Ã‚Â´ng gian cÃƒÂ¡Ã‚Â»Ã‚Â§a bÃƒÂ¡Ã‚ÂºÃ‚Â¡n"
+    intro = f"MÃƒÆ’Ã‚Â¬nh lÃƒÂ¡Ã‚Â»Ã‚Âc Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Â£c vÃƒÆ’Ã‚Â i mÃƒÂ¡Ã‚ÂºÃ‚Â«u {str(category).lower()} hÃƒÂ¡Ã‚Â»Ã‚Â£p vÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi {room}"
+    if _tenant_sales_soft_preference(message) or slots.get("constraints"):
+        intro += ", Ãƒâ€ Ã‚Â°u tiÃƒÆ’Ã‚Âªn cÃƒÂ¡Ã‚ÂºÃ‚Â£m giÃƒÆ’Ã‚Â¡c mÃƒÂ¡Ã‚Â»Ã‚Âm vÃƒÆ’Ã‚Â  dÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¦ ngÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“i"
+    intro += ":"
+    lines = [intro]
+    for idx, hit in enumerate((hits or [])[:3], start=1):
+        name = _tenant_sales_hit_name(hit) or f"MÃƒÂ¡Ã‚ÂºÃ‚Â«u {idx}"
+        sku = _tenant_sales_hit_sku(hit)
+        price = _tenant_sales_hit_price(hit)
+        bits = []
+        if sku:
+            bits.append(sku)
+        if price not in (None, ""):
+            try:
+                bits.append(f"{int(float(price)):,} VND".replace(",", "."))
+            except (TypeError, ValueError):
+                bits.append(str(price))
+        suffix = f" ({' - '.join(bits)})" if bits else ""
+        lines.append(f"{idx}. {name}{suffix}")
+    lines.append("BÃƒÂ¡Ã‚ÂºÃ‚Â¡n muÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœn mÃƒÆ’Ã‚Â¬nh nghiÃƒÆ’Ã‚Âªng vÃƒÂ¡Ã‚Â»Ã‚Â mÃƒÂ¡Ã‚ÂºÃ‚Â«u ÃƒÆ’Ã‚Âªm thÃƒâ€ Ã‚Â° giÃƒÆ’Ã‚Â£n, gÃƒÂ¡Ã‚Â»Ã‚Ân hiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â¡i hay mÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢t bÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢ ghÃƒÂ¡Ã‚ÂºÃ‚Â¿ tiÃƒÂ¡Ã‚ÂºÃ‚Â¿p khÃƒÆ’Ã‚Â¡ch Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â§y Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â§ hÃƒâ€ Ã‚Â¡n?")
+    return "\n".join(lines)
 
 
 from .retrievers.text import fold_accents as _fold_sku
@@ -727,7 +1046,7 @@ def _build_debug_trace(
     external_price_refs: int = 0,
     price_provider: str = "none",
     used_mock_price_data: bool = False,
-    # Phase 10F: LLM/trace debug fields — hardcoded defaults (overridden in callers)
+    # Phase 10F: LLM/trace debug fields ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â hardcoded defaults (overridden in callers)
     llm_enabled: bool = False,
     llm_provider: str = "none",
     llm_model: str = "",
@@ -766,7 +1085,101 @@ def _build_debug_trace(
         "retrieval_query": retrieval_query,
         "requested_category": requested_category,
         "slots_snapshot": dict(slots_snapshot or {}),
+        "planner_attempted": False,
+        "planner_called": False,
+        "planner_skip_reason": "",
+        "planner_error_type": "",
+        "planner_intent": "",
+        "planner_need_retrieval": False,
+        "finalizer_attempted": False,
+        "finalizer_called": False,
+        "finalizer_skip_reason": "",
+        "finalizer_error_type": "",
+        "orchestrator_enabled": False,
+        "orchestrator_fallback_reason": "",
     }
+
+
+def _collect_debug_skus(value: Any, limit: int = 8) -> List[str]:
+    skus: List[str] = []
+
+    def visit(item: Any) -> None:
+        if len(skus) >= limit:
+            return
+        if isinstance(item, dict):
+            sku = item.get("sku") or item.get("SKU")
+            if sku:
+                sku_text = str(sku)
+                if sku_text not in skus:
+                    skus.append(sku_text)
+            for key in ("metadata", "product", "items", "products", "evidence", "selected_products"):
+                if key in item:
+                    visit(item[key])
+        elif isinstance(item, list):
+            for child in item:
+                visit(child)
+                if len(skus) >= limit:
+                    break
+
+    visit(value)
+    return skus
+
+
+def _first_debug_reason(debug_trace: Dict[str, Any]) -> str:
+    for key in (
+        "planner_skip_reason",
+        "finalizer_skip_reason",
+        "real_claude_skip_reason",
+        "consultation_llm_skip_reason",
+        "state_interpreter_skip_reason",
+        "llm_skip_reason",
+        "orchestrator_fallback_reason",
+        "fallback_reason",
+        "template_reason",
+    ):
+        value = debug_trace.get(key)
+        if value not in (None, "", "not_applicable", "not_yet"):
+            return str(value)
+    return ""
+
+
+def _with_production_debug_panel(debug_trace: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if debug_trace is None:
+        return None
+    retrieval_count = int(debug_trace.get("retrieval_count") or debug_trace.get("retrieved_docs") or 0)
+    sales_action = debug_trace.get("sales_action_taken") or debug_trace.get("sales_action") or "none"
+    purchase_status = debug_trace.get("purchase_request_status")
+    lead_created = bool(
+        debug_trace.get("lead_created")
+        or debug_trace.get("handoff_id")
+        or purchase_status == "draft"
+        or sales_action in {"handoff", "handoff_sent", "handoff_already_sent"}
+    )
+    retrieved_skus = _collect_debug_skus({
+        "evidence": debug_trace.get("evidence"),
+        "selected_products": debug_trace.get("selected_products"),
+        "product_evidence": debug_trace.get("product_evidence"),
+    })
+    panel = {
+        "phase": "E",
+        "mode": debug_trace.get("mode", ""),
+        "route": debug_trace.get("template_reason") or debug_trace.get("answer_mode") or "",
+        "answer_mode": debug_trace.get("answer_mode", ""),
+        "planner_intent": debug_trace.get("planner_intent", ""),
+        "need_retrieval": bool(debug_trace.get("planner_need_retrieval") or retrieval_count > 0),
+        "retrieval_count": retrieval_count,
+        "retrieved_skus": retrieved_skus,
+        "finalizer_called": bool(debug_trace.get("finalizer_called")),
+        "skip_reason": _first_debug_reason(debug_trace),
+        "sales_action": sales_action,
+        "lead_created": lead_created,
+        "purchase_request_status": purchase_status,
+        "llm_called": bool(debug_trace.get("llm_called")),
+        "real_claude_response_called": bool(debug_trace.get("real_claude_response_called")),
+    }
+    debug_trace["production_debug_panel"] = panel
+    debug_trace["phase_e_debug_panel"] = panel
+    return debug_trace
 
 
 def _messages_to_plain_prompt(messages: List[Dict[str, Any]]) -> str:
@@ -780,7 +1193,7 @@ def _messages_to_plain_prompt(messages: List[Dict[str, Any]]) -> str:
 
 def _extract_candidate_price_vnd(message: str) -> Optional[float]:
     text = (message or "").lower().replace(",", ".")
-    match = re.search(r"(\d+(?:\.\d+)?)\s*(trieu|triệu|m|million)", text)
+    match = re.search(r"(\d+(?:\.\d+)?)\s*(trieu|triÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u|m|million)", text)
     if match:
         return float(match.group(1)) * 1_000_000
 
@@ -807,20 +1220,20 @@ def _format_vnd_range(min_price: float, max_price: float) -> str:
     min_m = min_price / 1_000_000
     max_m = max_price / 1_000_000
     if min_price == max_price:
-        return f"khoảng {min_m:.1f} triệu VND"
-    return f"khoảng {min_m:.1f}-{max_m:.1f} triệu VND"
+        return f"khoÃƒÂ¡Ã‚ÂºÃ‚Â£ng {min_m:.1f} triÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u VND"
+    return f"khoÃƒÂ¡Ã‚ÂºÃ‚Â£ng {min_m:.1f}-{max_m:.1f} triÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u VND"
 
 
 def _format_vnd_value(price: float) -> str:
     if price >= 1_000_000:
-        return f"{price / 1_000_000:.1f} triệu VND"
+        return f"{price / 1_000_000:.1f} triÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u VND"
     return f"{price:,.0f} VND"
 
 
 def _strip_accents(text: str) -> str:
     normalized = unicodedata.normalize("NFD", text or "")
     without_marks = "".join(ch for ch in normalized if unicodedata.category(ch) != "Mn")
-    return without_marks.replace("đ", "d").replace("Đ", "D")
+    return without_marks.replace("Ãƒâ€žÃ¢â‚¬Ëœ", "d").replace("Ãƒâ€žÃ‚Â", "D")
 
 
 def _market_price_subject(user_message: str, price_refs: List[Any]) -> str:
@@ -831,15 +1244,15 @@ def _market_price_subject(user_message: str, price_refs: List[Any]) -> str:
 
     plain = _strip_accents(message).lower()
     if "sofa" in plain and "go soi" in plain:
-        return "sofa gỗ sồi"
+        return "sofa gÃƒÂ¡Ã‚Â»Ã¢â‚¬â€ sÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“i"
     if "sofa" in plain:
         return "sofa"
     if "ban an" in plain:
-        return "bàn ăn"
+        return "bÃƒÆ’Ã‚Â n Ãƒâ€žÃ†â€™n"
     if "tu quan ao" in plain or "tu ao" in plain:
-        return "tủ quần áo"
+        return "tÃƒÂ¡Ã‚Â»Ã‚Â§ quÃƒÂ¡Ã‚ÂºÃ‚Â§n ÃƒÆ’Ã‚Â¡o"
     if "giuong" in plain:
-        return "giường"
+        return "giÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âng"
 
     return next(
         (
@@ -848,7 +1261,7 @@ def _market_price_subject(user_message: str, price_refs: List[Any]) -> str:
             for value in (getattr(ref, "product_id", None), getattr(ref, "name", None))
             if value
         ),
-        "sản phẩm",
+        "sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m",
     )
 
 
@@ -864,9 +1277,9 @@ def _build_market_price_reply(
     ]
     if not price_values:
         return (
-            "Chưa có đủ dữ liệu giá có cấu trúc để ước lượng khoảng giá hoặc phát hiện bất thường. "
-            "Bạn có thể gửi thêm tên sản phẩm, mã sản phẩm, vật liệu, kích thước hoặc một mức giá cụ thể "
-            "để mình phân tích sát hơn."
+            "ChÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â§ dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u giÃƒÆ’Ã‚Â¡ cÃƒÆ’Ã‚Â³ cÃƒÂ¡Ã‚ÂºÃ‚Â¥u trÃƒÆ’Ã‚Âºc Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ Ãƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºc lÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Â£ng khoÃƒÂ¡Ã‚ÂºÃ‚Â£ng giÃƒÆ’Ã‚Â¡ hoÃƒÂ¡Ã‚ÂºÃ‚Â·c phÃƒÆ’Ã‚Â¡t hiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n bÃƒÂ¡Ã‚ÂºÃ‚Â¥t thÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âng. "
+            "BÃƒÂ¡Ã‚ÂºÃ‚Â¡n cÃƒÆ’Ã‚Â³ thÃƒÂ¡Ã‚Â»Ã†â€™ gÃƒÂ¡Ã‚Â»Ã‚Â­i thÃƒÆ’Ã‚Âªm tÃƒÆ’Ã‚Âªn sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m, mÃƒÆ’Ã‚Â£ sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m, vÃƒÂ¡Ã‚ÂºÃ‚Â­t liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u, kÃƒÆ’Ã‚Â­ch thÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºc hoÃƒÂ¡Ã‚ÂºÃ‚Â·c mÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢t mÃƒÂ¡Ã‚Â»Ã‚Â©c giÃƒÆ’Ã‚Â¡ cÃƒÂ¡Ã‚Â»Ã‚Â¥ thÃƒÂ¡Ã‚Â»Ã†â€™ "
+            "Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ mÃƒÆ’Ã‚Â¬nh phÃƒÆ’Ã‚Â¢n tÃƒÆ’Ã‚Â­ch sÃƒÆ’Ã‚Â¡t hÃƒâ€ Ã‚Â¡n."
         )
 
     min_price = min(price_values)
@@ -876,21 +1289,21 @@ def _build_market_price_reply(
 
     if candidate_price is None:
         judgement = (
-            "Nếu chưa có mức giá cụ thể để đối chiếu, có thể dùng khoảng này làm mốc tham khảo ban đầu."
+            "NÃƒÂ¡Ã‚ÂºÃ‚Â¿u chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ mÃƒÂ¡Ã‚Â»Ã‚Â©c giÃƒÆ’Ã‚Â¡ cÃƒÂ¡Ã‚Â»Ã‚Â¥ thÃƒÂ¡Ã‚Â»Ã†â€™ Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœi chiÃƒÂ¡Ã‚ÂºÃ‚Â¿u, cÃƒÆ’Ã‚Â³ thÃƒÂ¡Ã‚Â»Ã†â€™ dÃƒÆ’Ã‚Â¹ng khoÃƒÂ¡Ã‚ÂºÃ‚Â£ng nÃƒÆ’Ã‚Â y lÃƒÆ’Ã‚Â m mÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœc tham khÃƒÂ¡Ã‚ÂºÃ‚Â£o ban Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â§u."
         )
     elif candidate_price < min_price:
-        judgement = f"Mức {_format_vnd_value(candidate_price)} đang thấp hơn khoảng tham chiếu."
+        judgement = f"MÃƒÂ¡Ã‚Â»Ã‚Â©c {_format_vnd_value(candidate_price)} Ãƒâ€žÃ¢â‚¬Ëœang thÃƒÂ¡Ã‚ÂºÃ‚Â¥p hÃƒâ€ Ã‚Â¡n khoÃƒÂ¡Ã‚ÂºÃ‚Â£ng tham chiÃƒÂ¡Ã‚ÂºÃ‚Â¿u."
     elif candidate_price > max_price:
-        judgement = f"Mức {_format_vnd_value(candidate_price)} đang cao hơn khoảng tham chiếu."
+        judgement = f"MÃƒÂ¡Ã‚Â»Ã‚Â©c {_format_vnd_value(candidate_price)} Ãƒâ€žÃ¢â‚¬Ëœang cao hÃƒâ€ Ã‚Â¡n khoÃƒÂ¡Ã‚ÂºÃ‚Â£ng tham chiÃƒÂ¡Ã‚ÂºÃ‚Â¿u."
     else:
-        judgement = f"Mức {_format_vnd_value(candidate_price)} đang nằm trong khoảng tham chiếu."
+        judgement = f"MÃƒÂ¡Ã‚Â»Ã‚Â©c {_format_vnd_value(candidate_price)} Ãƒâ€žÃ¢â‚¬Ëœang nÃƒÂ¡Ã‚ÂºÃ‚Â±m trong khoÃƒÂ¡Ã‚ÂºÃ‚Â£ng tham chiÃƒÂ¡Ã‚ÂºÃ‚Â¿u."
 
     return (
-        f"## Tham khảo giá {product_label}\n"
-        f"Khoảng giá tham khảo: {_format_vnd_range(min_price, max_price)}.\n"
-        f"Dữ liệu đối chiếu: {len(price_values)} mẫu tham chiếu hiện có.\n"
-        f"Nhận xét: {judgement}\n"
-        "Lưu ý: Khoảng giá có thể thay đổi theo kích thước, chất liệu, độ mới, thương hiệu và chi phí vận chuyển/lắp đặt."
+        f"## Tham khÃƒÂ¡Ã‚ÂºÃ‚Â£o giÃƒÆ’Ã‚Â¡ {product_label}\n"
+        f"KhoÃƒÂ¡Ã‚ÂºÃ‚Â£ng giÃƒÆ’Ã‚Â¡ tham khÃƒÂ¡Ã‚ÂºÃ‚Â£o: {_format_vnd_range(min_price, max_price)}.\n"
+        f"DÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœi chiÃƒÂ¡Ã‚ÂºÃ‚Â¿u: {len(price_values)} mÃƒÂ¡Ã‚ÂºÃ‚Â«u tham chiÃƒÂ¡Ã‚ÂºÃ‚Â¿u hiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n cÃƒÆ’Ã‚Â³.\n"
+        f"NhÃƒÂ¡Ã‚ÂºÃ‚Â­n xÃƒÆ’Ã‚Â©t: {judgement}\n"
+        "LÃƒâ€ Ã‚Â°u ÃƒÆ’Ã‚Â½: KhoÃƒÂ¡Ã‚ÂºÃ‚Â£ng giÃƒÆ’Ã‚Â¡ cÃƒÆ’Ã‚Â³ thÃƒÂ¡Ã‚Â»Ã†â€™ thay Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¢i theo kÃƒÆ’Ã‚Â­ch thÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºc, chÃƒÂ¡Ã‚ÂºÃ‚Â¥t liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u, Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢ mÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi, thÃƒâ€ Ã‚Â°Ãƒâ€ Ã‚Â¡ng hiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u vÃƒÆ’Ã‚Â  chi phÃƒÆ’Ã‚Â­ vÃƒÂ¡Ã‚ÂºÃ‚Â­n chuyÃƒÂ¡Ã‚Â»Ã†â€™n/lÃƒÂ¡Ã‚ÂºÃ‚Â¯p Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â·t."
     )
 
 
@@ -914,17 +1327,17 @@ def _stub_generate(messages: List[Dict[str, Any]], context: str, debug_trace: Di
 
     if mode == ChatMode.GENERAL_COMPARE.value:
         options = [
-            "1. SFG041 — giá: chưa có dữ liệu; chất liệu: gỗ sồi; dùng cho căn hộ nhỏ.",
-            "2. SFG040 — giá: chưa có dữ liệu; chất liệu: chưa có dữ liệu; phong cách tối giản.",
-            "3. SFG039 — giá: chưa có dữ liệu; chất liệu: gỗ tự nhiên; hợp không gian rộng.",
+            "1. SFG041 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â giÃƒÆ’Ã‚Â¡: chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u; chÃƒÂ¡Ã‚ÂºÃ‚Â¥t liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u: gÃƒÂ¡Ã‚Â»Ã¢â‚¬â€ sÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“i; dÃƒÆ’Ã‚Â¹ng cho cÃƒâ€žÃ†â€™n hÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢ nhÃƒÂ¡Ã‚Â»Ã‚Â.",
+            "2. SFG040 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â giÃƒÆ’Ã‚Â¡: chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u; chÃƒÂ¡Ã‚ÂºÃ‚Â¥t liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u: chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u; phong cÃƒÆ’Ã‚Â¡ch tÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœi giÃƒÂ¡Ã‚ÂºÃ‚Â£n.",
+            "3. SFG039 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â giÃƒÆ’Ã‚Â¡: chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u; chÃƒÂ¡Ã‚ÂºÃ‚Â¥t liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u: gÃƒÂ¡Ã‚Â»Ã¢â‚¬â€ tÃƒÂ¡Ã‚Â»Ã‚Â± nhiÃƒÆ’Ã‚Âªn; hÃƒÂ¡Ã‚Â»Ã‚Â£p khÃƒÆ’Ã‚Â´ng gian rÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢ng.",
         ]
         return (
             "[stub][general_compare]\n"
-            f"Nguồn dữ liệu: {data_provider}. No purchase request.\n"
-            "Tiêu chí so sánh: giá, chất liệu, kích thước/phong cách/mục đích dùng.\n"
-            "Các lựa chọn so sánh:\n"
+            f"NguÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u: {data_provider}. No purchase request.\n"
+            "TiÃƒÆ’Ã‚Âªu chÃƒÆ’Ã‚Â­ so sÃƒÆ’Ã‚Â¡nh: giÃƒÆ’Ã‚Â¡, chÃƒÂ¡Ã‚ÂºÃ‚Â¥t liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u, kÃƒÆ’Ã‚Â­ch thÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºc/phong cÃƒÆ’Ã‚Â¡ch/mÃƒÂ¡Ã‚Â»Ã‚Â¥c Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â­ch dÃƒÆ’Ã‚Â¹ng.\n"
+            "CÃƒÆ’Ã‚Â¡c lÃƒÂ¡Ã‚Â»Ã‚Â±a chÃƒÂ¡Ã‚Â»Ã‚Ân so sÃƒÆ’Ã‚Â¡nh:\n"
             + "\n".join(options)
-            + "\nKết luận trung lập: SFG041 hợp không gian nhỏ; SFG039 hợp không gian rộng; các thông số thiếu được ghi là 'chưa có dữ liệu'.\n"
+            + "\nKÃƒÂ¡Ã‚ÂºÃ‚Â¿t luÃƒÂ¡Ã‚ÂºÃ‚Â­n trung lÃƒÂ¡Ã‚ÂºÃ‚Â­p: SFG041 hÃƒÂ¡Ã‚Â»Ã‚Â£p khÃƒÆ’Ã‚Â´ng gian nhÃƒÂ¡Ã‚Â»Ã‚Â; SFG039 hÃƒÂ¡Ã‚Â»Ã‚Â£p khÃƒÆ’Ã‚Â´ng gian rÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢ng; cÃƒÆ’Ã‚Â¡c thÃƒÆ’Ã‚Â´ng sÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœ thiÃƒÂ¡Ã‚ÂºÃ‚Â¿u Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Â£c ghi lÃƒÆ’Ã‚Â  'chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u'.\n"
             f"{common}"
         )
 
@@ -935,32 +1348,32 @@ def _stub_generate(messages: List[Dict[str, Any]], context: str, debug_trace: Di
             max_price = max(price_values)
             range_text = _format_vnd_range(min_price, max_price)
             if candidate_price is None:
-                judgement = "chưa có giá người dùng cung cấp để nhận xét cao/thấp/bình thường."
+                judgement = "chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ giÃƒÆ’Ã‚Â¡ ngÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âi dÃƒÆ’Ã‚Â¹ng cung cÃƒÂ¡Ã‚ÂºÃ‚Â¥p Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ nhÃƒÂ¡Ã‚ÂºÃ‚Â­n xÃƒÆ’Ã‚Â©t cao/thÃƒÂ¡Ã‚ÂºÃ‚Â¥p/bÃƒÆ’Ã‚Â¬nh thÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âng."
             elif candidate_price < min_price:
-                judgement = "mức giá người dùng đưa ra đang thấp hơn khoảng tham chiếu."
+                judgement = "mÃƒÂ¡Ã‚Â»Ã‚Â©c giÃƒÆ’Ã‚Â¡ ngÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âi dÃƒÆ’Ã‚Â¹ng Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°a ra Ãƒâ€žÃ¢â‚¬Ëœang thÃƒÂ¡Ã‚ÂºÃ‚Â¥p hÃƒâ€ Ã‚Â¡n khoÃƒÂ¡Ã‚ÂºÃ‚Â£ng tham chiÃƒÂ¡Ã‚ÂºÃ‚Â¿u."
             elif candidate_price > max_price:
-                judgement = "mức giá người dùng đưa ra đang cao hơn khoảng tham chiếu."
+                judgement = "mÃƒÂ¡Ã‚Â»Ã‚Â©c giÃƒÆ’Ã‚Â¡ ngÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âi dÃƒÆ’Ã‚Â¹ng Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°a ra Ãƒâ€žÃ¢â‚¬Ëœang cao hÃƒâ€ Ã‚Â¡n khoÃƒÂ¡Ã‚ÂºÃ‚Â£ng tham chiÃƒÂ¡Ã‚ÂºÃ‚Â¿u."
             else:
-                judgement = "mức giá người dùng đưa ra đang trong khoảng tham chiếu."
+                judgement = "mÃƒÂ¡Ã‚Â»Ã‚Â©c giÃƒÆ’Ã‚Â¡ ngÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âi dÃƒÆ’Ã‚Â¹ng Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°a ra Ãƒâ€žÃ¢â‚¬Ëœang trong khoÃƒÂ¡Ã‚ÂºÃ‚Â£ng tham chiÃƒÂ¡Ã‚ÂºÃ‚Â¿u."
         else:
-            range_text = "chưa có dữ liệu do thiếu nguồn giá có cấu trúc."
-            judgement = "chưa đủ dữ liệu để kết luận giá cao/thấp/bình thường."
+            range_text = "chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u do thiÃƒÂ¡Ã‚ÂºÃ‚Â¿u nguÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n giÃƒÆ’Ã‚Â¡ cÃƒÆ’Ã‚Â³ cÃƒÂ¡Ã‚ÂºÃ‚Â¥u trÃƒÆ’Ã‚Âºc."
+            judgement = "chÃƒâ€ Ã‚Â°a Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â§ dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ kÃƒÂ¡Ã‚ÂºÃ‚Â¿t luÃƒÂ¡Ã‚ÂºÃ‚Â­n giÃƒÆ’Ã‚Â¡ cao/thÃƒÂ¡Ã‚ÂºÃ‚Â¥p/bÃƒÆ’Ã‚Â¬nh thÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âng."
 
         warnings = []
         if debug_trace.get("used_mock_price_data"):
-            warnings.append("dữ liệu hiện tại là mock/demo, không phải giá thị trường xác nhận")
+            warnings.append("dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u hiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n tÃƒÂ¡Ã‚ÂºÃ‚Â¡i lÃƒÆ’Ã‚Â  mock/demo, khÃƒÆ’Ã‚Â´ng phÃƒÂ¡Ã‚ÂºÃ‚Â£i giÃƒÆ’Ã‚Â¡ thÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹ trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âng xÃƒÆ’Ã‚Â¡c nhÃƒÂ¡Ã‚ÂºÃ‚Â­n")
         if not debug_trace.get("external_price_refs"):
-            warnings.append("chưa đủ nguồn giá để kết luận chắc chắn")
+            warnings.append("chÃƒâ€ Ã‚Â°a Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â§ nguÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n giÃƒÆ’Ã‚Â¡ Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ kÃƒÂ¡Ã‚ÂºÃ‚Â¿t luÃƒÂ¡Ã‚ÂºÃ‚Â­n chÃƒÂ¡Ã‚ÂºÃ‚Â¯c chÃƒÂ¡Ã‚ÂºÃ‚Â¯n")
         if not warnings:
-            warnings.append("không có cảnh báo bổ sung")
+            warnings.append("khÃƒÆ’Ã‚Â´ng cÃƒÆ’Ã‚Â³ cÃƒÂ¡Ã‚ÂºÃ‚Â£nh bÃƒÆ’Ã‚Â¡o bÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¢ sung")
 
         return (
             "[stub][market_price]\n"
-            f"Nguồn dữ liệu dùng: {data_provider} (price_provider={price_provider}).\n"
-            f"Khoảng giá tham khảo: {range_text}\n"
-            f"Nhận xét mức giá: {judgement}\n"
-            f"Cảnh báo dữ liệu: {'; '.join(warnings)}.\n"
-            "Không gợi ý mua sản phẩm cụ thể. No purchase request.\n"
+            f"NguÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u dÃƒÆ’Ã‚Â¹ng: {data_provider} (price_provider={price_provider}).\n"
+            f"KhoÃƒÂ¡Ã‚ÂºÃ‚Â£ng giÃƒÆ’Ã‚Â¡ tham khÃƒÂ¡Ã‚ÂºÃ‚Â£o: {range_text}\n"
+            f"NhÃƒÂ¡Ã‚ÂºÃ‚Â­n xÃƒÆ’Ã‚Â©t mÃƒÂ¡Ã‚Â»Ã‚Â©c giÃƒÆ’Ã‚Â¡: {judgement}\n"
+            f"CÃƒÂ¡Ã‚ÂºÃ‚Â£nh bÃƒÆ’Ã‚Â¡o dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u: {'; '.join(warnings)}.\n"
+            "KhÃƒÆ’Ã‚Â´ng gÃƒÂ¡Ã‚Â»Ã‚Â£i ÃƒÆ’Ã‚Â½ mua sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m cÃƒÂ¡Ã‚Â»Ã‚Â¥ thÃƒÂ¡Ã‚Â»Ã†â€™. No purchase request.\n"
             f"{common}"
         )
 
@@ -1307,7 +1720,7 @@ def chat(req: ChatReq):
     # Put it BEFORE RULE layer so it always works.
     # =========================================================
     msg_norm = (req.message or "").strip().lower()
-    if msg_norm in {"/reset", "reset", "/end", "end", "new scenario"}:
+    if msg_norm in {"/reset", "reset", "/new", "new", "/end", "end", "new scenario"}:
         if conv_id:
             try:
                 reset_state(conv_id)
@@ -1336,15 +1749,15 @@ def chat(req: ChatReq):
             "channel": req.channel,
             "conversation_id": conv_id,
             "tenant_id": req.tenant_id,
-            "debug": debug_trace,
+            "debug": _with_production_debug_panel(debug_trace),
         })
 
         return ChatResp(
-            reply="Mình đã làm mới cuộc trò chuyện. Bạn muốn mình tư vấn sản phẩm nào ạ?",
+            reply="Xong.",
             latency_ms=0,
             model="system",
             adapter=adapter,
-            debug=debug_trace,
+            debug=_with_production_debug_panel(debug_trace),
         )
 
     # Phase 11C: initialize interpreter + consultation vars early (used in debug_trace for all paths)
@@ -1362,6 +1775,118 @@ def chat(req: ChatReq):
     _consultation_called = False
     _consultation_skip_reason = ""
     _consultation_error_type = ""
+    _tenant_sales_agent_brief: Dict[str, Any] = {}
+    _tenant_sales_agent_decision = None
+    _tenant_sales_agent_force_retrieve = False
+    _memory_product_focus_changed = False
+    _memory_product_focus_before = ""
+    _memory_product_focus_after = ""
+    if mode in {ChatMode.GENERAL_COMPARE.value, ChatMode.MARKET_PRICE.value} and _conversation_orchestrator_enabled():
+        def _non_sales_orchestrator_retrieve(query: str, filters: Dict[str, Any]) -> List[Any]:
+            kb = get_kb_for_mode(retrieval_mode)
+            if kb is None:
+                return []
+            hits = search_hits(
+                kb,
+                query or req.message,
+                k=max(1, retrieval_top_k),
+                tenant_id=req.tenant_id,
+            )
+            requested = (
+                (filters or {}).get("product_category")
+                or (filters or {}).get("product_type")
+                or (filters or {}).get("product_focus")
+            )
+            if requested:
+                hits = filter_by_category(hits, requested)
+            return hits
+
+        st = get_state(conv_id)
+        orch_memory = _mask_contact_in_value(dict(st.slots or {}))
+        orchestrator = ConversationOrchestrator(ClaudeLLMClient())
+        orch_result = orchestrator.run(
+            OrchestratorRequest(
+                message=req.message,
+                mode=mode,
+                channel=req.channel,
+                tenant_id=req.tenant_id,
+                conversation_id=req.conversation_id,
+            ),
+            OrchestratorContext(
+                memory=dict(orch_memory),
+                retrieval_tool=_non_sales_orchestrator_retrieve,
+            ),
+        )
+        for _k, _v in (orch_result.updated_memory or {}).items():
+            if _k not in {"phone", "email"} and _v not in (None, "", [], {}):
+                st.slots[_k] = _v
+        st.stage = mode
+        try:
+            save_turn(conv_id, req.message, orch_result.reply[:1200])
+        except Exception:
+            pass
+
+        _planner_decision = orch_result.debug.get("planner_decision") or {}
+        _planner_filters = _planner_decision.get("filters") or {}
+        debug_trace = _build_debug_trace(
+            mode=mode,
+            stage=mode,
+            slots=_mask_contact_in_value(dict(st.slots or {})),
+            retrieved_docs=len(orch_result.retrieval_hits),
+            retrieval_mode=retrieval_mode,
+            answer_mode=orch_result.answer_mode,
+            template_reason="conversation_orchestrator",
+            llm_enabled=bool(os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")),
+            llm_provider="claude",
+            llm_model=os.getenv("CLAUDE_MODEL") or "claude-sonnet-4-6",
+            llm_call_attempted=bool(orch_result.debug.get("planner_attempted") or orch_result.debug.get("finalizer_attempted")),
+            llm_called=bool(orch_result.debug.get("planner_called") or orch_result.debug.get("finalizer_called")),
+            llm_skip_reason=orch_result.debug.get("planner_skip_reason") or orch_result.debug.get("finalizer_skip_reason") or "",
+            llm_error_type=orch_result.debug.get("planner_error_type") or orch_result.debug.get("finalizer_error_type") or "",
+            retrieval_query=_planner_decision.get("search_query", req.message),
+            requested_category=_planner_filters.get("product_category") or _planner_filters.get("product_type") or "",
+            slots_snapshot=_mask_contact_in_value(dict(st.slots or {})),
+        )
+        debug_trace.update({
+            **orch_result.debug,
+            "orchestrator_enabled": True,
+            "retrieval_count": len(orch_result.retrieval_hits),
+            "sales_mode": "off",
+            "sales_boundary": "non_sales_no_lead",
+            "trigger_purchase_request": False,
+            "real_claude_response_attempted": False,
+            "real_claude_response_called": False,
+            "real_claude_response_mode": "not_applicable",
+            "real_claude_skip_reason": orch_result.debug.get("planner_skip_reason") or orch_result.debug.get("finalizer_skip_reason") or "",
+            "real_claude_error_type": orch_result.debug.get("planner_error_type") or orch_result.debug.get("finalizer_error_type") or None,
+        })
+        log_event({
+            "event": "chat",
+            "question": req.message,
+            "answer": orch_result.reply[:1200],
+            "latency_ms": 0,
+            "model": "conversation-orchestrator",
+            "adapter": None,
+            "provider": "claude",
+            "channel": req.channel,
+            "conversation_id": conv_id,
+            "tenant_id": req.tenant_id,
+            "context_length": 0,
+            "kb_loaded": get_kb_for_mode(retrieval_mode) is not None,
+            "sales_stage": None,
+            "sales_slots": {},
+            "debug": _with_production_debug_panel(debug_trace),
+        })
+        return ChatResp(
+            reply=orch_result.reply[:1200],
+            latency_ms=0,
+            model="conversation-orchestrator",
+            adapter=None,
+            trigger_purchase_request=False,
+            captured_phone=None,
+            captured_name=None,
+            debug=_with_production_debug_panel(debug_trace),
+        )
     if sales_enabled:
         previous_purchase_status = None
         sales_state = _load_sales_state(req.tenant_id, req.conversation_id)
@@ -1425,7 +1950,7 @@ def chat(req: ChatReq):
                     model="sales-template",
                     adapter=None,
                     trigger_purchase_request=False,
-                    debug=debug_trace,
+                    debug=_with_production_debug_panel(debug_trace),
                 )
         # Phase 11C: deterministic extract + Claude state interpreter BEFORE action selection
         _deterministic_slots = extract_sales_slots(req.message)
@@ -1482,6 +2007,32 @@ def chat(req: ChatReq):
             _ii = _interpreter_intent or "consultation"
             sales_result["slots"]["intents"] = [_ii] if _ii else ["unknown"]
             sales_result["slots"]["intent"] = _ii
+        if _is_tenant_sales_mode(mode) and sales_state is not None:
+            _memory_product_focus_before = (
+                sales_state.slots.get("product_category_prev")
+                or sales_state.slots.get("product_type_prev")
+                or sales_state.slots.get("product_category")
+                or sales_state.slots.get("product_type")
+                or ""
+            )
+            _tenant_sales_agent_brief = _agent_update_customer_brief(
+                sales_state,
+                req.message,
+                sales_result.get("slots") or {},
+            )
+            _memory_product_focus_after = _tenant_sales_agent_brief.get("product_focus") or ""
+            _memory_product_focus_changed = bool(
+                _memory_product_focus_after
+                and _memory_product_focus_before
+                and _fold_sku(str(_memory_product_focus_after)) != _fold_sku(str(_memory_product_focus_before))
+            )
+            if _memory_product_focus_changed:
+                sales_state.selected_products = []
+                sales_state.last_recommended_products = []
+                sales_state.purchase_request = None
+                sales_state.confirmation_status = "none"
+                sales_state.handoff_required = False
+                sales_state.handoff_status = "not_ready"
         sales_slots_for_action = sales_result.get("slots") or {}
         sales_intents_for_action = sales_slots_for_action.get("intents") or []
         scored_purchase = score_purchase_intent(
@@ -1534,9 +2085,311 @@ def chat(req: ChatReq):
             # If not resolved: keep pending_sku_ref, do NOT create synthetic product.
             # _sales_action_from_state will see purchase_intent + category -> ask_product.
         sales_action_taken = _sales_action_from_state(sales_state, sales_result, sales_draft)
+        if _is_tenant_sales_mode(mode) and sales_state is not None:
+            if (_interpreter_result or {}).get("response_mode") == "consultation_llm":
+                _tenant_sales_agent_decision = None
+            else:
+                _tenant_sales_agent_decision = _agent_decide_next_response(
+                    req.message,
+                    _tenant_sales_agent_brief or (sales_state.slots.get(TENANT_SALES_BRIEF_SLOT) or {}),
+                    sales_action_taken,
+                    sales_result.get("slots") or {},
+                )
+            if getattr(_tenant_sales_agent_decision, "action", "") == "retrieve":
+                sales_action_taken = "none"
+                _tenant_sales_agent_force_retrieve = True
         _save_sales_state(sales_state)
         # Phase 11D: compute force flag early so we enter early-return block for interpreter-driven consultation
         _force_consult_from_interpreter = (_interpreter_result or {}).get("should_ask") or (_interpreter_result or {}).get("response_mode") == "consultation_llm"
+        _orchestrator_enabled = _conversation_orchestrator_enabled()
+        _transactional_actions = {
+            "ask_contact",
+            "ask_confirmation",
+            "handoff",
+            "handoff_sent",
+            "handoff_failed",
+            "handoff_already_sent",
+            "confirmation_cancelled",
+            "confirmation_without_pending",
+            "ask_product",
+            "cancelled",
+        }
+        _orchestrator_tenant_turn = (
+            _is_tenant_sales_mode(mode)
+            and sales_mode == "active"
+            and _orchestrator_enabled
+            and sales_action_taken not in _transactional_actions
+        )
+        if _orchestrator_tenant_turn and sales_state is not None:
+            def _orchestrator_retrieve(query: str, filters: Dict[str, Any]) -> List[Any]:
+                kb = get_kb_for_mode(retrieval_mode)
+                if kb is None:
+                    return []
+                hits = search_hits(
+                    kb,
+                    query or req.message,
+                    k=max(1, retrieval_top_k),
+                    tenant_id=req.tenant_id,
+                )
+                requested = (
+                    (filters or {}).get("product_category")
+                    or (filters or {}).get("product_type")
+                    or (filters or {}).get("product_focus")
+                )
+                if requested:
+                    hits = filter_by_category(hits, requested)
+                return hits
+
+            orchestrator = ConversationOrchestrator(ClaudeLLMClient())
+            _orch_memory = _mask_contact_in_value(dict(sales_state.slots or {}))
+            _orch_result = orchestrator.run(
+                OrchestratorRequest(
+                    message=req.message,
+                    mode=mode,
+                    channel=req.channel,
+                    tenant_id=req.tenant_id,
+                    conversation_id=req.conversation_id,
+                ),
+                OrchestratorContext(
+                    memory=dict(_orch_memory),
+                    retrieval_tool=_orchestrator_retrieve,
+                ),
+            )
+            _old_product_focus = _memory_product_focus_before or (
+                sales_state.slots.get("product_category")
+                or sales_state.slots.get("product_type")
+                or ""
+            )
+            _new_product_focus = (
+                (_orch_result.updated_memory or {}).get("product_focus")
+                or _memory_product_focus_after
+                or ""
+            )
+            _product_focus_changed = _memory_product_focus_changed or bool(
+                _new_product_focus
+                and _old_product_focus
+                and _fold_sku(str(_new_product_focus)) != _fold_sku(str(_old_product_focus))
+            )
+            if _product_focus_changed:
+                sales_state.selected_products = []
+                sales_state.last_recommended_products = []
+                sales_state.purchase_request = None
+                sales_state.confirmation_status = "none"
+                sales_state.handoff_required = False
+                sales_state.handoff_status = "not_ready"
+            for _k, _v in (_orch_result.updated_memory or {}).items():
+                if _k not in {"phone", "email"} and _v not in (None, "", [], {}):
+                    sales_state.slots[_k] = _v
+            if (_orch_result.updated_memory or {}).get("product_focus"):
+                sales_state.slots["product_category"] = _orch_result.updated_memory["product_focus"]
+                sales_state.slots["product_type"] = _orch_result.updated_memory["product_focus"]
+            if _orch_result.retrieval_hits:
+                update_recommended_products(sales_state, _orch_result.retrieval_hits)
+            _save_sales_state(sales_state)
+
+            debug_trace = _build_debug_trace(
+                mode=mode,
+                stage=_mode_default_stage(mode),
+                slots={},
+                retrieved_docs=len(_orch_result.retrieval_hits),
+                retrieval_mode=retrieval_mode,
+                answer_mode=_orch_result.answer_mode,
+                template_reason="conversation_orchestrator",
+                llm_enabled=bool(os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")),
+                llm_provider="claude",
+                llm_call_attempted=bool(_orch_result.debug.get("planner_attempted") or _orch_result.debug.get("finalizer_attempted")),
+                llm_called=bool(_orch_result.debug.get("planner_called") or _orch_result.debug.get("finalizer_called")),
+                llm_skip_reason=_orch_result.debug.get("planner_skip_reason") or _orch_result.debug.get("finalizer_skip_reason") or "",
+                llm_error_type=_orch_result.debug.get("planner_error_type") or _orch_result.debug.get("finalizer_error_type") or "",
+                retrieval_query=(_orch_result.debug.get("planner_decision") or {}).get("search_query", req.message),
+                requested_category=(
+                    ((_orch_result.debug.get("planner_decision") or {}).get("filters") or {}).get("product_category")
+                    or ((_orch_result.debug.get("planner_decision") or {}).get("filters") or {}).get("product_type")
+                    or ""
+                ),
+                slots_snapshot=_mask_contact_in_value(dict(sales_state.slots or {})),
+            )
+            debug_trace.update(_sales_debug_payload(
+                sales_mode,
+                sales_state,
+                sales_result,
+                sales_action_taken,
+                persistent=sales_state_persistent,
+                state_warning=sales_state_warning,
+            ))
+            debug_trace.update({
+                **_orch_result.debug,
+                "orchestrator_enabled": True,
+                "retrieval_count": len(_orch_result.retrieval_hits),
+                "state_interpreter_llm_attempted": _interpreter_attempted,
+                "state_interpreter_llm_called": _interpreter_called,
+                "state_interpreter_skip_reason": _interpreter_skip_reason,
+                "state_interpreter_error_type": _interpreter_error_type,
+                "state_interpreter_intent": _interpreter_intent or "",
+                "deterministic_slots": _mask_contact_in_value(dict(_deterministic_slots or {})),
+                "slots_snapshot_after_interpreter": _mask_contact_in_value(dict(_slots_after_interpreter or (sales_state.slots if sales_state else {}))),
+                "consultation_llm_attempted": False,
+                "consultation_llm_called": False,
+                "consultation_llm_skip_reason": "orchestrator_route",
+                "consultation_llm_error_type": "",
+                "tenant_sales_agent_enabled": True,
+                "tenant_sales_agent_action": getattr(_tenant_sales_agent_decision, "action", "") if _tenant_sales_agent_decision else "",
+                "tenant_sales_agent_reason": getattr(_tenant_sales_agent_decision, "reason", "") if _tenant_sales_agent_decision else "",
+                "customer_brief": _mask_contact_in_value(_orch_result.updated_memory or _tenant_sales_agent_brief),
+                "memory_product_focus_changed": _product_focus_changed,
+                "memory_product_focus_before": _old_product_focus,
+                "memory_product_focus_after": _new_product_focus,
+                "real_claude_response_attempted": False,
+                "real_claude_response_called": False,
+                "real_claude_response_mode": "not_applicable",
+                "real_claude_skip_reason": _orch_result.debug.get("planner_skip_reason") or _orch_result.debug.get("finalizer_skip_reason") or "not_applicable",
+                "real_claude_error_type": _orch_result.debug.get("planner_error_type") or _orch_result.debug.get("finalizer_error_type") or None,
+            })
+            try:
+                save_turn(conv_id, req.message, _orch_result.reply[:1200])
+            except Exception:
+                pass
+            return ChatResp(
+                reply=_orch_result.reply[:1200],
+                latency_ms=0,
+                model="conversation-orchestrator",
+                adapter=None,
+                trigger_purchase_request=False,
+                debug=_with_production_debug_panel(debug_trace),
+            )
+        if getattr(_tenant_sales_agent_decision, "action", "") == "advice" and sales_mode == "active":
+            _claude_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+            debug_trace = _build_debug_trace(
+                mode=mode,
+                stage=_mode_default_stage(mode),
+                slots={},
+                retrieval_mode=retrieval_mode,
+                answer_mode="tenant_sales_agent",
+                template_reason="agent_advice",
+                llm_enabled=bool(_claude_key),
+                llm_provider="claude" if _claude_key else "none",
+                llm_call_attempted=False,
+                llm_called=False,
+                llm_skip_reason="not_yet" if _claude_key else "missing_api_key",
+                retrieval_query=req.message,
+                requested_category=(sales_state.slots.get("product_category") if sales_state else "") or "",
+                slots_snapshot=_mask_contact_in_value(dict(sales_state.slots if sales_state else {})),
+            )
+            debug_trace.update(_sales_debug_payload(
+                sales_mode,
+                sales_state,
+                sales_result,
+                sales_action_taken,
+                persistent=sales_state_persistent,
+                state_warning=sales_state_warning,
+            ))
+            debug_trace.update({
+                "tenant_sales_agent_enabled": True,
+                "tenant_sales_agent_action": "advice",
+                "tenant_sales_agent_reason": getattr(_tenant_sales_agent_decision, "reason", ""),
+                "customer_brief": _mask_contact_in_value(_tenant_sales_agent_brief),
+                "state_interpreter_llm_attempted": _interpreter_attempted,
+                "state_interpreter_llm_called": _interpreter_called,
+                "state_interpreter_skip_reason": _interpreter_skip_reason,
+                "state_interpreter_error_type": _interpreter_error_type,
+                "state_interpreter_intent": _interpreter_intent or "",
+                "state_interpreter_confidence": float(_interpreter_result.get("confidence", 0.0)) if _interpreter_result else 0.0,
+                "deterministic_slots": _mask_contact_in_value(dict(_deterministic_slots or {})),
+                "slots_snapshot_after_interpreter": _mask_contact_in_value(dict(_slots_after_interpreter or (sales_state.slots if sales_state else {}))),
+                "consultation_llm_attempted": _consultation_attempted,
+                "consultation_llm_called": _consultation_called,
+                "consultation_llm_skip_reason": _consultation_skip_reason,
+                "consultation_llm_error_type": _consultation_error_type,
+                "real_claude_response_attempted": False,
+                "real_claude_response_called": False,
+                "real_claude_response_mode": "not_applicable",
+                "real_claude_skip_reason": "not_applicable",
+                "real_claude_error_type": None,
+            })
+            reply = None
+            fallback_reply = _agent_compose_advice(req.message, _tenant_sales_agent_brief)
+            if _claude_key and not _is_pytest_blocking_real_claude():
+                debug_trace["real_claude_response_attempted"] = True
+                debug_trace["llm_call_attempted"] = True
+                try:
+                    _prompt = _build_tenant_sales_advice_prompt(
+                        req.message,
+                        _tenant_sales_agent_brief,
+                        sales_state.slots if sales_state else {},
+                    )
+                    _t0c = time.time()
+                    _cout, _cerr, _cprev = _call_claude_api(
+                        _prompt,
+                        _claude_key,
+                        os.getenv("CLAUDE_MODEL") or "claude-sonnet-4-6",
+                        os.getenv("CLAUDE_API_BASE_URL") or "https://api.anthropic.com",
+                        700,
+                        0.75,
+                        1.0,
+                        30,
+                    )
+                    if _cout and not _cerr:
+                        reply = _cout.strip()
+                        debug_trace.update({
+                            "answer_mode": "claude_tenant_sales",
+                            "template_reason": "claude_advice",
+                            "llm_called": True,
+                            "llm_skip_reason": "",
+                            "real_claude_response_called": True,
+                            "real_claude_response_mode": "advice",
+                            "real_claude_skip_reason": "",
+                            "real_claude_error_type": None,
+                        })
+                        try:
+                            log_event({
+                                "event": "tenant_sales_claude_advice",
+                                "conversation_id": conv_id,
+                                "latency_ms": int((time.time() - _t0c) * 1000),
+                            })
+                        except Exception:
+                            pass
+                        print(f"[LLM] tenant_sales_response success mode=advice latency_ms={int((time.time()-_t0c)*1000)}")
+                    else:
+                        debug_trace.update({
+                            "real_claude_response_called": False,
+                            "real_claude_response_mode": "advice",
+                            "real_claude_skip_reason": "claude_error_or_empty",
+                            "real_claude_error_type": _cerr or "empty",
+                            "llm_skip_reason": "claude_error_or_empty",
+                        })
+                        print(f"[LLM] tenant_sales_response failed mode=advice error_type={debug_trace.get('real_claude_error_type')}")
+                except Exception as _aexc:
+                    debug_trace.update({
+                        "real_claude_response_called": False,
+                        "real_claude_response_mode": "advice",
+                        "real_claude_skip_reason": "exception",
+                        "real_claude_error_type": _aexc.__class__.__name__,
+                        "llm_skip_reason": "fallback_after_error",
+                    })
+                    print(f"[LLM] tenant_sales_response failed mode=advice error_type={_aexc.__class__.__name__}")
+            else:
+                if _is_pytest_blocking_real_claude():
+                    debug_trace["real_claude_skip_reason"] = "pytest_real_llm_disabled"
+                    debug_trace["llm_skip_reason"] = "pytest_real_llm_disabled"
+                else:
+                    debug_trace["real_claude_skip_reason"] = "missing_api_key"
+                    debug_trace["llm_skip_reason"] = "missing_api_key"
+                print(f"[LLM] tenant_sales_response skipped mode=advice reason={debug_trace.get('real_claude_skip_reason')}")
+            if not reply:
+                reply = fallback_reply
+            try:
+                save_turn(conv_id, req.message, reply[:1200])
+            except Exception:
+                pass
+            _save_sales_state(sales_state)
+            return ChatResp(
+                reply=reply[:1200],
+                latency_ms=0,
+                model="claude-tenant-sales" if debug_trace.get("real_claude_response_called") else "tenant-sales-agent",
+                adapter=None,
+                trigger_purchase_request=False,
+                debug=_with_production_debug_panel(debug_trace),
+            )
         if sales_mode == "active" and (sales_action_taken != "none" or bool(_force_consult_from_interpreter) or sales_action_taken == "ask_discovery"):
             debug_trace = _build_debug_trace(
                 mode=mode,
@@ -1736,7 +2589,7 @@ def chat(req: ChatReq):
                 model=_final_model,
                 adapter=None,
                 trigger_purchase_request=False,
-                debug=debug_trace,
+                debug=_with_production_debug_panel(debug_trace),
             )
 
     # ---- RULE layer (guardrails) ----
@@ -1776,14 +2629,14 @@ def chat(req: ChatReq):
             "channel": req.channel,
             "conversation_id": conv_id,
             "tenant_id": req.tenant_id,
-            "debug": debug_trace,
+            "debug": _with_production_debug_panel(debug_trace),
         })
         # Save turn (optional but useful for audit)
         try:
             save_turn(conv_id, req.message, rr["reply"])
         except Exception:
             pass
-        return ChatResp(reply=rr["reply"], latency_ms=0, model="rule", adapter=adapter, debug=debug_trace)
+        return ChatResp(reply=rr["reply"], latency_ms=0, model="rule", adapter=adapter, debug=_with_production_debug_panel(debug_trace))
 
     # --- SALES FLOW: state/slots/stage (AFTER RULE layer) ---
     st = get_state(conv_id)
@@ -1799,6 +2652,12 @@ def chat(req: ChatReq):
     _tenant_sales_requested_cat = None
     _tenant_sales_search_query = req.message
     _tenant_sales_claude_rewritten = None
+    _tenant_sales_listing_claude_attempted = False
+    _tenant_sales_listing_claude_called = False
+    _tenant_sales_listing_claude_mode = ""
+    _tenant_sales_listing_claude_skip_reason = ""
+    _tenant_sales_listing_claude_error_type = None
+    _tenant_sales_style_question_requested = _is_tenant_sales_mode(mode) and _tenant_sales_style_question(req.message)
 
     # Phase 11F: initialize debug_trace early (before any listing rewrite) with real_claude defaults
     debug_trace = _build_debug_trace(
@@ -1874,8 +2733,10 @@ def chat(req: ChatReq):
             _rag_stage,
             _rag_slots,
         )
+        if _tenant_sales_agent_force_retrieve:
+            allow_rag = True
     except Exception:
-        allow_rag = False
+        allow_rag = bool(_tenant_sales_agent_force_retrieve)
 
     active_kb = get_kb_for_mode(retrieval_mode)
     # Phase 8: build accumulated search query from sales state for tenant_sales retrieval
@@ -1894,7 +2755,7 @@ def chat(req: ChatReq):
         if cat or room or budget or style or budget_min:
             # Phase 10G: format budget_min as lower-bound phrase so parse_price_constraint picks it up as min_price
             parts = [cat, room, budget]
-            # Phase 10H: include both canonical style and Vietnamese label for KB matching (e.g., "classic" + "cổ điển")
+            # Phase 10H: include both canonical style and Vietnamese label for KB matching (e.g., "classic" + "cÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¢ Ãƒâ€žÃ¢â‚¬ËœiÃƒÂ¡Ã‚Â»Ã†â€™n")
             if style:
                 parts.append(style)
                 try:
@@ -1905,10 +2766,17 @@ def chat(req: ChatReq):
                 except Exception:
                     pass
             if budget_min:
-                parts.append(f"trên {budget_min}")
+                parts.append(f"trÃƒÆ’Ã‚Âªn {budget_min}")
             accumulated = " ".join(p for p in parts if p).strip()
             if accumulated:
                 _tenant_sales_search_query = accumulated
+        if _tenant_sales_agent_brief:
+            _tenant_sales_search_query = _agent_build_search_query(
+                _tenant_sales_agent_brief,
+                _tenant_sales_search_query or req.message,
+            )
+            if _tenant_sales_agent_brief.get("product_focus"):
+                _tenant_sales_requested_cat = _tenant_sales_agent_brief.get("product_focus")
     if active_kb is not None and allow_rag:
         retrieval_hits = search_hits(
             active_kb,
@@ -1985,9 +2853,10 @@ def chat(req: ChatReq):
                 debug_trace["price_filter_max"] = _max_price_vnd
 
     # Phase 11D: if Claude configured for tenant_sales and we have filtered hits, generate natural response using ONLY evidence
-    if _is_tenant_sales_mode(mode) and sales_state and retrieval_hits:
+    if _is_tenant_sales_mode(mode) and retrieval_hits:
         _claude_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
         if _claude_key and not _is_pytest_blocking_real_claude():
+            _tenant_sales_listing_claude_attempted = True
             _ev = []
             for _h in retrieval_hits[:5]:
                 _m = getattr(_h, "metadata", {}) if hasattr(_h, "metadata") else {}
@@ -1997,9 +2866,10 @@ def chat(req: ChatReq):
                     "name": _m.get("product_name") or getattr(_h, "title", "") or "",
                     "sku": _m.get("sku") or getattr(_h, "sku", "") or "",
                     "price": _m.get("price"),
+                    "category": _m.get("category") or getattr(_h, "category", "") or "",
                     "url": _m.get("source_url") or getattr(_h, "source", "") or getattr(_h, "source_url", ""),
                 })
-            _prompt = _build_tenant_sales_listing_prompt(_tenant_sales_search_query or req.message, _ev, (sales_state.slots if sales_state else {}))
+            _prompt = _build_tenant_sales_listing_prompt(_tenant_sales_search_query or req.message, _ev, (sales_state.slots if sales_state else slots_for_debug))
             _t0c = time.time()
             _cout, _cerr, _cprev = _call_claude_api(
                 _prompt, _claude_key,
@@ -2007,11 +2877,11 @@ def chat(req: ChatReq):
                 os.getenv("CLAUDE_API_BASE_URL") or "https://api.anthropic.com",
                 800, 0.6, 1.0, 30
             )
-            debug_trace["real_claude_response_attempted"] = True
             if _cout and not _cerr:
                 _tenant_sales_claude_rewritten = _cout.strip()
-                debug_trace["real_claude_response_called"] = True
-                debug_trace["real_claude_response_mode"] = "product_listing"
+                _tenant_sales_listing_claude_called = True
+                _tenant_sales_listing_claude_mode = "product_listing"
+                _tenant_sales_listing_claude_error_type = None
                 try:
                     log_event({
                         "event": "tenant_sales_claude_listing",
@@ -2022,21 +2892,18 @@ def chat(req: ChatReq):
                     pass
                 print(f"[LLM] tenant_sales_response success mode=product_listing latency_ms={int((time.time()-_t0c)*1000)}")
             else:
-                debug_trace["real_claude_response_called"] = False
-                debug_trace["real_claude_skip_reason"] = "claude_error_or_empty"
-                debug_trace["real_claude_error_type"] = _cerr or "empty"
-                print(f"[LLM] tenant_sales_response failed error_type={debug_trace.get('real_claude_error_type')}")
+                _tenant_sales_listing_claude_called = False
+                _tenant_sales_listing_claude_skip_reason = "claude_error_or_empty"
+                _tenant_sales_listing_claude_error_type = _cerr or "empty"
+                print(f"[LLM] tenant_sales_response failed error_type={_tenant_sales_listing_claude_error_type}")
         else:
-            if 'debug_trace' in dir() and debug_trace is not None:
-                if _is_pytest_blocking_real_claude():
-                    debug_trace.setdefault("real_claude_response_attempted", False)
-                    debug_trace["real_claude_skip_reason"] = "pytest_real_llm_disabled"
-                else:
-                    debug_trace.setdefault("real_claude_response_attempted", False)
-                    debug_trace["real_claude_skip_reason"] = "missing_api_key"
-                print(f"[LLM] tenant_sales_response skipped reason={debug_trace.get('real_claude_skip_reason')}")
+            _tenant_sales_listing_claude_attempted = False
+            _tenant_sales_listing_claude_called = False
+            if _is_pytest_blocking_real_claude():
+                _tenant_sales_listing_claude_skip_reason = "pytest_real_llm_disabled"
             else:
-                print("[LLM] tenant_sales_response skipped (no debug_trace yet)")
+                _tenant_sales_listing_claude_skip_reason = "missing_api_key"
+            print(f"[LLM] tenant_sales_response skipped reason={_tenant_sales_listing_claude_skip_reason}")
 
     # Phase 6C: resolve pending_sku from KB hits -> real selected_product
     if sales_state and _is_tenant_sales_mode(mode) and retrieval_hits:
@@ -2205,7 +3072,19 @@ def chat(req: ChatReq):
         "consultation_llm_called": _consultation_called,
         "consultation_llm_skip_reason": _consultation_skip_reason,
         "consultation_llm_error_type": _consultation_error_type,
+        "tenant_sales_agent_enabled": bool(_tenant_sales_agent_brief),
+        "tenant_sales_agent_action": getattr(_tenant_sales_agent_decision, "action", "") if _tenant_sales_agent_decision else "",
+        "tenant_sales_agent_reason": getattr(_tenant_sales_agent_decision, "reason", "") if _tenant_sales_agent_decision else "",
+        "customer_brief": _mask_contact_in_value(_tenant_sales_agent_brief),
     })
+    if _is_tenant_sales_mode(mode) and retrieval_hits:
+        debug_trace.update({
+            "real_claude_response_attempted": _tenant_sales_listing_claude_attempted,
+            "real_claude_response_called": _tenant_sales_listing_claude_called,
+            "real_claude_response_mode": _tenant_sales_listing_claude_mode or "product_listing",
+            "real_claude_skip_reason": _tenant_sales_listing_claude_skip_reason,
+            "real_claude_error_type": _tenant_sales_listing_claude_error_type,
+        })
     if sales_enabled:
         debug_trace.update(_sales_debug_payload(
             sales_mode,
@@ -2215,6 +3094,16 @@ def chat(req: ChatReq):
             persistent=sales_state_persistent,
             state_warning=sales_state_warning,
         ))
+    _claude_advisor_response = None
+    if not (_is_tenant_sales_mode(mode) and (_tenant_sales_claude_rewritten or retrieval_hits)):
+        _claude_advisor_response = _try_claude_advisor_response(
+            mode=mode,
+            user_message=req.message,
+            context=context,
+            customer_brief=_tenant_sales_agent_brief if _is_tenant_sales_mode(mode) else {},
+            slots=(sales_state.slots if sales_state else slots_for_debug),
+            debug_trace=debug_trace,
+        )
     log_retrieval_debug({
         **debug_trace,
         **summarize_retrieval_debug(retrieval_hits, context),
@@ -2224,6 +3113,43 @@ def chat(req: ChatReq):
         "tenant_id": req.tenant_id,
         "allow_rag": allow_rag,
     })
+
+    if _claude_advisor_response:
+        latency_ms = 0
+        log_event({
+            "event": "chat",
+            "question": req.message,
+            "answer": _claude_advisor_response[:1200],
+            "latency_ms": latency_ms,
+            "model": "claude-advisor",
+            "adapter": None,
+            "provider": "claude",
+            "channel": req.channel,
+            "conversation_id": conv_id,
+            "tenant_id": req.tenant_id,
+            "context_length": len(context),
+            "kb_loaded": active_kb is not None,
+            "sales_stage": stage_for_debug,
+            "sales_slots": slots_for_debug,
+            "debug": _with_production_debug_panel(debug_trace),
+        })
+        try:
+            save_turn(conv_id, req.message, _claude_advisor_response[:1200])
+        except Exception:
+            pass
+        if sales_enabled and sales_state is not None:
+            _save_sales_state(sales_state)
+        response_trigger_purchase_request = False if sales_enabled else (trigger_purchase_request if _is_tenant_sales_mode(mode) else False)
+        return ChatResp(
+            reply=_claude_advisor_response[:1200],
+            latency_ms=latency_ms,
+            model="claude-advisor",
+            adapter=None,
+            trigger_purchase_request=response_trigger_purchase_request,
+            captured_phone=captured_phone if _is_tenant_sales_mode(mode) else None,
+            captured_name=captured_name if _is_tenant_sales_mode(mode) else None,
+            debug=_with_production_debug_panel(debug_trace),
+        )
 
     if answer_mode == "template":
         t0 = time.time()
@@ -2240,6 +3166,31 @@ def chat(req: ChatReq):
                     "real_claude_response_attempted": True,
                     "real_claude_response_called": True,
                     "real_claude_response_mode": "product_listing",
+                })
+            elif _is_tenant_sales_mode(mode) and _tenant_sales_style_question_requested and sales_state:
+                resp = _tenant_sales_style_consult_reply(sales_state.slots, req.message)
+                debug_trace.update({
+                    "answer_mode": "tenant_sales_consultation",
+                    "template_renderer": False,
+                    "retrieval_count": len(retrieval_hits),
+                    "tenant_sales_response_kind": "style_consultation",
+                })
+            elif _is_tenant_sales_mode(mode) and retrieval_hits:
+                _listing_brief = _tenant_sales_agent_brief
+                if not _listing_brief and sales_state:
+                    _listing_brief = sales_state.slots.get(TENANT_SALES_BRIEF_SLOT) or {}
+                if not _listing_brief:
+                    _listing_brief = slots_for_debug if isinstance(slots_for_debug, dict) else {}
+                resp = _agent_compose_listing(
+                    req.message,
+                    retrieval_hits,
+                    _listing_brief,
+                )
+                debug_trace.update({
+                    "answer_mode": "tenant_sales_agent",
+                    "template_renderer": False,
+                    "retrieval_count": len(retrieval_hits),
+                    "tenant_sales_response_kind": "agent_listing_fallback",
                 })
             else:
                 resp = render_product_answer(req.message, context)
@@ -2273,7 +3224,7 @@ def chat(req: ChatReq):
             "kb_loaded": active_kb is not None,
             "sales_stage": stage_for_debug,
             "sales_slots": slots_for_debug,
-            "debug": debug_trace,
+            "debug": _with_production_debug_panel(debug_trace),
         })
         try:
             save_turn(conv_id, req.message, resp)
@@ -2290,7 +3241,7 @@ def chat(req: ChatReq):
             trigger_purchase_request=response_trigger_purchase_request,
             captured_phone=captured_phone if _is_tenant_sales_mode(mode) else None,
             captured_name=captured_name if _is_tenant_sales_mode(mode) else None,
-            debug=debug_trace,
+            debug=_with_production_debug_panel(debug_trace),
         )
 
     # ---- SIMILAR SUGGESTION (use KB hits) ----
@@ -2307,18 +3258,18 @@ def chat(req: ChatReq):
             _minvnd2 = None
             _maxvnd2 = None
             if _bmin2:
-                _m2 = __import__("re").search(r"(\d+(?:[.,]\d+)?)\s*(triệu|tr|trieu|nghìn|nghin)", _bmin2, __import__("re").I)
+                _m2 = __import__("re").search(r"(\d+(?:[.,]\d+)?)\s*(triÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u|tr|trieu|nghÃƒÆ’Ã‚Â¬n|nghin)", _bmin2, __import__("re").I)
                 if _m2:
                     _v2 = float(_m2.group(1).replace(",", "."))
-                    _mu2 = 1_000_000 if _m2.group(2) in ("triệu", "tr", "trieu") else 1_000
+                    _mu2 = 1_000_000 if _m2.group(2) in ("triÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u", "tr", "trieu") else 1_000
                     _minvnd2 = int(_v2 * _mu2)
             if not _bmin2:
                 _ut2 = _ss2.get("budget") or _ss2.get("budget_text") or ""
                 if _ut2:
-                    _m3 = __import__("re").search(r"(\d+(?:[.,]\d+)?)\s*(triệu|tr|trieu|nghìn|nghin)", _ut2, __import__("re").I)
+                    _m3 = __import__("re").search(r"(\d+(?:[.,]\d+)?)\s*(triÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u|tr|trieu|nghÃƒÆ’Ã‚Â¬n|nghin)", _ut2, __import__("re").I)
                     if _m3:
                         _v3 = float(_m3.group(1).replace(",", "."))
-                        _mu3 = 1_000_000 if _m3.group(2) in ("triệu", "tr", "trieu") else 1_000
+                        _mu3 = 1_000_000 if _m3.group(2) in ("triÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u", "tr", "trieu") else 1_000
                         _maxvnd2 = int(_v3 * _mu3)
             if _minvnd2 is not None or _maxvnd2 is not None:
                 _fh2 = []
@@ -2343,11 +3294,11 @@ def chat(req: ChatReq):
 
         if items:
             reply = (
-                "Mình gợi ý một vài sản phẩm tương tự trong dữ liệu hiện có:\n" +
+                'Mình gợi ý một vài sản phẩm tương tự trong dữ liệu hiện có:\n' +
                 "\n".join([f"- {t} ({u})" if u else f"- {t}" for t, u in items])
             )
         else:
-            reply = "Mình chưa tìm thấy sản phẩm cùng loại phù hợp trong dữ liệu hiện có. Bạn có muốn nới điều kiện hoặc chọn nhóm sản phẩm khác không?"
+            reply = "MÃƒÆ’Ã‚Â¬nh chÃƒâ€ Ã‚Â°a tÃƒÆ’Ã‚Â¬m thÃƒÂ¡Ã‚ÂºÃ‚Â¥y sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m cÃƒÆ’Ã‚Â¹ng loÃƒÂ¡Ã‚ÂºÃ‚Â¡i phÃƒÆ’Ã‚Â¹ hÃƒÂ¡Ã‚Â»Ã‚Â£p trong dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u hiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n cÃƒÆ’Ã‚Â³. BÃƒÂ¡Ã‚ÂºÃ‚Â¡n cÃƒÆ’Ã‚Â³ muÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœn nÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi Ãƒâ€žÃ¢â‚¬ËœiÃƒÂ¡Ã‚Â»Ã‚Âu kiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n hoÃƒÂ¡Ã‚ÂºÃ‚Â·c chÃƒÂ¡Ã‚Â»Ã‚Ân nhÃƒÆ’Ã‚Â³m sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m khÃƒÆ’Ã‚Â¡c khÃƒÆ’Ã‚Â´ng?"
 
         log_event({
             "event": "similar_suggestion",
@@ -2356,7 +3307,7 @@ def chat(req: ChatReq):
             "conversation_id": conv_id,
             "tenant_id": req.tenant_id,
             "items": [{"title": t, "url": u} for t, u in items] if items else [],
-            "debug": debug_trace,
+            "debug": _with_production_debug_panel(debug_trace),
         })
 
         # Save turn for stateful flow continuity
@@ -2372,7 +3323,7 @@ def chat(req: ChatReq):
             latency_ms=0,
             model=base_model or "stub",
             adapter=adapter,
-            debug=debug_trace,
+            debug=_with_production_debug_panel(debug_trace),
         )
 
     # ---- SALES flow prefix inside system prompt ----
@@ -2482,25 +3433,25 @@ def chat(req: ChatReq):
         resp = render_product_answer(req.message, context)
         debug_trace["fallback_answer_mode"] = "product-template"
     if not resp:
-        resp = "Xin lỗi, hệ thống đang gặp sự cố khi xử lý yêu cầu. Bạn thử lại giúp mình nhé."
+        resp = "Xin lÃƒÂ¡Ã‚Â»Ã¢â‚¬â€i, hÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡ thÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœng Ãƒâ€žÃ¢â‚¬Ëœang gÃƒÂ¡Ã‚ÂºÃ‚Â·p sÃƒÂ¡Ã‚Â»Ã‚Â± cÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœ khi xÃƒÂ¡Ã‚Â»Ã‚Â­ lÃƒÆ’Ã‚Â½ yÃƒÆ’Ã‚Âªu cÃƒÂ¡Ã‚ÂºÃ‚Â§u. BÃƒÂ¡Ã‚ÂºÃ‚Â¡n thÃƒÂ¡Ã‚Â»Ã‚Â­ lÃƒÂ¡Ã‚ÂºÃ‚Â¡i giÃƒÆ’Ã‚Âºp mÃƒÆ’Ã‚Â¬nh nhÃƒÆ’Ã‚Â©."
 
     # Keep answers concise, but not too short for consultative flow
     if response_model != "structured_price":
         sentences = re.split(r'(?<=[.!?])\s+', resp)
         resp = " ".join(sentences[:6]).strip()
 
-    NOT_FOUND = "I couldn’t find that in this store’s data."
+    NOT_FOUND = "I couldnÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢t find that in this storeÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s data."
 
     if provider != "stub":
         if _is_tenant_sales_mode(mode) and _prefer_vietnamese_response(req, mode) and ((not context) or (NOT_FOUND.lower() in resp.lower())):
             resp = (
-                "Mình chưa có đủ dữ liệu từ kho tri thức của cửa hàng để trả lời thật chính xác. "
-                "Bạn gửi giúp mình tên sản phẩm, mã sản phẩm hoặc nhu cầu cụ thể hơn nhé; "
-                "mình cũng có thể chuyển cho nhân viên tư vấn nếu bạn muốn."
+                "MÃƒÆ’Ã‚Â¬nh chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â§ dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u tÃƒÂ¡Ã‚Â»Ã‚Â« kho tri thÃƒÂ¡Ã‚Â»Ã‚Â©c cÃƒÂ¡Ã‚Â»Ã‚Â§a cÃƒÂ¡Ã‚Â»Ã‚Â­a hÃƒÆ’Ã‚Â ng Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ trÃƒÂ¡Ã‚ÂºÃ‚Â£ lÃƒÂ¡Ã‚Â»Ã‚Âi thÃƒÂ¡Ã‚ÂºÃ‚Â­t chÃƒÆ’Ã‚Â­nh xÃƒÆ’Ã‚Â¡c. "
+                "BÃƒÂ¡Ã‚ÂºÃ‚Â¡n gÃƒÂ¡Ã‚Â»Ã‚Â­i giÃƒÆ’Ã‚Âºp mÃƒÆ’Ã‚Â¬nh tÃƒÆ’Ã‚Âªn sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m, mÃƒÆ’Ã‚Â£ sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m hoÃƒÂ¡Ã‚ÂºÃ‚Â·c nhu cÃƒÂ¡Ã‚ÂºÃ‚Â§u cÃƒÂ¡Ã‚Â»Ã‚Â¥ thÃƒÂ¡Ã‚Â»Ã†â€™ hÃƒâ€ Ã‚Â¡n nhÃƒÆ’Ã‚Â©; "
+                "mÃƒÆ’Ã‚Â¬nh cÃƒâ€¦Ã‚Â©ng cÃƒÆ’Ã‚Â³ thÃƒÂ¡Ã‚Â»Ã†â€™ chuyÃƒÂ¡Ã‚Â»Ã†â€™n cho nhÃƒÆ’Ã‚Â¢n viÃƒÆ’Ã‚Âªn tÃƒâ€ Ã‚Â° vÃƒÂ¡Ã‚ÂºÃ‚Â¥n nÃƒÂ¡Ã‚ÂºÃ‚Â¿u bÃƒÂ¡Ã‚ÂºÃ‚Â¡n muÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœn."
             )
         elif _is_tenant_sales_mode(mode) and ((not context) or (NOT_FOUND.lower() in resp.lower())):
             resp = (
-                "Mình chưa đủ thông tin để tư vấn chính xác. Bạn cho mình biết thêm nhu cầu, ngân sách hoặc không gian sử dụng nhé."
+                "MÃƒÆ’Ã‚Â¬nh chÃƒâ€ Ã‚Â°a Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â§ thÃƒÆ’Ã‚Â´ng tin Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ tÃƒâ€ Ã‚Â° vÃƒÂ¡Ã‚ÂºÃ‚Â¥n chÃƒÆ’Ã‚Â­nh xÃƒÆ’Ã‚Â¡c. BÃƒÂ¡Ã‚ÂºÃ‚Â¡n cho mÃƒÆ’Ã‚Â¬nh biÃƒÂ¡Ã‚ÂºÃ‚Â¿t thÃƒÆ’Ã‚Âªm nhu cÃƒÂ¡Ã‚ÂºÃ‚Â§u, ngÃƒÆ’Ã‚Â¢n sÃƒÆ’Ã‚Â¡ch hoÃƒÂ¡Ã‚ÂºÃ‚Â·c khÃƒÆ’Ã‚Â´ng gian sÃƒÂ¡Ã‚Â»Ã‚Â­ dÃƒÂ¡Ã‚Â»Ã‚Â¥ng nhÃƒÆ’Ã‚Â©."
             )
         elif mode == ChatMode.GENERAL_COMPARE.value and not context:
             resp = (
@@ -2511,9 +3462,9 @@ def chat(req: ChatReq):
     if _is_tenant_sales_mode(mode) and getattr(st, "stage", None) == "close":
         resp = resp.strip()
         resp += (
-            "\n\nNếu muốn gửi yêu cầu cho cửa hàng, bạn trả lời CONFIRM. "
-            "Nếu muốn dừng, bạn trả lời CANCEL. "
-            "Mình chưa xử lý thanh toán trực tiếp trong chat."
+            "\n\nNÃƒÂ¡Ã‚ÂºÃ‚Â¿u muÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœn gÃƒÂ¡Ã‚Â»Ã‚Â­i yÃƒÆ’Ã‚Âªu cÃƒÂ¡Ã‚ÂºÃ‚Â§u cho cÃƒÂ¡Ã‚Â»Ã‚Â­a hÃƒÆ’Ã‚Â ng, bÃƒÂ¡Ã‚ÂºÃ‚Â¡n trÃƒÂ¡Ã‚ÂºÃ‚Â£ lÃƒÂ¡Ã‚Â»Ã‚Âi CONFIRM. "
+            "NÃƒÂ¡Ã‚ÂºÃ‚Â¿u muÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœn dÃƒÂ¡Ã‚Â»Ã‚Â«ng, bÃƒÂ¡Ã‚ÂºÃ‚Â¡n trÃƒÂ¡Ã‚ÂºÃ‚Â£ lÃƒÂ¡Ã‚Â»Ã‚Âi CANCEL. "
+            'Mình chưa xử lý thanh toán trực tiếp trong chat.'
         )
 
 
@@ -2522,7 +3473,7 @@ def chat(req: ChatReq):
     # --- Output guardrail: if model slips into unverified facts, replace with safe fallback ---
     if BAD_FACTS.search(resp):
         resp = (
-            "Mình chưa tìm thấy thông tin đủ chắc chắn trong dữ liệu hiện có. Bạn có thể mô tả cụ thể hơn nhu cầu được không?"
+            "MÃƒÆ’Ã‚Â¬nh chÃƒâ€ Ã‚Â°a tÃƒÆ’Ã‚Â¬m thÃƒÂ¡Ã‚ÂºÃ‚Â¥y thÃƒÆ’Ã‚Â´ng tin Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â§ chÃƒÂ¡Ã‚ÂºÃ‚Â¯c chÃƒÂ¡Ã‚ÂºÃ‚Â¯n trong dÃƒÂ¡Ã‚Â»Ã‚Â¯ liÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡u hiÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡n cÃƒÆ’Ã‚Â³. BÃƒÂ¡Ã‚ÂºÃ‚Â¡n cÃƒÆ’Ã‚Â³ thÃƒÂ¡Ã‚Â»Ã†â€™ mÃƒÆ’Ã‚Â´ tÃƒÂ¡Ã‚ÂºÃ‚Â£ cÃƒÂ¡Ã‚Â»Ã‚Â¥ thÃƒÂ¡Ã‚Â»Ã†â€™ hÃƒâ€ Ã‚Â¡n nhu cÃƒÂ¡Ã‚ÂºÃ‚Â§u Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Â£c khÃƒÆ’Ã‚Â´ng?"
         )
 
     latency_ms = int((time.time() - t0) * 1000)
@@ -2551,7 +3502,7 @@ def chat(req: ChatReq):
         "kb_loaded": active_kb is not None,
         "sales_stage": stage_for_debug,
         "sales_slots": slots_for_debug,
-        "debug": debug_trace,
+        "debug": _with_production_debug_panel(debug_trace),
     })
 
     # --- SALES FLOW: save conversation turn ---
@@ -2574,7 +3525,7 @@ def chat(req: ChatReq):
         trigger_purchase_request=response_trigger_purchase_request,
         captured_phone=captured_phone if _is_tenant_sales_mode(mode) else None,
         captured_name=captured_name if _is_tenant_sales_mode(mode) else None,
-        debug=debug_trace,
+        debug=_with_production_debug_panel(debug_trace),
     )
 
 @app.get("/state")
@@ -2587,3 +3538,4 @@ def read_state(conversation_id: str):
         "last_question": st.last_question,
         "last_answer": st.last_answer,
     }
+

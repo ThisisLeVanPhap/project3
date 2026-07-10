@@ -7,6 +7,7 @@ import com.app.leads.LeadRepository;
 import com.app.leads.LeadService;
 import com.app.modelserver.LlmInstanceManager;
 import com.app.modelserver.PythonChatClient;
+import com.app.modelserver.ChatRuntimeService;
 import com.app.modelserver.dto.ChatResponse;
 import com.app.purchases.PurchaseRequest;
 import com.app.purchases.PurchaseRequestService;
@@ -29,8 +30,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.eq;
 
 @ExtendWith(MockitoExtension.class)
 class ChatControllerConfirmMessageTest {
@@ -41,6 +44,8 @@ class ChatControllerConfirmMessageTest {
     private MessageRepository msgRepo;
     @Mock
     private ChatbotInstanceRepository botRepo;
+    @Mock
+    private ChatRuntimeService chatRuntimeService;
     @Mock
     private PythonChatClient pythonChatClient;
     @Mock
@@ -53,6 +58,8 @@ class ChatControllerConfirmMessageTest {
     private PurchaseRequestService purchaseRequestService;
     @Mock
     private ConversationResetService conversationResetService;
+    @Mock
+    private CrossChannelConversationContextService crossChannelConversationContextService;
 
     @InjectMocks
     private ChatController chatController;
@@ -65,13 +72,8 @@ class ChatControllerConfirmMessageTest {
     @Test
     void confirmSuccessReturnsClearPurchaseRequestMessage() {
         Fixture fixture = Fixture.create();
-        PurchaseRequest purchaseRequest = new PurchaseRequest();
-        purchaseRequest.setCustomerName("Nguyen Van A");
-        purchaseRequest.setPhone("0912345678");
-        purchaseRequest.setShippingAddress("123 Nguyen Trai, Ha Noi");
 
         mockBaseConversation(fixture);
-        when(purchaseRequestService.findOrCreateFromLead(fixture.lead)).thenReturn(purchaseRequest);
 
         Map<String, Object> out = chatController.send(Map.of(
                 "conversationId", fixture.conversationId.toString(),
@@ -80,21 +82,20 @@ class ChatControllerConfirmMessageTest {
         ));
 
         String reply = String.valueOf(out.get("reply"));
-        assertTrue(reply.contains("Nguyen Van A"));
-        assertTrue(reply.contains("0912345678"));
-        assertTrue(reply.contains("123 Nguyen Trai, Ha Noi"));
+        assertTrue(reply.contains("Ma lead"));
         assertEquals(18, out.get("latencyMs"));
         assertEquals("model-a", out.get("model"));
         assertEquals("adapter-a", out.get("adapter"));
-        verify(leadRepo).save(fixture.lead);
+        verify(leadService).createFromChatbotHandoff(any(LeadService.ChatbotHandoffLeadData.class));
+        verify(purchaseRequestService, never()).findOrCreateFromLead(any());
     }
 
     @Test
     void confirmBlockedReturnsFriendlyMissingInfoMessage() {
         Fixture fixture = Fixture.create();
 
-        mockBaseConversation(fixture);
-        when(purchaseRequestService.findOrCreateFromLead(fixture.lead))
+        mockBaseConversation(fixture, new ChatResponse("upstream", 18, "model-a", "adapter-a", true, null, null, Map.of("mode", "tenant_sales")), false);
+        when(leadService.createFromChatbotHandoff(any(LeadService.ChatbotHandoffLeadData.class)))
                 .thenThrow(new IllegalStateException("missing required buyer details"));
 
         Map<String, Object> out = chatController.send(Map.of(
@@ -110,24 +111,25 @@ class ChatControllerConfirmMessageTest {
         assertEquals("model-a", out.get("model"));
         assertEquals("adapter-a", out.get("adapter"));
         verify(leadRepo, never()).save(any());
+        verify(purchaseRequestService, never()).findOrCreateFromLead(any());
     }
 
     @Test
-    void nonTenantSalesModeBlocksPurchaseRequestEvenIfPythonTriggers() {
+    void tenantWebChatForcesTenantSalesModeEvenIfBotModeIsGeneralCompare() {
         Fixture fixture = Fixture.create();
         fixture.bot.setMode("general_compare");
         ChatResponse upstreamResponse = new ChatResponse(
-                "compare reply",
+                "upstream",
                 18,
                 "model-a",
                 "adapter-a",
                 true,
                 null,
                 null,
-                Map.of("mode", "general_compare")
+                Map.of("mode", "tenant_sales")
         );
 
-        mockBaseConversation(fixture, upstreamResponse, false);
+        mockBaseConversation(fixture, upstreamResponse, true);
 
         Map<String, Object> out = chatController.send(Map.of(
                 "conversationId", fixture.conversationId.toString(),
@@ -135,11 +137,10 @@ class ChatControllerConfirmMessageTest {
                 "userExternalId", fixture.userExternalId
         ));
 
-        assertEquals("compare reply", out.get("reply"));
+        assertTrue(String.valueOf(out.get("reply")).contains("Ma lead"));
         assertEquals(18, out.get("latencyMs"));
-        verify(leadService, never()).createLeadFromConversation(anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(leadService).createFromChatbotHandoff(any(LeadService.ChatbotHandoffLeadData.class));
         verify(purchaseRequestService, never()).findOrCreateFromLead(any());
-        verify(leadRepo, never()).save(any());
     }
 
     @Test
@@ -154,7 +155,7 @@ class ChatControllerConfirmMessageTest {
                 "userExternalId", fixture.userExternalId
         ));
 
-        assertEquals("Đã reset hội thoại hiện tại.", out.get("reply"));
+        assertEquals("Xong.", out.get("reply"));
         assertEquals(0, out.get("latencyMs"));
         assertEquals("system", out.get("model"));
         verify(conversationResetService).reset(
@@ -179,7 +180,7 @@ class ChatControllerConfirmMessageTest {
                 "userExternalId", fixture.userExternalId
         ));
 
-        assertEquals("Đã reset hội thoại hiện tại.", out.get("reply"));
+        assertEquals("Xong.", out.get("reply"));
         assertEquals(0, out.get("latencyMs"));
         assertEquals("system", out.get("model"));
         verify(conversationResetService).reset(
@@ -214,7 +215,7 @@ class ChatControllerConfirmMessageTest {
                 "userExternalId", fixture.userExternalId
         ));
 
-        assertEquals("Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.", out.get("reply"));
+        assertEquals("Xong.", out.get("reply"));
         assertEquals(newConversationId.toString(), out.get("newConversationId"));
         verify(msgRepo, never()).save(any());
         verify(pythonChatClient, never()).chat(anyString(), anyString(), any(), any(), anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.anyBoolean(), org.mockito.ArgumentMatchers.anyBoolean());
@@ -241,7 +242,7 @@ class ChatControllerConfirmMessageTest {
                 "userExternalId", fixture.userExternalId
         ));
 
-        assertEquals("Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.", out.get("reply"));
+        assertEquals("Xong.", out.get("reply"));
         assertEquals(newConversationId.toString(), out.get("newConversationId"));
         verify(msgRepo, never()).save(any());
         verify(pythonChatClient, never()).chat(anyString(), anyString(), any(), any(), anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.anyBoolean(), org.mockito.ArgumentMatchers.anyBoolean());
@@ -262,28 +263,19 @@ class ChatControllerConfirmMessageTest {
         when(botRepo.findById(fixture.chatbotId)).thenReturn(Optional.of(fixture.bot));
         when(msgRepo.findTop20ByConversationIdOrderByCreatedAtAsc(fixture.conversationId))
                 .thenReturn(List.of(new Message(UUID.randomUUID(), fixture.conversationId, "user", "CONFIRM")));
-        when(llmInstanceManager.getOrStartSession(fixture.tenantId, fixture.bot))
-                .thenReturn(new LlmInstanceManager.Session("http://127.0.0.1:8101", false, false));
-        when(pythonChatClient.chat(
-                "http://127.0.0.1:8101",
-                "CONFIRM",
-                List.of("CONFIRM"),
-                fixture.bot,
-                fixture.conversationId.toString(),
-                "web",
-                fixture.tenantId.toString(),
-                false,
-                false
-        )).thenReturn(upstreamResponse);
+        when(chatRuntimeService.chat(
+                eq(fixture.tenantId),
+                eq(fixture.bot),
+                eq("CONFIRM"),
+                any(List.class),
+                eq(fixture.conversationId.toString()),
+                eq("web"),
+                eq("tenant_sales")
+        )).thenReturn(new ChatRuntimeService.Result(upstreamResponse, "http://127.0.0.1:8101", "external"));
 
         if (stubLeadCapture) {
-            when(leadService.createLeadFromConversation(
-                    "http://127.0.0.1:8101",
-                    fixture.tenantId.toString(),
-                    "web",
-                    fixture.conversationId.toString(),
-                    ""
-            )).thenReturn(fixture.lead);
+            lenient().when(leadService.createFromChatbotHandoff(any(LeadService.ChatbotHandoffLeadData.class)))
+                    .thenReturn(fixture.lead);
         }
     }
 

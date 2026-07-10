@@ -132,6 +132,11 @@ function ownerLabel(row) {
     return "Unassigned";
 }
 
+function normalizeStatus(status) {
+    const s = String(status || "NEW").toUpperCase();
+    return s === "CONTACTED" ? "PROCESSING" : s;
+}
+
 function memberOptions(selectedMemberId) {
     const options = ['<option value="">Select member</option>'];
     for (const member of TENANT_MEMBERS) {
@@ -172,7 +177,7 @@ function render(rows) {
 
         tr.innerHTML = `
           <td>${created}</td>
-          <td><span class="status-pill">${row.status || ""}</span></td>
+          <td><span class="status-pill">${normalizeStatus(row.status)}</span></td>
           <td>${escapeHtml(row.customer_name || "")}</td>
           <td>${escapeHtml(row.phone || "")}</td>
           <td>${escapeHtml(row.shipping_address || "")}</td>

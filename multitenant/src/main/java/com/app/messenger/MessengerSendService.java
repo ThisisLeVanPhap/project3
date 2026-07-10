@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -25,7 +26,27 @@ public class MessengerSendService {
                 "recipient", Map.of("id", psid),
                 "message", Map.of("text", text)
         );
+        return sendMessageBody(pageId, psid, body, pageAccessToken);
+    }
 
+    public Mono<Void> sendTextWithQuickReplies(
+            String pageId,
+            String psid,
+            String text,
+            String pageAccessToken,
+            List<Map<String, Object>> quickReplies
+    ) {
+        Map<String, Object> body = Map.of(
+                "recipient", Map.of("id", psid),
+                "message", Map.of(
+                        "text", text,
+                        "quick_replies", quickReplies
+                )
+        );
+        return sendMessageBody(pageId, psid, body, pageAccessToken);
+    }
+
+    private Mono<Void> sendMessageBody(String pageId, String psid, Map<String, Object> body, String pageAccessToken) {
         Mono<Void> sendAttempt = client.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/me/messages")

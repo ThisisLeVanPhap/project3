@@ -3,6 +3,7 @@ package com.app.purchases;
 import com.app.auth.AppPrincipal;
 import com.app.auth.AppRole;
 import com.app.auth.SessionPrincipalAccessor;
+import com.app.leads.LeadRepository;
 import com.app.tenant.TenantContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,13 +25,16 @@ public class PurchaseRequestController {
 
     private final PurchaseRequestService purchaseRequestService;
     private final SessionPrincipalAccessor principalAccessor;
+    private final LeadRepository leadRepository;
 
     public PurchaseRequestController(
             PurchaseRequestService purchaseRequestService,
-            SessionPrincipalAccessor principalAccessor
+            SessionPrincipalAccessor principalAccessor,
+            LeadRepository leadRepository
     ) {
         this.purchaseRequestService = purchaseRequestService;
         this.principalAccessor = principalAccessor;
+        this.leadRepository = leadRepository;
     }
 
     @GetMapping
@@ -148,7 +152,29 @@ public class PurchaseRequestController {
         if (purchaseRequest.getAssignedToMemberId() != null) {
             assignedToDisplayName = memberDisplayNames.getOrDefault(purchaseRequest.getAssignedToMemberId(), null);
         }
-        return PurchaseRequestResponse.from(purchaseRequest, assignedToDisplayName);
+        return PurchaseRequestResponse.from(
+                purchaseRequest,
+                assignedToDisplayName,
+                resolveConversationTranscript(purchaseRequest)
+        );
+    }
+
+    private String resolveConversationTranscript(PurchaseRequest purchaseRequest) {
+        if (purchaseRequest.getLeadId() != null) {
+            return leadRepository.findByIdAndTenantId(purchaseRequest.getLeadId(), purchaseRequest.getTenantId())
+                    .map(lead -> lead.getTranscript() == null ? "" : lead.getTranscript())
+                    .orElse("");
+        }
+        if (purchaseRequest.getConversationId() == null || purchaseRequest.getConversationId().isBlank()) {
+            return "";
+        }
+        return leadRepository
+                .findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(
+                        purchaseRequest.getTenantId(),
+                        purchaseRequest.getConversationId()
+                )
+                .map(lead -> lead.getTranscript() == null ? "" : lead.getTranscript())
+                .orElse("");
     }
 
     private UUID requireCurrentMemberId(AppPrincipal principal) {

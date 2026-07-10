@@ -47,10 +47,10 @@ def apply_grounding_guard(user_msg: str, context: str, response: str) -> str:
         if has_supported_payment_context and has_bad_payment_claim:
             if vietnamese:
                 return (
-                    "Theo thong tin cua hang, khach co the thanh toan hoac "
-                    "\u0111\u1eb7t c\u1ecdc truc tiep voi nhan vien ban hang. "
-                    "Cua hang co ho tro chuyen khoan; thanh toan sau khi giao hang "
-                    "ap dung trong pham vi 0-50km neu thong tin nay co trong chinh sach."
+                    "Theo th\u00f4ng tin c\u1eeda h\u00e0ng, kh\u00e1ch c\u00f3 th\u1ec3 thanh to\u00e1n ho\u1eb7c "
+                    "\u0111\u1eb7t c\u1ecdc tr\u1ef1c ti\u1ebfp v\u1edbi nh\u00e2n vi\u00ean b\u00e1n h\u00e0ng. "
+                    "C\u1eeda h\u00e0ng c\u00f3 h\u1ed7 tr\u1ee3 chuy\u1ec3n kho\u1ea3n; thanh to\u00e1n sau khi giao h\u00e0ng "
+                    "\u00e1p d\u1ee5ng trong ph\u1ea1m vi 0-50km n\u1ebfu th\u00f4ng tin n\u00e0y c\u00f3 trong ch\u00ednh s\u00e1ch."
                 )
             return (
                 "According to the store information, customers can pay or place a deposit "
@@ -72,9 +72,9 @@ def apply_grounding_guard(user_msg: str, context: str, response: str) -> str:
         if response_makes_cleaning_claim and not context_supports_cleaning:
             if vietnamese:
                 return (
-                    "Minh \u0063\u0068\u01b0\u0061 \u0111\u1ee7 du lieu tu kho tri thuc "
-                    "de ket luan chat lieu nao de ve sinh hon. Theo thong tin hien co, "
-                    "chi co the xac nhan sofa go co the duoc boc nem da hoac ni."
+                    "Mình chưa đủ dữ liệu từ kho tri thức "
+                    "để kết luận chất liệu nào dễ vệ sinh hơn. Theo thông tin hiện có, "
+                    "chỉ có thể xác nhận sofa gỗ có thể được bọc nệm da hoặc nỉ."
                 )
             return (
                 "I do not have enough verified knowledge-base data to say which material "

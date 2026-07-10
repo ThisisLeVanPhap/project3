@@ -6,6 +6,7 @@ import com.app.chat.ChannelConversationService;
 import com.app.chat.Conversation;
 import com.app.chat.ConversationResetRequest;
 import com.app.chat.ConversationResetService;
+import com.app.chat.CrossChannelConversationContextService;
 import com.app.chat.Message;
 import com.app.chat.MessageRepository;
 import com.app.chat.NewConsultationSessionResponse;
@@ -66,6 +67,7 @@ public class MessengerWebhookController {
     private final FeedbackRepository feedbackRepo;
     private final CustomerIdentityService customerIdentityService;
     private final ConversationResetService conversationResetService;
+    private final CrossChannelConversationContextService crossChannelConversationContextService;
 
     private final Set<String> processedMids = ConcurrentHashMap.newKeySet();
     private final ExecutorService workerPool = Executors.newFixedThreadPool(8);
@@ -126,23 +128,17 @@ public class MessengerWebhookController {
                     }
                     String psid = String.valueOf(sender.get("id"));
 
-                    Map<String, Object> msg = (Map<String, Object>) ev.get("message");
-                    if (msg == null) {
-                        continue;
-                    }
-
-                    String text = (String) msg.get("text");
+                    String text = incomingText(ev);
                     if (text == null || text.isBlank()) {
                         continue;
                     }
 
-                    String mid = msg.get("mid") != null ? String.valueOf(msg.get("mid")) : null;
+                    String mid = incomingMessageId(ev);
                     if (mid != null && !processedMids.add(mid)) {
                         continue;
                     }
 
                     String senderKey = channelConversationService.buildMessengerSenderKey(pageId, psid);
-                    resolveCustomerIdentity(binding.getTenantId(), senderKey);
                     Conversation conv = channelConversationService.findOrCreateActiveConversation(
                             binding.getTenantId(),
                             binding.getChatbotId(),
@@ -153,6 +149,14 @@ public class MessengerWebhookController {
                     if (handleResetCommand(binding, conv, psid, text)) {
                         continue;
                     }
+                    channelConversationService.linkIdentityFromMessage(
+                            binding.getTenantId(),
+                            conv,
+                            "messenger",
+                            senderKey,
+                            null,
+                            text
+                    );
 
                     ChatbotInstance bot = botRepo.findById(conv.getChatbotId())
                             .orElseThrow(() -> new IllegalStateException("Bot not found: " + conv.getChatbotId()));
@@ -166,7 +170,7 @@ public class MessengerWebhookController {
                         continue;
                     }
 
-                    String requestedMode = ChatbotMode.normalize(bot.getMode());
+                    String requestedMode = ChatbotMode.TENANT_SALES;
 
                     if ("CONFIRM".equalsIgnoreCase(text.trim())) {
                         handleConfirm(binding, bot, conv, psid, requestedMode);
@@ -192,11 +196,12 @@ public class MessengerWebhookController {
                         continue;
                     }
 
-                    ChatResponse ai = callChatbot(binding, bot, conv, psid, text);
+                    ChatResponse ai = callChatbot(binding, bot, conv, psid, text, requestedMode);
                     enforceModeContract(binding, conv, requestedMode, ai);
+                    createLeadIfChatbotConfirmed(binding, conv, psid, ai);
 
                     String reply = normalizeReply(bot, binding, conv, psid, ai);
-                    persistAndSendAssistantReply(binding, conv, psid, reply);
+                    persistAndSendAssistantReply(binding, conv, psid, reply, shouldSendBuyConfirmationQuickReplies(ai));
                 }
             } finally {
                 if (prevTenant == null) {
@@ -224,7 +229,7 @@ public class MessengerWebhookController {
                     conv.getId(),
                     conv.getUnifiedCustomerId()
             );
-            reply = "Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.";
+            reply = "Xong.";
         } else {
             conversationResetService.reset(
                     binding.getTenantId(),
@@ -237,7 +242,7 @@ public class MessengerWebhookController {
                             true
                     )
             );
-            reply = "Đã reset hội thoại hiện tại.";
+            reply = "Xong.";
         }
         sendService.sendText(
                 binding.getPageId(),
@@ -256,6 +261,39 @@ public class MessengerWebhookController {
         mUser.setRole("user");
         mUser.setContent(text);
         msgRepo.save(mUser);
+    }
+
+    @SuppressWarnings("unchecked")
+    private String incomingText(Map<String, Object> ev) {
+        Map<String, Object> msg = (Map<String, Object>) ev.get("message");
+        if (msg != null) {
+            Map<String, Object> quickReply = (Map<String, Object>) msg.get("quick_reply");
+            if (quickReply != null && quickReply.get("payload") != null) {
+                return String.valueOf(quickReply.get("payload"));
+            }
+            Object text = msg.get("text");
+            if (text != null) {
+                return String.valueOf(text);
+            }
+        }
+        Map<String, Object> postback = (Map<String, Object>) ev.get("postback");
+        if (postback != null && postback.get("payload") != null) {
+            return String.valueOf(postback.get("payload"));
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String incomingMessageId(Map<String, Object> ev) {
+        Map<String, Object> msg = (Map<String, Object>) ev.get("message");
+        if (msg != null && msg.get("mid") != null) {
+            return String.valueOf(msg.get("mid"));
+        }
+        Map<String, Object> postback = (Map<String, Object>) ev.get("postback");
+        if (postback != null && postback.get("mid") != null) {
+            return String.valueOf(postback.get("mid"));
+        }
+        return null;
     }
 
     private void resolveCustomerIdentity(UUID tenantId, String senderKey) {
@@ -337,7 +375,8 @@ public class MessengerWebhookController {
             ChatbotInstance bot,
             Conversation conv,
             String psid,
-            String text
+            String text,
+            String requestedMode
     ) {
         List<Message> historyMsgs = msgRepo.findTop20ByConversationIdOrderByCreatedAtAsc(conv.getId());
         List<String> history = new ArrayList<>();
@@ -345,6 +384,10 @@ public class MessengerWebhookController {
             if ("user".equals(hm.getRole())) {
                 history.add(hm.getContent());
             }
+        }
+        List<String> enrichedHistory = crossChannelConversationContextService.enrichHistory(binding.getTenantId(), conv, history);
+        if (enrichedHistory != null && (!enrichedHistory.isEmpty() || history.isEmpty())) {
+            history = enrichedHistory;
         }
 
         try {
@@ -354,7 +397,8 @@ public class MessengerWebhookController {
                     text,
                     history,
                     conv.getId().toString(),
-                    "messenger"
+                    "messenger",
+                    requestedMode
             ).response();
         } catch (Exception ex) {
             log.warn(
@@ -437,6 +481,16 @@ public class MessengerWebhookController {
             String psid,
             String reply
     ) {
+        persistAndSendAssistantReply(binding, conv, psid, reply, false);
+    }
+
+    private void persistAndSendAssistantReply(
+            MessengerPageBinding binding,
+            Conversation conv,
+            String psid,
+            String reply,
+            boolean includeBuyConfirmationQuickReplies
+    ) {
         Message mBot = new Message();
         mBot.setId(UUID.randomUUID());
         mBot.setTenantId(binding.getTenantId());
@@ -445,6 +499,118 @@ public class MessengerWebhookController {
         mBot.setContent(reply);
         msgRepo.save(mBot);
 
-        sendService.sendText(binding.getPageId(), psid, reply, binding.getPageAccessToken());
+        if (includeBuyConfirmationQuickReplies) {
+            sendService.sendTextWithQuickReplies(
+                    binding.getPageId(),
+                    psid,
+                    reply,
+                    binding.getPageAccessToken(),
+                    List.of(
+                            Map.of("content_type", "text", "title", "Xác nhận gửi", "payload", "BUY_CONFIRM"),
+                            Map.of("content_type", "text", "title", "Hủy", "payload", "BUY_REJECT")
+                    )
+            );
+        } else {
+            sendService.sendText(binding.getPageId(), psid, reply, binding.getPageAccessToken());
+        }
+    }
+
+    private void createLeadIfChatbotConfirmed(
+            MessengerPageBinding binding,
+            Conversation conv,
+            String psid,
+            ChatResponse ai
+    ) {
+        if (!shouldCreateLeadFromChatbotResponse(ai)) {
+            return;
+        }
+        if (conv.isLeadCreated()) {
+            return;
+        }
+        try {
+            Lead lead = leadService.createFromChatbotHandoff(new LeadService.ChatbotHandoffLeadData(
+                    binding.getTenantId().toString(),
+                    conv.getId().toString(),
+                    "messenger",
+                    psid,
+                    conv.getUnifiedCustomerId() == null ? "" : conv.getUnifiedCustomerId().toString(),
+                    ai.captured_name(),
+                    ai.captured_phone(),
+                    valueFromDebug(ai, "email"),
+                    firstNonBlank(
+                            valueFromDebug(ai, "requested_product_ref"),
+                            valueFromDebug(ai, "product_name"),
+                            valueFromDebug(ai, "product_sku")
+                    ),
+                    valueFromDebug(ai, "product_sku"),
+                    valueFromDebug(ai, "product_url"),
+                    null,
+                    integerFromDebug(ai, "quantity"),
+                    valueFromDebug(ai, "notes"),
+                    valueFromDebug(ai, "handoff_id"),
+                    valueFromDebug(ai, "idempotency_key"),
+                    "",
+                    "HANDOFF",
+                    ai.debug()
+            ));
+            if (!conv.isLeadCreated()) {
+                conv.setLeadCreated(true);
+            }
+            log.info("Created chatbot lead id={} tenant={} conversationId={} channel=messenger", lead.getId(), lead.getTenantId(), lead.getConversationId());
+        } catch (RuntimeException ex) {
+            log.error("Failed to create Messenger lead from chatbot confirmation tenant={} conversationId={}", binding.getTenantId(), conv.getId(), ex);
+        }
+    }
+
+    private boolean shouldCreateLeadFromChatbotResponse(ChatResponse ai) {
+        if (ai == null || ai.debug() == null) {
+            return false;
+        }
+        String action = valueFromDebug(ai, "sales_action_taken");
+        String confirmationStatus = valueFromDebug(ai, "confirmation_status");
+        String handoffStatus = valueFromDebug(ai, "handoff_status");
+        return "handoff_sent".equals(action)
+                || "confirmed".equals(confirmationStatus)
+                || "sent".equals(handoffStatus);
+    }
+
+    private static String valueFromDebug(ChatResponse ai, String key) {
+        if (ai == null || ai.debug() == null || ai.debug().get(key) == null) {
+            return "";
+        }
+        return String.valueOf(ai.debug().get(key)).trim();
+    }
+
+    private static Integer integerFromDebug(ChatResponse ai, String key) {
+        String value = valueFromDebug(ai, key);
+        if (value.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.trim().isBlank()) {
+                return value.trim();
+            }
+        }
+        return "";
+    }
+
+    private boolean shouldSendBuyConfirmationQuickReplies(ChatResponse ai) {
+        if (ai == null || ai.debug() == null) {
+            return false;
+        }
+        Object action = ai.debug().get("sales_action_taken");
+        Object confirmationStatus = ai.debug().get("confirmation_status");
+        Object handoffStatus = ai.debug().get("handoff_status");
+        return "ask_confirmation".equals(action)
+                && "pending".equals(confirmationStatus)
+                && "pending_confirmation".equals(handoffStatus);
     }
 }

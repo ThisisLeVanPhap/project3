@@ -1,6 +1,9 @@
 package com.app.purchases;
 
 import com.app.common.ApiExceptionHandler;
+import com.app.leads.Lead;
+import com.app.leads.LeadRepository;
+import com.app.leads.LeadService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -9,6 +12,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -24,7 +28,9 @@ class ChatbotPurchaseRequestControllerTest {
     @Test
     void rejectsMissingServiceToken() throws Exception {
         PurchaseRequestService service = mock(PurchaseRequestService.class);
-        MockMvc mvc = mvc(service);
+        LeadService leadService = mock(LeadService.class);
+        LeadRepository leadRepository = mock(LeadRepository.class);
+        MockMvc mvc = mvc(service, leadService, leadRepository);
 
         mvc.perform(post("/api/chatbot/purchase-requests")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -32,15 +38,22 @@ class ChatbotPurchaseRequestControllerTest {
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(service);
+        verifyNoInteractions(leadService);
     }
 
     @Test
-    void createsPurchaseRequestWithValidBearerToken() throws Exception {
+    void createsLeadWithValidBearerToken() throws Exception {
         PurchaseRequestService service = mock(PurchaseRequestService.class);
-        PurchaseRequest purchaseRequest = purchaseRequest(123L);
-        when(service.createFromChatbotHandoff(any(ChatbotPurchaseRequestCreateRequest.class)))
-                .thenReturn(new PurchaseRequestService.ChatbotCreateResult(purchaseRequest, true));
-        MockMvc mvc = mvc(service);
+        LeadService leadService = mock(LeadService.class);
+        LeadRepository leadRepository = mock(LeadRepository.class);
+        Lead lead = lead(123L);
+        when(leadRepository.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(
+                "8e0f40c4-83de-4d44-bf0f-5e53769595e0",
+                "conv-1"
+        )).thenReturn(Optional.empty());
+        when(leadService.createFromChatbotHandoff(any(LeadService.ChatbotHandoffLeadData.class)))
+                .thenReturn(lead);
+        MockMvc mvc = mvc(service, leadService, leadRepository);
 
         mvc.perform(post("/api/chatbot/purchase-requests")
                         .header("Authorization", "Bearer test-token")
@@ -51,35 +64,41 @@ class ChatbotPurchaseRequestControllerTest {
                 .andExpect(jsonPath("$.handoff_id").value("handoff-1"))
                 .andExpect(jsonPath("$.idempotency_key").value("idem-1"))
                 .andExpect(jsonPath("$.status").value("NEW"))
+                .andExpect(jsonPath("$.stage").value("HANDOFF"))
                 .andExpect(jsonPath("$.created").value(true))
-                .andExpect(jsonPath("$.purchase_request.id").value(123))
-                .andExpect(jsonPath("$.purchase_request.handoff_id").value("handoff-1"))
-                .andExpect(jsonPath("$.purchase_request.product_sku").value("GHO-607"))
-                .andExpect(jsonPath("$.purchase_request.email").value("a@example.com"));
+                .andExpect(jsonPath("$.lead.id").value(123))
+                .andExpect(jsonPath("$.lead.channel").value("web"));
 
-        verify(service).createFromChatbotHandoff(any(ChatbotPurchaseRequestCreateRequest.class));
+        verify(leadService).createFromChatbotHandoff(any(LeadService.ChatbotHandoffLeadData.class));
+        verifyNoInteractions(service);
     }
 
     @Test
     void returnsOkForDuplicateIdempotency() throws Exception {
         PurchaseRequestService service = mock(PurchaseRequestService.class);
-        PurchaseRequest purchaseRequest = purchaseRequest(123L);
-        when(service.createFromChatbotHandoff(any(ChatbotPurchaseRequestCreateRequest.class)))
-                .thenReturn(new PurchaseRequestService.ChatbotCreateResult(purchaseRequest, false));
-        MockMvc mvc = mvc(service);
+        LeadService leadService = mock(LeadService.class);
+        LeadRepository leadRepository = mock(LeadRepository.class);
+        Lead lead = lead(123L);
+        when(leadRepository.findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(
+                "8e0f40c4-83de-4d44-bf0f-5e53769595e0",
+                "conv-1"
+        )).thenReturn(Optional.of(lead));
+        when(leadService.createFromChatbotHandoff(any(LeadService.ChatbotHandoffLeadData.class)))
+                .thenReturn(lead);
+        MockMvc mvc = mvc(service, leadService, leadRepository);
 
         mvc.perform(post("/api/chatbot/purchase-requests")
                         .header("X-Service-Token", "test-token")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validPayload()))
+                .content(validPayload()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.created").value(false))
-                .andExpect(jsonPath("$.purchase_request.id").value(123));
+                .andExpect(jsonPath("$.lead.id").value(123));
     }
 
-    private static MockMvc mvc(PurchaseRequestService service) {
+    private static MockMvc mvc(PurchaseRequestService service, LeadService leadService, LeadRepository leadRepository) {
         return MockMvcBuilders
-                .standaloneSetup(new ChatbotPurchaseRequestController(service, "test-token"))
+                .standaloneSetup(new ChatbotPurchaseRequestController(service, leadService, leadRepository, "test-token"))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .build();
     }
@@ -134,5 +153,20 @@ class ChatbotPurchaseRequestControllerTest {
         Field field = PurchaseRequest.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(purchaseRequest, value);
+    }
+
+    private static Lead lead(Long id) throws Exception {
+        Lead lead = Lead.createNew(
+                "8e0f40c4-83de-4d44-bf0f-5e53769595e0",
+                "web",
+                "conv-1",
+                "",
+                "{}",
+                "user: hello"
+        );
+        Field field = Lead.class.getDeclaredField("id");
+        field.setAccessible(true);
+        field.set(lead, id);
+        return lead;
     }
 }

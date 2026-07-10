@@ -38,7 +38,7 @@ public class PurchaseRequestOpsStatsService {
     private PurchaseRequestOpsStatsDto summarize(List<PurchaseRequest> requests) {
         long total = requests.size();
         long newCount = countByStatus(requests, "NEW");
-        long contactedCount = countByStatus(requests, "CONTACTED");
+        long contactedCount = countByStatus(requests, "PROCESSING");
         long completedCount = countByStatus(requests, "COMPLETED");
         long assignedCount = requests.stream().filter(request -> request.getAssignedToMemberId() != null).count();
         return new PurchaseRequestOpsStatsDto(

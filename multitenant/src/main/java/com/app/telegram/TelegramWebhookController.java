@@ -6,6 +6,7 @@ import com.app.chat.ChannelConversationService;
 import com.app.chat.Conversation;
 import com.app.chat.ConversationResetRequest;
 import com.app.chat.ConversationResetService;
+import com.app.chat.CrossChannelConversationContextService;
 import com.app.chat.Message;
 import com.app.chat.MessageRepository;
 import com.app.chat.NewConsultationSessionResponse;
@@ -55,6 +56,7 @@ public class TelegramWebhookController {
     private final FeedbackRepository feedbackRepo;
     private final CustomerIdentityService customerIdentityService;
     private final ConversationResetService conversationResetService;
+    private final CrossChannelConversationContextService crossChannelConversationContextService;
 
     private final Set<Long> processedUpdateIds = ConcurrentHashMap.newKeySet();
     private final ExecutorService workerPool = Executors.newFixedThreadPool(8);
@@ -94,7 +96,6 @@ public class TelegramWebhookController {
             String chatId = String.valueOf(chat.get("id"));
 
             String senderKey = channelConversationService.buildTelegramSenderKey(chatId);
-            resolveCustomerIdentity(binding.getTenantId(), senderKey, chat, msg);
             Conversation conv = channelConversationService.findOrCreateActiveConversation(
                     binding.getTenantId(),
                     binding.getChatbotId(),
@@ -105,6 +106,14 @@ public class TelegramWebhookController {
             if (handleResetCommand(binding, conv, chatId, text)) {
                 return;
             }
+            channelConversationService.linkIdentityFromMessage(
+                    binding.getTenantId(),
+                    conv,
+                    "telegram",
+                    senderKey,
+                    telegramDisplayName(chat, msg),
+                    text
+            );
 
             ChatbotInstance bot = botRepo.findById(conv.getChatbotId())
                     .orElseThrow(() -> new IllegalStateException("Bot not found: " + conv.getChatbotId()));
@@ -211,6 +220,10 @@ public class TelegramWebhookController {
             List<Message> historyMsgs = msgRepo.findTop20ByConversationIdOrderByCreatedAtAsc(conv.getId());
             List<String> history = new ArrayList<>();
             for (Message hm : historyMsgs) if ("user".equals(hm.getRole())) history.add(hm.getContent());
+            List<String> enrichedHistory = crossChannelConversationContextService.enrichHistory(binding.getTenantId(), conv, history);
+            if (enrichedHistory != null && (!enrichedHistory.isEmpty() || history.isEmpty())) {
+                history = enrichedHistory;
+            }
 
             ChatRuntimeService.Result runtimeResult = chatRuntimeService.chat(
                     binding.getTenantId(),
@@ -277,7 +290,7 @@ public class TelegramWebhookController {
                     conv.getId(),
                     conv.getUnifiedCustomerId()
             );
-            reply = "Đã bắt đầu phiên tư vấn mới. Mình sẽ không dùng thông tin từ phiên cũ.";
+            reply = "Xong.";
         } else {
             conversationResetService.reset(
                     binding.getTenantId(),
@@ -290,7 +303,7 @@ public class TelegramWebhookController {
                             true
                     )
             );
-            reply = "Đã reset hội thoại hiện tại.";
+            reply = "Xong.";
         }
         sendService.sendText(
                 binding.getBotToken(),
@@ -305,22 +318,7 @@ public class TelegramWebhookController {
         if (customerIdentityService == null) {
             return;
         }
-        String displayName = null;
-        Object fromRaw = msg.get("from");
-        if (fromRaw instanceof Map<?, ?> from) {
-            Object firstName = from.get("first_name");
-            Object lastName = from.get("last_name");
-            String first = firstName == null ? "" : String.valueOf(firstName).trim();
-            String last = lastName == null ? "" : String.valueOf(lastName).trim();
-            String combined = (first + " " + last).trim();
-            displayName = combined.isBlank() ? null : combined;
-        }
-        if (displayName == null && chat != null) {
-            Object title = chat.get("title");
-            if (title != null && !String.valueOf(title).isBlank()) {
-                displayName = String.valueOf(title).trim();
-            }
-        }
+        String displayName = telegramDisplayName(chat, msg);
         try {
             customerIdentityService.resolveOrCreateIdentity(
                     tenantId,
@@ -333,5 +331,26 @@ public class TelegramWebhookController {
         } catch (RuntimeException ex) {
             log.debug("Skip telegram customer identity resolution tenant={} senderKey={}", tenantId, senderKey, ex);
         }
+    }
+
+    private String telegramDisplayName(Map<String, Object> chat, Map<String, Object> msg) {
+        Object fromRaw = msg.get("from");
+        if (fromRaw instanceof Map<?, ?> from) {
+            Object firstName = from.get("first_name");
+            Object lastName = from.get("last_name");
+            String first = firstName == null ? "" : String.valueOf(firstName).trim();
+            String last = lastName == null ? "" : String.valueOf(lastName).trim();
+            String combined = (first + " " + last).trim();
+            if (!combined.isBlank()) {
+                return combined;
+            }
+        }
+        if (chat != null) {
+            Object title = chat.get("title");
+            if (title != null && !String.valueOf(title).isBlank()) {
+                return String.valueOf(title).trim();
+            }
+        }
+        return null;
     }
 }

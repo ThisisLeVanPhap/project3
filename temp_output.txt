@@ -1,0 +1,42 @@
+﻿def _build_debug_trace(
+    *,
+    mode: str,
+    stage: Optional[str],
+    slots: Optional[Dict[str, Any]],
+    retrieved_docs: int = 0,
+    context: str = "",
+    retrieval_mode: str = "",
+    data_provider: str = "none",
+    internal_candidates: int = 0,
+    external_price_refs: int = 0,
+    price_provider: str = "none",
+    used_mock_price_data: bool = False,
+) -> Dict[str, Any]:
+    return {
+        "mode": mode,
+        "stage": stage,
+        "slots": dict(slots or {}),
+        "retrieved_docs": retrieved_docs,
+        "context_chars": len(context or ""),
+        "retrieval_mode": retrieval_mode,
+        "data_provider": data_provider,
+        "internal_candidates": internal_candidates,
+        "external_price_refs": external_price_refs,
+        "price_provider": price_provider,
+        "used_mock_price_data": used_mock_price_data,
+        # Phase 10F: LLM/trace debug fields
+        "llm_enabled": False,
+        "llm_provider": "none",
+        "llm_model": "",
+        "llm_call_attempted": False,
+        "llm_called": False,
+        "llm_skip_reason": "",
+        "llm_error_type": "",
+        "answer_mode": "",
+        "template_reason": "",
+        "retrieval_query": "",
+        "requested_category": "",
+        "slots_snapshot": {},
+    }
+
+

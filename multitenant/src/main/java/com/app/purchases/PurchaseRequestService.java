@@ -6,7 +6,6 @@ import com.app.chat.Conversation;
 import com.app.chat.ConversationRepository;
 import com.app.customers.CustomerIdentityService;
 import com.app.leads.Lead;
-import com.app.modelserver.PythonChatFallbacks;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +25,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -35,11 +35,17 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class PurchaseRequestService {
 
     private static final Pattern PHONE_PATTERN = Pattern.compile("(?<!\\d)(?:\\+?84|0)(?:[\\s.\\-]?\\d){8,10}(?!\\d)");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("(?i)\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b");
     // Vietnam phone validation after cleaning: digits only (0xxxxxxxxx or 84xxxxxxxxx)
     private static final Pattern PHONE_VALIDATION_PATTERN = Pattern.compile("^(0[3-9]\\d{8}|84[3-9]\\d{8})$");
     private static final Pattern PRODUCT_URL_PATTERN = Pattern.compile("(https?://\\S+)");
+    private static final Pattern PRODUCT_LINE_PATTERN = Pattern.compile("(?is)(?:^|\\s)\\d+\\.\\s*([^\\[]+?)\\s*\\[(?:P\\d+)\\]\\s*-\\s*Giá:\\s*([\\d.,]+)\\s*VND.*?SKU:\\s*([A-Z0-9-]+).*?Link nguồn:\\s*(https?://\\S+)");
+    private static final Pattern DRAFT_PRODUCT_PATTERN = Pattern.compile("(?is)(?:Sản phẩm|San pham):\\s*(.*?)\\s*-\\s*(?:Số lượng|So luong):\\s*(\\d+).*?(?:Giá tham khảo[^:]*|Gia tham khao[^:]*):\\s*([\\d.]+)(?:.*?(?:Liên hệ|Lien he):\\s*([^\\s]+))?");
+    private static final Pattern SKU_PATTERN = Pattern.compile("\\b[A-Z]{2,5}-\\d+\\b");
     private static final List<Pattern> NAME_PATTERNS = List.of(
-            Pattern.compile("(?im)\\b(?:tên|ten|name)\\b\\s*(?:(?:tôi|toi|mình|minh|em|anh|chị|chi)\\s+)?(?:là|la|:|-)?\\s*([^\\n,.;]{2,80})"),
+            Pattern.compile("(?im)^\\s*(?:user:\\s*)?(?:tên|ten|name)\\s*:\\s*([^\\n,.;]{2,80})"),
+            Pattern.compile("(?im)\\b(?:tên|ten)\\s+(?:tôi|toi|mình|minh|em|anh|chị|chi|khách|khach)\\s*(?:là|la|:|-)?\\s*([^\\n,.;]{2,80})"),
+            Pattern.compile("(?im)\\b(?:họ tên|ho ten|full name|customer name)\\s*(?:là|la|:|-)?\\s*([^\\n,.;]{2,80})"),
             Pattern.compile("(?im)\\b(?:tôi là|toi la|mình là|minh la|em là|em la|anh là|anh la|chị là|chi la)\\s+([^\\n,.;]{2,80})")
     );
     private static final List<Pattern> ADDRESS_PATTERNS = List.of(
@@ -56,7 +62,7 @@ public class PurchaseRequestService {
     private static final List<String> PRODUCT_KEYS = List.of("requested_product_ref", "product_ref", "product_name", "product_code", "sku", "item");
     private static final List<String> OPEN_STATUSES = List.of(
             PurchaseRequestStatus.NEW.name(),
-            PurchaseRequestStatus.CONTACTED.name()
+            PurchaseRequestStatus.PROCESSING.name()
     );
 
     private final PurchaseRequestRepository purchaseRequestRepo;
@@ -106,6 +112,9 @@ public class PurchaseRequestService {
 
         if (normalizedStatus.equals(purchaseRequest.getStatus())) {
             return purchaseRequest;
+        }
+        if (PurchaseRequestStatus.PROCESSING.name().equals(normalizedStatus)) {
+            requireReadyForProcessing(purchaseRequest);
         }
 
         purchaseRequest.setStatus(normalizedStatus);
@@ -290,10 +299,6 @@ public class PurchaseRequestService {
             return existing;
         }
 
-        if (!isEligibleForCreation(lead, extracted)) {
-            throw new IllegalStateException("Purchase request requires confirmed customer name, phone, and shipping address");
-        }
-
         PurchaseRequest created = new PurchaseRequest();
         created.setTenantId(lead.getTenantId());
         created.setChannel(defaultString(lead.getChannel()));
@@ -301,9 +306,14 @@ public class PurchaseRequestService {
         created.setLeadId(lead.getId());
         created.setCustomerName(extracted.customerName());
         created.setPhone(extracted.phone());
+        created.setEmail(nullableTrim(extracted.email()));
         created.setShippingAddress(extracted.shippingAddress());
         created.setNotes(extracted.notes());
         created.setRequestedProductRef(extracted.requestedProductRef());
+        created.setProductSku(nullableTrim(extracted.productSku()));
+        created.setProductUrl(nullableTrim(extracted.productUrl()));
+        created.setPrice(extracted.price());
+        created.setQuantity(extracted.quantity());
         created.setStatus(PurchaseRequestStatus.NEW.name());
 
         PurchaseRequest saved = purchaseRequestRepo.save(created);
@@ -354,38 +364,50 @@ public class PurchaseRequestService {
     private ExtractedPurchaseData extractFromLead(Lead lead) {
         Map<String, Object> slots = readSlots(lead.getSlotsJson());
         String transcript = defaultString(lead.getTranscript());
+        String userTranscript = userOnlyTranscript(transcript);
 
         String customerName = firstNonBlank(
                 slot(slots, NAME_KEYS),
-                findByPatterns(transcript, NAME_PATTERNS),
-                findFieldValue(transcript, "tên", "ten", "name")
+                findByPatterns(userTranscript, NAME_PATTERNS)
         );
         String phone = firstNonBlank(
                 slot(slots, PHONE_KEYS),
-                findPhone(transcript)
+                findPhone(userTranscript)
         );
         String shippingAddress = firstNonBlank(
                 slot(slots, ADDRESS_KEYS),
-                findByPatterns(transcript, ADDRESS_PATTERNS),
-                findFieldValue(transcript, "địa chỉ", "dia chi", "address", "giao tới", "giao toi", "ship tới", "ship toi", "nhận hàng tại", "nhan hang tai")
+                findByPatterns(userTranscript, ADDRESS_PATTERNS),
+                findFieldValue(userTranscript, "địa chỉ", "dia chi", "address", "giao tới", "giao toi", "ship tới", "ship toi", "nhận hàng tại", "nhan hang tai")
         );
         String notes = firstNonBlank(
                 slot(slots, NOTES_KEYS),
                 defaultString(lead.getOrderInfo()),
-                findByPatterns(transcript, NOTES_PATTERNS),
-                findFieldValue(transcript, "ghi chú", "ghi chu", "note", "lưu ý", "luu y")
+                findByPatterns(userTranscript, NOTES_PATTERNS),
+                findFieldValue(userTranscript, "ghi chú", "ghi chu", "note", "lưu ý", "luu y")
         );
         String requestedProductRef = firstNonBlank(
                 slot(slots, PRODUCT_KEYS),
-                findProductReference(transcript)
+                findProductReference(userTranscript)
         );
+        ProductCandidate product = combineProductCandidates(
+                parseDraftProductCandidate(transcript),
+                productCandidateFromSlots(slots),
+                parseProductCandidate(firstNonBlank(defaultString(lead.getOrderInfo()), transcript)),
+                parseProductCandidate(transcript)
+        );
+        String email = firstNonBlank(findEmail(userTranscript), product.email());
 
         return new ExtractedPurchaseData(
                 cleanCustomerName(customerName),
                 cleanPhone(phone),
+                email,
                 cleanShippingAddress(shippingAddress),
                 normalize(notes),
-                cleanRequestedProductRef(requestedProductRef)
+                cleanRequestedProductRef(firstNonBlank(requestedProductRef, product.name())),
+                product.sku(),
+                product.url(),
+                product.price(),
+                product.quantity()
         );
     }
 
@@ -405,9 +427,20 @@ public class PurchaseRequestService {
         boolean changed = false;
         changed |= fillIfBlank(existing::getCustomerName, existing::setCustomerName, extracted.customerName());
         changed |= fillIfBlank(existing::getPhone, existing::setPhone, extracted.phone());
+        changed |= fillIfBlank(existing::getEmail, existing::setEmail, extracted.email());
         changed |= fillIfBlank(existing::getShippingAddress, existing::setShippingAddress, extracted.shippingAddress());
         changed |= fillIfBlank(existing::getNotes, existing::setNotes, extracted.notes());
         changed |= fillIfBlank(existing::getRequestedProductRef, existing::setRequestedProductRef, extracted.requestedProductRef());
+        changed |= fillIfBlank(existing::getProductSku, existing::setProductSku, extracted.productSku());
+        changed |= fillIfBlank(existing::getProductUrl, existing::setProductUrl, extracted.productUrl());
+        if (existing.getPrice() == null && extracted.price() != null) {
+            existing.setPrice(extracted.price());
+            changed = true;
+        }
+        if (existing.getQuantity() == null && extracted.quantity() != null) {
+            existing.setQuantity(extracted.quantity());
+            changed = true;
+        }
         if (existing.getLeadId() == null && lead.getId() != null) {
             existing.setLeadId(lead.getId());
             changed = true;
@@ -439,6 +472,11 @@ public class PurchaseRequestService {
             return "";
         }
         return matcher.group().replaceAll("[^\\d+]", "");
+    }
+
+    private static String findEmail(String transcript) {
+        Matcher matcher = EMAIL_PATTERN.matcher(transcript);
+        return matcher.find() ? matcher.group() : "";
     }
 
     private static String findProductReference(String transcript) {
@@ -490,21 +528,32 @@ public class PurchaseRequestService {
         return "";
     }
 
-    private static boolean isEligibleForCreation(Lead lead, ExtractedPurchaseData extracted) {
-        return extracted.hasRequiredBuyerDetails()
-                && isValidPhone(extracted.phone())
-                && !lastAssistantReplyWasFallback(defaultString(lead.getTranscript()));
+    private static void requireReadyForProcessing(PurchaseRequest purchaseRequest) {
+        String customerName = normalize(purchaseRequest.getCustomerName());
+        String phone = normalize(purchaseRequest.getPhone());
+        String shippingAddress = normalize(purchaseRequest.getShippingAddress());
+        if (customerName.isBlank() || phone.isBlank() || shippingAddress.isBlank()) {
+            throw new ResponseStatusException(
+                    BAD_REQUEST,
+                    "Purchase request requires customer name, phone, and shipping address before processing"
+            );
+        }
+        if (!isValidPhone(phone)) {
+            throw new ResponseStatusException(
+                    BAD_REQUEST,
+                    "Purchase request phone is invalid before processing. Use a Vietnam mobile number like 09xxxxxxxx or 84xxxxxxxxx"
+            );
+        }
     }
 
-    private static boolean lastAssistantReplyWasFallback(String transcript) {
-        String lastAssistantReply = "";
+    private static String userOnlyTranscript(String transcript) {
+        StringBuilder builder = new StringBuilder();
         for (String line : transcript.split("\\R")) {
-            String normalized = normalize(line);
-            if (normalized.toLowerCase(Locale.ROOT).startsWith("assistant:")) {
-                lastAssistantReply = stripRolePrefix(normalized);
+            if (isUserLine(line)) {
+                builder.append(line).append('\n');
             }
         }
-        return PythonChatFallbacks.isKnownFailureMessage(lastAssistantReply);
+        return builder.toString();
     }
 
     private static boolean isUserLine(String line) {
@@ -549,6 +598,13 @@ public class PurchaseRequestService {
         if (cleaned.matches("(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
             return "";
         }
+        String lower = cleaned.toLowerCase(Locale.ROOT);
+        if (lower.matches(".*\\b(ghs|gho|sku|mẫu|mau|sofa|bàn|ban|ghế|ghe|đèn|den|sản phẩm|san pham)\\b.*")) {
+            return "";
+        }
+        if (cleaned.matches(".*\\d.*")) {
+            return "";
+        }
         return cleaned;
     }
 
@@ -577,6 +633,141 @@ public class PurchaseRequestService {
             return "";
         }
         return cleaned;
+    }
+
+    private static ProductCandidate parseProductCandidate(String text) {
+        String normalized = normalize(text);
+        if (normalized.isBlank()) {
+            return ProductCandidate.empty();
+        }
+        Matcher matcher = PRODUCT_LINE_PATTERN.matcher(normalized);
+        if (!matcher.find()) {
+            return ProductCandidate.empty();
+        }
+        return new ProductCandidate(
+                normalize(matcher.group(1)),
+                normalize(matcher.group(3)),
+                normalize(matcher.group(4)),
+                parsePrice(matcher.group(2)),
+                1,
+                ""
+        );
+    }
+
+    private static ProductCandidate parseDraftProductCandidate(String text) {
+        String normalized = normalize(text.replaceAll("(?im)^\\s*(?:user|assistant):\\s*", ""));
+        if (normalized.isBlank()) {
+            return ProductCandidate.empty();
+        }
+        Matcher matcher = DRAFT_PRODUCT_PATTERN.matcher(normalized);
+        ProductCandidate latest = ProductCandidate.empty();
+        while (matcher.find()) {
+            String name = normalize(matcher.group(1)).replaceFirst("^[-\\s]+", "");
+            latest = new ProductCandidate(
+                    name,
+                    extractSku(name),
+                    "",
+                    parsePrice(matcher.group(3)),
+                    parseQuantity(matcher.group(2)),
+                    normalize(matcher.group(4))
+            );
+        }
+        return latest;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ProductCandidate productCandidateFromSlots(Map<String, Object> slots) {
+        Object debug = slots.get("debug");
+        if (!(debug instanceof Map<?, ?> debugMap)) {
+            return ProductCandidate.empty();
+        }
+        Object selectedProducts = debugMap.get("selected_products");
+        if (selectedProducts instanceof List<?> products && !products.isEmpty() && products.get(0) instanceof Map<?, ?> product) {
+            return new ProductCandidate(
+                    normalize(stringValue(product, "product_name")),
+                    normalize(stringValue(product, "sku")),
+                    normalize(stringValue(product, "source_url")),
+                    parsePrice(product.get("price")),
+                    1,
+                    ""
+            );
+        }
+        Object knownSlots = debugMap.get("known_slots");
+        if (knownSlots instanceof Map<?, ?> known) {
+            String name = normalize(stringValue(known, "selected_product_name"));
+            String sku = normalize(stringValue(known, "selected_product_id"));
+            if (!name.isBlank() || !sku.isBlank()) {
+                return new ProductCandidate(name, sku, "", null, 1, "");
+            }
+        }
+        return ProductCandidate.empty();
+    }
+
+    private static String stringValue(Map<?, ?> map, String key) {
+        Object value = map.get(key);
+        return value == null ? "" : String.valueOf(value);
+    }
+
+    private static ProductCandidate combineProductCandidates(ProductCandidate... candidates) {
+        String name = "";
+        String sku = "";
+        String url = "";
+        BigDecimal price = null;
+        Integer quantity = null;
+        String email = "";
+        for (ProductCandidate candidate : candidates) {
+            if (candidate != null && candidate.hasAnyValue()) {
+                if (name.isBlank()) name = normalize(candidate.name());
+                if (sku.isBlank()) sku = normalize(candidate.sku());
+                if (url.isBlank() && sameSkuOrMissing(sku, candidate.sku())) url = normalize(candidate.url());
+                if (price == null && sameSkuOrMissing(sku, candidate.sku())) price = candidate.price();
+                if (quantity == null && sameSkuOrMissing(sku, candidate.sku())) quantity = candidate.quantity();
+                if (email.isBlank()) email = normalize(candidate.email());
+            }
+        }
+        return new ProductCandidate(name, sku, url, price, quantity, email);
+    }
+
+    private static boolean sameSkuOrMissing(String selectedSku, String candidateSku) {
+        String selected = normalize(selectedSku);
+        String candidate = normalize(candidateSku);
+        return selected.isBlank() || candidate.isBlank() || selected.equalsIgnoreCase(candidate);
+    }
+
+    private static BigDecimal parsePrice(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String raw = String.valueOf(value).replaceAll("[^0-9.]", "");
+        if (raw.isBlank()) {
+            return null;
+        }
+        int firstDot = raw.indexOf('.');
+        if (firstDot >= 0 && raw.indexOf('.', firstDot + 1) >= 0) {
+            raw = raw.replace(".", "");
+        }
+        try {
+            return new BigDecimal(raw);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private static Integer parseQuantity(String value) {
+        String normalized = normalize(value).replaceAll("[^0-9]", "");
+        if (normalized.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(normalized);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private static String extractSku(String value) {
+        Matcher matcher = SKU_PATTERN.matcher(normalize(value));
+        return matcher.find() ? matcher.group() : "";
     }
 
     private PurchaseRequest requirePurchaseRequest(String tenantId, Long purchaseRequestId) {
@@ -682,14 +873,36 @@ public class PurchaseRequestService {
     private record ExtractedPurchaseData(
             String customerName,
             String phone,
+            String email,
             String shippingAddress,
             String notes,
-            String requestedProductRef
+            String requestedProductRef,
+            String productSku,
+            String productUrl,
+            BigDecimal price,
+            Integer quantity
     ) {
-        boolean hasRequiredBuyerDetails() {
-            return !customerName.isBlank()
-                    && !phone.isBlank()
-                    && !shippingAddress.isBlank();
+    }
+
+    private record ProductCandidate(
+            String name,
+            String sku,
+            String url,
+            BigDecimal price,
+            Integer quantity,
+            String email
+    ) {
+        private static ProductCandidate empty() {
+            return new ProductCandidate("", "", "", null, null, "");
+        }
+
+        private boolean hasAnyValue() {
+            return !normalize(name).isBlank()
+                    || !normalize(sku).isBlank()
+                    || !normalize(url).isBlank()
+                    || price != null
+                    || quantity != null
+                    || !normalize(email).isBlank();
         }
     }
 

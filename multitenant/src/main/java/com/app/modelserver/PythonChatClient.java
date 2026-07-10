@@ -155,7 +155,8 @@ public class PythonChatClient {
                 null,  // api_base_url - system-level env only
                 mode,
                 ChatbotMode.DEFAULT_RETRIEVAL_MODE,
-                null
+                null,
+                ChatbotMode.isTenantSales(mode) ? "active" : null
         );
 
         ChatRequest request = new ChatRequest(

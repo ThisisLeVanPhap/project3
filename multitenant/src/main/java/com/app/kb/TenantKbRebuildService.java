@@ -39,6 +39,10 @@ public class TenantKbRebuildService {
             String status,
             Instant lastRebuildAt,
             int artifactCount,
+            String sourceType,
+            String datasetId,
+            String source,
+            String sourceUrl,
             Instant lastRebuildStartedAt,
             Instant lastRebuildFinishedAt,
             String lastRebuildStatus,
@@ -52,6 +56,7 @@ public class TenantKbRebuildService {
     private final LlmInstanceManager llmInstanceManager;
     private final TenantKbRebuildStatusService tenantKbRebuildStatusService;
     private final TenantKbVersionRepository tenantKbVersionRepository;
+    private final ProductDatasetRepository productDatasetRepository;
     private final TenantKbSourceService tenantKbSourceService;
     private final ObjectMapper objectMapper;
 
@@ -61,6 +66,7 @@ public class TenantKbRebuildService {
             LlmInstanceManager llmInstanceManager,
             TenantKbRebuildStatusService tenantKbRebuildStatusService,
             TenantKbVersionRepository tenantKbVersionRepository,
+            ProductDatasetRepository productDatasetRepository,
             TenantKbSourceService tenantKbSourceService,
             ObjectMapper objectMapper
     ) {
@@ -69,6 +75,7 @@ public class TenantKbRebuildService {
         this.llmInstanceManager = llmInstanceManager;
         this.tenantKbRebuildStatusService = tenantKbRebuildStatusService;
         this.tenantKbVersionRepository = tenantKbVersionRepository;
+        this.productDatasetRepository = productDatasetRepository;
         this.tenantKbSourceService = tenantKbSourceService;
         this.objectMapper = objectMapper;
     }
@@ -278,14 +285,24 @@ public class TenantKbRebuildService {
     public KbStatusSnapshot inspectStatus(UUID tenantId) {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant not found"));
-        String kbDirValue = tenant.getKbDir() == null ? "" : tenant.getKbDir().trim();
         TenantKbRebuildStatusService.RebuildTrackingSnapshot tracking = tenantKbRebuildStatusService.getSnapshot(tenantId);
+
+        TenantKbVersion activeVersion = activeKbVersion(tenant);
+        if (activeVersion != null) {
+            return inspectActiveVersion(activeVersion, tracking);
+        }
+
+        String kbDirValue = tenant.getKbDir() == null ? "" : tenant.getKbDir().trim();
         if (kbDirValue.isBlank()) {
             return new KbStatusSnapshot(
                     null,
                     "NOT_CONFIGURED",
                     tracking.lastRebuildFinishedAt(),
                     0,
+                    null,
+                    null,
+                    null,
+                    null,
                     tracking.lastRebuildStartedAt(),
                     tracking.lastRebuildFinishedAt(),
                     tracking.lastRebuildStatus(),
@@ -295,18 +312,7 @@ public class TenantKbRebuildService {
         }
 
         Path kbDir = Path.of(kbDirValue).normalize();
-        List<Path> artifactPaths = List.of(
-                kbDir.resolve("source_manifest.json"),
-                kbDir.resolve("raw_urls.txt"),
-                kbDir.resolve("products.jsonl"),
-                kbDir.resolve("chunks.jsonl"),
-                kbDir.resolve("index.json")
-        );
-
-        List<Path> existingArtifacts = artifactPaths.stream()
-                .filter(Files::exists)
-                .toList();
-
+        List<Path> existingArtifacts = existingArtifactPaths(kbDir);
         Instant artifactLastRebuildAt = existingArtifacts.stream()
                 .map(this::safeLastModified)
                 .filter(fileTime -> fileTime != null)
@@ -322,12 +328,90 @@ public class TenantKbRebuildService {
                 status,
                 lastRebuildAt,
                 existingArtifacts.size(),
+                null,
+                null,
+                null,
+                null,
                 tracking.lastRebuildStartedAt(),
                 tracking.lastRebuildFinishedAt(),
                 tracking.lastRebuildStatus(),
                 tracking.lastRebuildMessage(),
                 tracking.history()
         );
+    }
+
+    private TenantKbVersion activeKbVersion(Tenant tenant) {
+        UUID activeKbVersionId = tenant.getActiveKbVersionId();
+        if (activeKbVersionId == null) {
+            return null;
+        }
+        return tenantKbVersionRepository.findByTenantIdAndId(tenant.getId(), activeKbVersionId)
+                .orElse(null);
+    }
+
+    private KbStatusSnapshot inspectActiveVersion(
+            TenantKbVersion activeVersion,
+            TenantKbRebuildStatusService.RebuildTrackingSnapshot tracking
+    ) {
+        Path kbDir = Path.of(activeVersion.getKbDir()).normalize();
+        List<Path> existingArtifacts = existingArtifactPaths(kbDir);
+        Instant artifactLastRebuildAt = existingArtifacts.stream()
+                .map(this::safeLastModified)
+                .filter(fileTime -> fileTime != null)
+                .max(Comparator.naturalOrder())
+                .map(FileTime::toInstant)
+                .orElse(null);
+
+        Integer versionArtifactCount = activeVersion.getArtifactCount();
+        if (versionArtifactCount == null) {
+            versionArtifactCount = countArtifactLines(
+                    kbDir.resolve("chunks.jsonl"),
+                    kbDir.resolve("products.jsonl")
+            );
+        }
+        int artifactCount = versionArtifactCount == null ? existingArtifacts.size() : versionArtifactCount;
+        String status = activeVersion.getStatus() == TenantKbVersionStatus.READY
+                && (artifactCount > 0 || !existingArtifacts.isEmpty())
+                ? "READY"
+                : activeVersion.getStatus().name();
+        Instant explicitFinishedAt = tracking.lastRebuildFinishedAt();
+        Instant lastRebuildAt = explicitFinishedAt != null
+                ? explicitFinishedAt
+                : firstNonNull(activeVersion.getBuiltAt(), artifactLastRebuildAt);
+        ProductDataset dataset = activeVersion.getDatasetId() == null
+                ? null
+                : productDatasetRepository.findByDatasetId(activeVersion.getDatasetId()).orElse(null);
+        return new KbStatusSnapshot(
+                kbDir.toString(),
+                status,
+                lastRebuildAt,
+                artifactCount,
+                activeVersion.getSourceType(),
+                activeVersion.getDatasetId(),
+                dataset == null ? null : dataset.getSource(),
+                dataset == null ? null : dataset.getSourceUrl(),
+                tracking.lastRebuildStartedAt(),
+                tracking.lastRebuildFinishedAt(),
+                tracking.lastRebuildStatus(),
+                tracking.lastRebuildMessage(),
+                tracking.history()
+        );
+    }
+
+    private List<Path> existingArtifactPaths(Path kbDir) {
+        return List.of(
+                        kbDir.resolve("source_manifest.json"),
+                        kbDir.resolve("raw_urls.txt"),
+                        kbDir.resolve("products.jsonl"),
+                        kbDir.resolve("chunks.jsonl"),
+                        kbDir.resolve("index.json")
+                ).stream()
+                .filter(Files::exists)
+                .toList();
+    }
+
+    private Instant firstNonNull(Instant first, Instant second) {
+        return first == null ? second : first;
     }
 
     private ScriptResult runCommand(File workingDir, List<String> command, String failurePrefix) {

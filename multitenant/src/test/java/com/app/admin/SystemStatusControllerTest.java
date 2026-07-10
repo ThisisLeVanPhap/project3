@@ -60,7 +60,7 @@ class SystemStatusControllerTest {
         when(llmInstanceManager.dumpRuntimeStatuses()).thenReturn(Map.of());
         when(purchaseRequestRepository.count()).thenReturn(7L);
         when(purchaseRequestRepository.countByStatus(PurchaseRequestStatus.NEW.name())).thenReturn(4L);
-        when(purchaseRequestRepository.countByStatus(PurchaseRequestStatus.CONTACTED.name())).thenReturn(2L);
+        when(purchaseRequestRepository.countByStatus(PurchaseRequestStatus.PROCESSING.name())).thenReturn(2L);
         when(purchaseRequestRepository.countByStatus(PurchaseRequestStatus.COMPLETED.name())).thenReturn(1L);
 
         SystemStatusController controller = new SystemStatusController(

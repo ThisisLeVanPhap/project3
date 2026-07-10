@@ -60,7 +60,7 @@ public class SystemStatusController {
                 new SystemStatusResponse.PurchaseRequests(
                         purchaseRequestRepository.count(),
                         purchaseRequestRepository.countByStatus(PurchaseRequestStatus.NEW.name()),
-                        purchaseRequestRepository.countByStatus(PurchaseRequestStatus.CONTACTED.name()),
+                        purchaseRequestRepository.countByStatus(PurchaseRequestStatus.PROCESSING.name()),
                         purchaseRequestRepository.countByStatus(PurchaseRequestStatus.COMPLETED.name())
                 )
         );

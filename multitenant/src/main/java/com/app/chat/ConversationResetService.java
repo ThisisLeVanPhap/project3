@@ -51,22 +51,23 @@ public class ConversationResetService {
         }
         String normalizedChannel = normalizeChannel(channel);
         String conversationUserKey = toConversationUserKey(normalizedChannel, requireText(senderKeyOrUserExternalId, "senderKey"));
-        List<Conversation> activeConversations = conversationRepository
-                .findByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
-                        tenantId,
-                        chatbotId,
-                        conversationUserKey,
-                        ACTIVE_STATUS
-                );
+        List<Conversation> activeConversations = findActiveConversationsForNewSession(
+                tenantId,
+                chatbotId,
+                normalizedChannel,
+                conversationUserKey
+        );
 
         long deletedMessageCount = 0;
         long runtimeResetCount = 0;
         long discardedLeadCount = 0;
         long discardedPurchaseRequestCount = 0;
-        UUID retainedUnifiedCustomerId = unifiedCustomerId;
+        UUID retainedUnifiedCustomerId = shouldCreateNewDemoCustomer(normalizedChannel) ? null : unifiedCustomerId;
 
         for (Conversation conversation : activeConversations) {
-            if (retainedUnifiedCustomerId == null && conversation.getUnifiedCustomerId() != null) {
+            if (!shouldCreateNewDemoCustomer(normalizedChannel)
+                    && retainedUnifiedCustomerId == null
+                    && conversation.getUnifiedCustomerId() != null) {
                 retainedUnifiedCustomerId = conversation.getUnifiedCustomerId();
             }
             deletedMessageCount += deleteMessages(tenantId, conversation.getId());
@@ -84,7 +85,7 @@ public class ConversationResetService {
         fresh.setId(UUID.randomUUID());
         fresh.setTenantId(tenantId);
         fresh.setChatbotId(chatbotId);
-        fresh.setUserExternalId(conversationUserKey);
+        fresh.setUserExternalId(nextConversationUserKey(normalizedChannel, conversationUserKey));
         fresh.setUnifiedCustomerId(retainedUnifiedCustomerId);
         fresh.setStatus(ACTIVE_STATUS);
         fresh.setLeadCreated(false);
@@ -99,6 +100,49 @@ public class ConversationResetService {
                 discardedLeadCount,
                 discardedPurchaseRequestCount
         );
+    }
+
+    private List<Conversation> findActiveConversationsForNewSession(
+            UUID tenantId,
+            UUID chatbotId,
+            String channel,
+            String conversationUserKey
+    ) {
+        if (!shouldCreateNewDemoCustomer(channel)) {
+            return conversationRepository.findByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+                    tenantId,
+                    chatbotId,
+                    conversationUserKey,
+                    ACTIVE_STATUS
+            );
+        }
+        String baseKey = ChannelConversationService.stripDemoSuffix(conversationUserKey);
+        List<Conversation> conversations = new java.util.ArrayList<>(conversationRepository
+                .findByTenantIdAndChatbotIdAndUserExternalIdAndStatusOrderByCreatedAtDesc(
+                        tenantId,
+                        chatbotId,
+                        baseKey,
+                        ACTIVE_STATUS
+                ));
+        conversations.addAll(conversationRepository.findByTenantIdAndChatbotIdAndUserExternalIdStartingWithAndStatusOrderByCreatedAtDesc(
+                tenantId,
+                chatbotId,
+                baseKey + ChannelConversationService.DEMO_CUSTOMER_SUFFIX,
+                ACTIVE_STATUS
+        ));
+        return conversations;
+    }
+
+    private String nextConversationUserKey(String channel, String conversationUserKey) {
+        if (!shouldCreateNewDemoCustomer(channel)) {
+            return conversationUserKey;
+        }
+        String baseKey = ChannelConversationService.stripDemoSuffix(conversationUserKey);
+        return baseKey + ChannelConversationService.DEMO_CUSTOMER_SUFFIX + UUID.randomUUID();
+    }
+
+    private boolean shouldCreateNewDemoCustomer(String channel) {
+        return "messenger".equals(channel) || "telegram".equals(channel);
     }
 
     @Transactional

@@ -237,11 +237,11 @@ class ConversationResetServiceTest {
         UUID conversationId = UUID.fromString("fd0f4034-42c9-4217-9df3-0353c93fcd7f");
         Conversation conversation = conversation(tenantId, conversationId, "ACTIVE");
         PurchaseRequest newRequest = purchaseRequest(tenantId, conversationId, "NEW");
-        PurchaseRequest contactedRequest = purchaseRequest(tenantId, conversationId, "CONTACTED");
+        PurchaseRequest processingRequest = purchaseRequest(tenantId, conversationId, "PROCESSING");
         PurchaseRequest completedRequest = purchaseRequest(tenantId, conversationId, "COMPLETED");
         when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(conversation));
         when(purchaseRequestRepository.findByTenantIdAndConversationId(tenantId.toString(), conversationId.toString()))
-                .thenReturn(List.of(newRequest, contactedRequest, completedRequest));
+                .thenReturn(List.of(newRequest, processingRequest, completedRequest));
 
         service().reset(
                 tenantId,
@@ -249,10 +249,10 @@ class ConversationResetServiceTest {
         );
 
         assertEquals("RESET_DISCARDED", newRequest.getStatus());
-        assertEquals("RESET_DISCARDED", contactedRequest.getStatus());
+        assertEquals("RESET_DISCARDED", processingRequest.getStatus());
         assertEquals("COMPLETED", completedRequest.getStatus());
         verify(purchaseRequestRepository).save(newRequest);
-        verify(purchaseRequestRepository).save(contactedRequest);
+        verify(purchaseRequestRepository).save(processingRequest);
         verify(purchaseRequestRepository, never()).save(completedRequest);
     }
 
@@ -329,6 +329,12 @@ class ConversationResetServiceTest {
                 userKey,
                 "ACTIVE"
         )).thenReturn(List.of(latest, older));
+        when(conversationRepository.findByTenantIdAndChatbotIdAndUserExternalIdStartingWithAndStatusOrderByCreatedAtDesc(
+                tenantId,
+                chatbotId,
+                userKey + "#demo:",
+                "ACTIVE"
+        )).thenReturn(List.of());
         when(messageRepository.countByTenantIdAndConversationId(tenantId, latest.getId())).thenReturn(2L);
         when(messageRepository.countByTenantIdAndConversationId(tenantId, older.getId())).thenReturn(3L);
         when(chatbotInstanceRepository.findById(chatbotId)).thenReturn(Optional.of(bot));
@@ -378,8 +384,8 @@ class ConversationResetServiceTest {
         Conversation fresh = savedConversation.getAllValues().get(2);
         assertEquals("ACTIVE", fresh.getStatus());
         assertEquals(chatbotId, fresh.getChatbotId());
-        assertEquals(userKey, fresh.getUserExternalId());
-        assertEquals(unifiedCustomerId, fresh.getUnifiedCustomerId());
+        org.junit.jupiter.api.Assertions.assertTrue(fresh.getUserExternalId().startsWith(userKey + "#demo:"));
+        assertEquals(null, fresh.getUnifiedCustomerId());
         assertFalse(fresh.isLeadCreated());
         assertEquals(fresh.getId().toString(), response.newConversationId());
     }

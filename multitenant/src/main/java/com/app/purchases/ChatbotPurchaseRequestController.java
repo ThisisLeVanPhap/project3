@@ -1,5 +1,9 @@
 package com.app.purchases;
 
+import com.app.leads.ChatbotLeadCreateResponse;
+import com.app.leads.Lead;
+import com.app.leads.LeadRepository;
+import com.app.leads.LeadService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,27 +20,63 @@ import org.springframework.web.server.ResponseStatusException;
 public class ChatbotPurchaseRequestController {
 
     private final PurchaseRequestService purchaseRequestService;
+    private final LeadService leadService;
+    private final LeadRepository leadRepository;
     private final String serviceToken;
 
     public ChatbotPurchaseRequestController(
             PurchaseRequestService purchaseRequestService,
+            LeadService leadService,
+            LeadRepository leadRepository,
             @Value("${app.chatbot.service-token:${CHATBOT_SERVICE_TOKEN:}}") String serviceToken
     ) {
         this.purchaseRequestService = purchaseRequestService;
+        this.leadService = leadService;
+        this.leadRepository = leadRepository;
         this.serviceToken = serviceToken;
     }
 
     @PostMapping
-    public ResponseEntity<ChatbotPurchaseRequestCreateResponse> create(
+    public ResponseEntity<ChatbotLeadCreateResponse> create(
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestHeader(value = "X-Service-Token", required = false) String serviceTokenHeader,
             @RequestBody ChatbotPurchaseRequestCreateRequest request
     ) {
         requireValidServiceToken(authorization, serviceTokenHeader);
-        PurchaseRequestService.ChatbotCreateResult result =
-                purchaseRequestService.createFromChatbotHandoff(request);
-        HttpStatus status = result.created() ? HttpStatus.CREATED : HttpStatus.OK;
-        return ResponseEntity.status(status).body(ChatbotPurchaseRequestCreateResponse.from(result));
+        boolean existed = leadRepository
+                .findTop1ByTenantIdAndConversationIdOrderByCreatedAtDesc(request.tenantId(), request.conversationId())
+                .isPresent();
+        Lead lead = leadService.createFromChatbotHandoff(new LeadService.ChatbotHandoffLeadData(
+                request.tenantId(),
+                request.conversationId(),
+                request.channel(),
+                "",
+                "",
+                request.customerName(),
+                request.phone(),
+                request.email(),
+                request.requestedProductRef(),
+                request.productSku(),
+                request.productUrl(),
+                request.price(),
+                request.quantity(),
+                request.notes(),
+                request.handoffId(),
+                request.idempotencyKey(),
+                "",
+                "HANDOFF",
+                java.util.Map.of()
+        ));
+        HttpStatus status = existed ? HttpStatus.OK : HttpStatus.CREATED;
+        return ResponseEntity.status(status).body(new ChatbotLeadCreateResponse(
+                lead.getId(),
+                request.handoffId(),
+                request.idempotencyKey(),
+                lead.getStatus(),
+                lead.getStage(),
+                !existed,
+                lead
+        ));
     }
 
     private void requireValidServiceToken(String authorization, String serviceTokenHeader) {

@@ -1,9 +1,0 @@
-digraph "Kênh truy cập" {
-	graph [fontcolor="#2D3436" fontname="Sans-Serif" fontsize=15 label="Kênh truy cập" nodesep=0.60 pad=2.0 rankdir=LR ranksep=0.75 splines=ortho]
-	node [fixedsize=true fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13 height=1.4 imagescale=true labelloc=b shape=box style=rounded width=1.4]
-	edge [color="#7B8894"]
-	"620d674f200642f386263872e9b5d3f0" [label="Web Chat
-& Admin UI" height=2.3 image="C:\Users\Admin\AppData\Local\Programs\Python\Python311\Lib\site-packages\resources/onprem/client\user.png" shape=none]
-	"8854858403ab470dbc9dc9e384a49d2e" [label=Messenger height=1.9 image="C:\Users\Admin\AppData\Local\Programs\Python\Python311\Lib\site-packages\resources/onprem/client\user.png" shape=none]
-	"180a8b78158b41aaae19a719b7787723" [label=Telegram height=1.9 image="C:\Users\Admin\AppData\Local\Programs\Python\Python311\Lib\site-packages\resources/onprem/client\user.png" shape=none]
-}

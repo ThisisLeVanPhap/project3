@@ -22,9 +22,34 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 12px;
         }
         .topbar h2 { margin: 0; font-size: 1.1em; }
         .config-info { font-size: 0.8em; opacity: 0.8; }
+        .brand-block {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .home-link {
+            color: #fff;
+            text-decoration: none;
+            border: 1px solid rgba(255,255,255,0.55);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 0.82em;
+            line-height: 1;
+        }
+        .home-link:hover {
+            background: rgba(255,255,255,0.12);
+        }
         .main {
             display: flex;
             flex: 1;
@@ -142,6 +167,54 @@
             word-wrap: break-word;
             white-space: pre-wrap;
         }
+        .assistant.has-table {
+            max-width: min(96%, 720px);
+            white-space: normal;
+        }
+        .msg .message-paragraph {
+            margin: 0 0 10px 0;
+        }
+        .msg .message-paragraph:last-child {
+            margin-bottom: 0;
+        }
+        .compare-table-wrap {
+            max-width: 100%;
+            overflow-x: auto;
+            margin: 8px 0 12px;
+            border: 1px solid #e1d7ee;
+            border-radius: 10px;
+            background: #fff;
+        }
+        .compare-table {
+            width: 100%;
+            min-width: 460px;
+            border-collapse: collapse;
+            font-size: 0.95em;
+            white-space: normal;
+        }
+        .compare-table th,
+        .compare-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee6f7;
+            text-align: left;
+            vertical-align: top;
+        }
+        .compare-table th {
+            background: #f6f0ff;
+            color: #32105f;
+            font-weight: 700;
+        }
+        .compare-table tr:last-child td {
+            border-bottom: none;
+        }
+        .compare-table td:first-child {
+            font-weight: 650;
+            color: #4a148c;
+            width: 30%;
+        }
+        .compare-table tbody tr:nth-child(even) {
+            background: #fcfaff;
+        }
         .msg .price-title {
             display: block;
             font-weight: 700;
@@ -168,6 +241,15 @@
             background: #f0f0f0;
             color: #333;
             border-bottom-left-radius: 4px;
+        }
+        @media (max-width: 640px) {
+            .assistant.has-table {
+                max-width: 100%;
+            }
+            .compare-table {
+                min-width: 560px;
+                font-size: 0.9em;
+            }
         }
         .typing {
             align-self: flex-start;
@@ -268,8 +350,13 @@
 </head>
 <body>
     <div class="topbar">
-        <h2>💬 AI Interior Shopping Advisor</h2>
-        <span class="config-info" id="config-info">Tư vấn mua sắm cá nhân hóa</span>
+        <div class="brand-block">
+            <h2>💬 AI Interior Shopping Advisor</h2>
+            <span class="config-info" id="config-info">Tư vấn mua sắm cá nhân hóa</span>
+        </div>
+        <div class="topbar-actions">
+            <a class="home-link" href="/">Trang chính</a>
+        </div>
     </div>
     <div class="main">
         <div class="sidebar">
@@ -312,19 +399,13 @@
             : {
                 mode: 'general_compare',
                 storagePrefix: 'general_chat',
-                heading: '💬 AI Interior Shopping Advisor',
-                subtitle: 'Tư vấn mua sắm cá nhân hóa',
+                heading: 'So sánh & tư vấn nội thất',
+                subtitle: 'Cân nhắc lựa chọn theo nhu cầu, giá và bối cảnh sử dụng',
                 introTitle: '',
                 description: '',
                 sourceNote: '',
-                placeholder: "Ví dụ: 'Tôi cần sofa cho phòng khách 20m², ngân sách 5-7 triệu'",
-                welcome: "Xin chào! Tôi là AI Interior Shopping Advisor. Tôi sẽ giúp bạn tìm nội thất phù hợp.\n\n" +
-                    "Hãy cho tôi biết:\n" +
-                    "- Phòng bạn muốn trang trí (phòng khách, phòng ngủ, v.v.)\n" +
-                    "- Diện tích roughly (nếu biết)\n" +
-                    "- Ngân sách của bạn\n" +
-                    "- Phong cách bạn thích\n\n" +
-                    "Ví dụ: 'Tôi cần sofa cho phòng khách 20m², ngân sách 5-7 triệu, phong cách hiện đại'",
+                placeholder: "Ví dụ: 'So sánh sofa vải và sofa da cho phòng khách có trẻ nhỏ'",
+                welcome: "Mình giúp bạn so sánh và cân nhắc lựa chọn nội thất theo nhu cầu, ngân sách và bối cảnh sử dụng. Bạn gửi 2 lựa chọn hoặc mô tả thứ đang phân vân nhé.",
                 suggestions: []
             };
 
@@ -376,10 +457,12 @@
             const div = document.createElement('div');
             div.className = 'msg ' + role;
             renderMessageContent(div, text, role);
-            if (meta && role === 'assistant' && !isPriceCheckPage) {
+            const latency = Number(meta?.latency);
+            const hasUsefulMeta = meta?.model && meta.model !== 'unknown' && Number.isFinite(latency) && latency > 0;
+            if (hasUsefulMeta && role === 'assistant' && !isPriceCheckPage) {
                 const metaDiv = document.createElement('span');
                 metaDiv.className = 'meta';
-                metaDiv.textContent = `${meta.model || 'unknown'} · ${meta.latency || '?'}ms`;
+                metaDiv.textContent = `${meta.model} · ${latency}ms`;
                 div.appendChild(metaDiv);
             }
             messagesDiv.appendChild(div);
@@ -388,7 +471,7 @@
 
         function renderMessageContent(container, text, role) {
             const value = text || '';
-            if (!isPriceCheckPage || role !== 'assistant') {
+            if (role !== 'assistant') {
                 container.textContent = value;
                 return;
             }
@@ -399,12 +482,104 @@
                 return;
             }
 
+            if (!isPriceCheckPage) {
+                renderGeneralAssistantContent(container, lines);
+                return;
+            }
+
             for (const line of lines) {
                 const item = document.createElement(line.startsWith('## ') ? 'strong' : 'p');
                 item.className = line.startsWith('## ') ? 'price-title' : 'price-line';
                 item.textContent = line.replace(/^##\s+/, '');
                 container.appendChild(item);
             }
+        }
+
+        function renderGeneralAssistantContent(container, lines) {
+            let renderedTable = false;
+            for (let i = 0; i < lines.length; i += 1) {
+                if (isMarkdownTableStart(lines, i)) {
+                    const tableLines = [lines[i], lines[i + 1]];
+                    i += 2;
+                    while (i < lines.length && isMarkdownTableRow(lines[i])) {
+                        tableLines.push(lines[i]);
+                        i += 1;
+                    }
+                    i -= 1;
+                    container.appendChild(renderMarkdownTable(tableLines));
+                    renderedTable = true;
+                    continue;
+                }
+                const paragraph = document.createElement('p');
+                paragraph.className = 'message-paragraph';
+                paragraph.textContent = cleanupMarkdownText(lines[i]);
+                container.appendChild(paragraph);
+            }
+            if (renderedTable) {
+                container.classList.add('has-table');
+            }
+        }
+
+        function isMarkdownTableRow(line) {
+            return /^\|.+\|$/.test(line || '');
+        }
+
+        function isMarkdownTableSeparator(line) {
+            return /^\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|$/.test(line || '');
+        }
+
+        function isMarkdownTableStart(lines, index) {
+            return isMarkdownTableRow(lines[index]) && isMarkdownTableSeparator(lines[index + 1]);
+        }
+
+        function splitMarkdownTableRow(line) {
+            return String(line || '')
+                .trim()
+                .replace(/^\|/, '')
+                .replace(/\|$/, '')
+                .split('|')
+                .map(cell => cleanupMarkdownText(cell.trim()));
+        }
+
+        function renderMarkdownTable(tableLines) {
+            const wrap = document.createElement('div');
+            wrap.className = 'compare-table-wrap';
+            const table = document.createElement('table');
+            table.className = 'compare-table';
+
+            const headers = splitMarkdownTableRow(tableLines[0]);
+            const thead = document.createElement('thead');
+            const headRow = document.createElement('tr');
+            for (const header of headers) {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headRow.appendChild(th);
+            }
+            thead.appendChild(headRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            for (const rowLine of tableLines.slice(2)) {
+                const cells = splitMarkdownTableRow(rowLine);
+                if (cells.length === 0) continue;
+                const tr = document.createElement('tr');
+                for (const cell of cells) {
+                    const td = document.createElement('td');
+                    td.textContent = cell;
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
+            }
+            table.appendChild(tbody);
+            wrap.appendChild(table);
+            return wrap;
+        }
+
+        function cleanupMarkdownText(text) {
+            return String(text || '')
+                .replace(/\*\*(.*?)\*\*/g, '$1')
+                .replace(/^[-*]\s+/, '')
+                .trim();
         }
 
         function addTypingIndicator() {

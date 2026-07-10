@@ -98,6 +98,10 @@ def _extract_entities(text: str) -> Dict[str, Any]:
                 is_past_tense = bool(_re.search(r"\bđã\b", text or "", re.I)) or bool(_re.search(r'\bda\s+(noi|mua|lam|bao|chot|gui|tim|biet|bảo|làm|chốt|gửi|tìm|biết|nghi|nghĩ|lay|lấy|hoc|đi)\b', text or "", re.I))
                 if is_past_tense:
                     continue
+            if material == "vai":
+                has_real_fabric = bool(_re.search(r"\bvải\b", text or "", re.I)) or bool(_re.search(r"\b(fabric|ni)\b", normalized))
+                if not has_real_fabric:
+                    continue
             entities["material"] = material
             break
 

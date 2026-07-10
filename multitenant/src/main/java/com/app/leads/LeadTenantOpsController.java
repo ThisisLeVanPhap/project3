@@ -4,6 +4,9 @@ import com.app.auth.SessionPrincipalAccessor;
 import com.app.leads.channel.MessengerOutbox;
 import com.app.leads.channel.TelegramOutbox;
 import com.app.leads.dto.OrderInfoReq;
+import com.app.purchases.PurchaseRequest;
+import com.app.purchases.PurchaseRequestResponse;
+import com.app.purchases.PurchaseRequestService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,15 +19,18 @@ public class LeadTenantOpsController {
     private final MessengerOutbox messengerOutbox;
     private final TelegramOutbox telegramOutbox;
     private final SessionPrincipalAccessor principalAccessor;
+    private final PurchaseRequestService purchaseRequestService;
 
     public LeadTenantOpsController(LeadRepository leadRepo,
                                    MessengerOutbox messengerOutbox,
                                    TelegramOutbox telegramOutbox,
-                                   SessionPrincipalAccessor principalAccessor) {
+                                   SessionPrincipalAccessor principalAccessor,
+                                   PurchaseRequestService purchaseRequestService) {
         this.leadRepo = leadRepo;
         this.messengerOutbox = messengerOutbox;
         this.telegramOutbox = telegramOutbox;
         this.principalAccessor = principalAccessor;
+        this.purchaseRequestService = purchaseRequestService;
     }
 
     @PostMapping("/order-info")
@@ -75,6 +81,27 @@ public class LeadTenantOpsController {
         leadRepo.save(lead);
 
         return lead;
+    }
+
+    @PostMapping("/{id}/convert-purchase-request")
+    public PurchaseRequestResponse convertToPurchaseRequest(@PathVariable Long id,
+                                                            @RequestParam("tid") String tenantId) {
+        principalAccessor.requireTenantOperator();
+        String currentTenantId = principalAccessor.requireTenantIdMatching(tenantId);
+
+        Lead lead = requireLead(id, currentTenantId);
+        PurchaseRequest purchaseRequest = purchaseRequestService.findOrCreateFromLead(lead);
+
+        lead.setStatus("CONVERTED");
+        leadRepo.save(lead);
+
+        String assignedToDisplayName = null;
+        if (purchaseRequest.getAssignedToMemberId() != null) {
+            assignedToDisplayName = purchaseRequestService
+                    .findMemberDisplayNames(currentTenantId)
+                    .getOrDefault(purchaseRequest.getAssignedToMemberId(), null);
+        }
+        return PurchaseRequestResponse.from(purchaseRequest, assignedToDisplayName, lead.getTranscript());
     }
 
     private Lead requireLead(Long id, String tenantId) {

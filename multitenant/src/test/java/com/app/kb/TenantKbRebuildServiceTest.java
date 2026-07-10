@@ -170,6 +170,51 @@ class TenantKbRebuildServiceTest {
     }
 
     @Test
+    void inspectStatusUsesActiveVersionBeforeLegacyKbRootArtifacts() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID activeVersionId = UUID.randomUUID();
+        Path rootKbDir = tempDir.resolve("kb").resolve("gotrangtri");
+        Files.createDirectories(rootKbDir);
+        Path artifactDir = tempDir.resolve("kb")
+                .resolve("datasets")
+                .resolve("gotrangtri-20260610")
+                .resolve("dataset-20260629041345-gotrangtri-20260610");
+        Files.createDirectories(artifactDir);
+        Files.writeString(artifactDir.resolve("chunks.jsonl"), "{\"id\":\"chunk-1\"}\n");
+        Files.writeString(artifactDir.resolve("index.json"), "{}");
+
+        Tenant tenant = tenant(tenantId, rootKbDir);
+        tenant.setCode("gotrangtri");
+        tenant.setActiveKbVersionId(activeVersionId);
+        TenantKbVersion activeVersion = new TenantKbVersion();
+        activeVersion.setId(activeVersionId);
+        activeVersion.setTenantId(tenantId);
+        activeVersion.setVersionTag("dataset-20260629041437-artifact-5d2619a5");
+        activeVersion.setKbDir(artifactDir.toString());
+        activeVersion.setDatasetId("gotrangtri-20260610");
+        activeVersion.setArtifactCount(6070);
+        activeVersion.setStatus(TenantKbVersionStatus.READY);
+        activeVersion.setBuiltAt(Instant.parse("2026-06-29T04:14:37Z"));
+
+        List<TenantKbVersion> savedVersions = new ArrayList<>();
+        TenantKbVersionRepository versionRepository = versionRepository(savedVersions);
+        when(versionRepository.findByTenantIdAndId(tenantId, activeVersionId)).thenReturn(Optional.of(activeVersion));
+        TenantKbRebuildService service = newService(
+                tenantRepository(tenant),
+                versionRepository,
+                mock(LlmInstanceManager.class),
+                tempDir
+        );
+
+        TenantKbRebuildService.KbStatusSnapshot snapshot = service.inspectStatus(tenantId);
+
+        assertEquals("READY", snapshot.status());
+        assertEquals(6070, snapshot.artifactCount());
+        assertEquals(artifactDir.toString(), snapshot.kbDir());
+        assertEquals(Instant.parse("2026-06-29T04:14:37Z"), snapshot.lastRebuildAt());
+    }
+
+    @Test
     void rebuildVersionTagAddsSuffixWhenTimestampCollides() throws Exception {
         UUID tenantId = UUID.randomUUID();
         Path modelDir = createModelServerScripts(false);
@@ -202,8 +247,13 @@ class TenantKbRebuildServiceTest {
         llmProperties.setPythonBin("python");
         TenantKbRebuildStatusService statusService = mock(TenantKbRebuildStatusService.class);
         TenantKbSourceService sourceService = mock(TenantKbSourceService.class);
+        ProductDatasetRepository datasetRepository = mock(ProductDatasetRepository.class);
         ObjectMapper objectMapper = new ObjectMapper();
         try {
+            when(statusService.getSnapshot(any(UUID.class))).thenReturn(
+                    new TenantKbRebuildStatusService.RebuildTrackingSnapshot(null, null, null, null, List.of())
+            );
+            when(datasetRepository.findByDatasetId(any(String.class))).thenReturn(Optional.empty());
             when(sourceService.sourceManifestPath(any(UUID.class))).thenAnswer(invocation -> {
                 UUID tenantId = invocation.getArgument(0);
                 Path path = tempDir.resolve("kb").resolve("demo").resolve("source_manifest.json");
@@ -231,7 +281,7 @@ class TenantKbRebuildServiceTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return new TenantKbRebuildService(tenantRepository, llmProperties, llmInstanceManager, statusService, versionRepository, sourceService, objectMapper);
+        return new TenantKbRebuildService(tenantRepository, llmProperties, llmInstanceManager, statusService, versionRepository, datasetRepository, sourceService, objectMapper);
     }
 
     private TenantRepository tenantRepository(Tenant tenant) {
